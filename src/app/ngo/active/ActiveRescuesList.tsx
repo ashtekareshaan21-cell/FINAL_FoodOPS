@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
+import { divertDonationToBiogas } from '@/app/actions/donations';
 
 interface ActiveRescuesListProps {
   activeRescues: any[];
@@ -24,6 +25,26 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
   const [selectedVolunteers, setSelectedVolunteers] = useState<Record<string, string>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [errorMap, setErrorMap] = useState<Record<string, string | null>>({});
+
+  const [spoilLoadingMap, setSpoilLoadingMap] = useState<Record<string, boolean>>({});
+  const [spoilReasonMap, setSpoilReasonMap] = useState<Record<string, string>>({});
+  const [showSpoilConfirm, setShowSpoilConfirm] = useState<Record<string, boolean>>({});
+
+  const handleDivert = async (donationId: string) => {
+    const reason = spoilReasonMap[donationId] || 'Uncollected / Expired';
+    setSpoilLoadingMap(prev => ({ ...prev, [donationId]: true }));
+    setErrorMap(prev => ({ ...prev, [donationId]: null }));
+
+    const res = await divertDonationToBiogas(donationId, reason);
+    setSpoilLoadingMap(prev => ({ ...prev, [donationId]: false }));
+
+    if (res.success) {
+      setShowSpoilConfirm(prev => ({ ...prev, [donationId]: false }));
+      router.refresh();
+    } else {
+      setErrorMap(prev => ({ ...prev, [donationId]: res.error || 'Failed to divert donation.' }));
+    }
+  };
 
   const handleAssign = async (donationId: string) => {
     const volunteerId = selectedVolunteers[donationId];
@@ -190,6 +211,53 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                       )}
                     </div>
                   )}
+
+                  {/* Divert to Biogas Section */}
+                  <div className="mt-6 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-800">
+                    {showSpoilConfirm[rescue.id] ? (
+                      <div className="space-y-3 bg-zinc-50 dark:bg-zinc-950/40 p-3 rounded-lg border border-zinc-200 dark:border-zinc-850">
+                        <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                          Why are you diverting this to recovery?
+                        </p>
+                        <select
+                          className="w-full p-2 bg-white border border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 rounded text-xs dark:text-zinc-200"
+                          value={spoilReasonMap[rescue.id] || ''}
+                          onChange={(e) => setSpoilReasonMap(prev => ({ ...prev, [rescue.id]: e.target.value }))}
+                        >
+                          <option value="">Select a reason...</option>
+                          <option value="Food spoiled / bad odor">Food spoiled / bad odor</option>
+                          <option value="Packaging damaged or leaking">Packaging damaged or leaking</option>
+                          <option value="Deadline expired and rider delayed">Deadline expired and rider delayed</option>
+                          <option value="Other organic waste / leftovers">Other organic waste / leftovers</option>
+                        </select>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={spoilLoadingMap[rescue.id]}
+                            onClick={() => handleDivert(rescue.id)}
+                            className="flex-grow py-1.5 px-3 border border-transparent rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors disabled:opacity-50"
+                          >
+                            {spoilLoadingMap[rescue.id] ? 'Diverting...' : 'Confirm Biogas Divert'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowSpoilConfirm(prev => ({ ...prev, [rescue.id]: false }))}
+                            className="py-1.5 px-3 border border-zinc-300 dark:border-zinc-700 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setShowSpoilConfirm(prev => ({ ...prev, [rescue.id]: true }))}
+                        className="w-full py-1.5 px-4 border border-amber-300 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-amber-700 dark:text-amber-400 rounded text-xs font-semibold transition-colors"
+                      >
+                        🗑️ Mark Spoiled / Divert to Biogas
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

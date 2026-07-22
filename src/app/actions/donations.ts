@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { NgoAvailability } from '@prisma/client';
 
 import { haversineDistance } from '@/lib/geo';
 
@@ -15,6 +16,40 @@ const IMPACT_FACTORS: Record<string, { co2: number; water: number }> = {
   'meat': { co2: 7.0, water: 15000 },
   'mixed': { co2: 2.5, water: 1500 }, // Default average for prepared meals
 };
+
+function isFoodTypeMatching(donation: any, acceptedTypesStr: string): boolean {
+  if (!acceptedTypesStr) return false;
+  const acceptedTypes = acceptedTypesStr.split(',').map(t => t.trim());
+  
+  const category = donation.foodCategory.toLowerCase(); // mixed, grains, vegetables, fruits, dairy, meat
+  const dietary = donation.vegNonVegMixed; // VEG, NON_VEG, MIXED
+
+  if (category === 'mixed') {
+    if (dietary === 'VEG') {
+      return acceptedTypes.includes('COOKED_VEG');
+    } else {
+      return acceptedTypes.includes('COOKED_NON_VEG');
+    }
+  }
+  
+  if (category === 'grains') {
+    return acceptedTypes.includes('DRY_RATION') || acceptedTypes.includes('PACKAGED_FOOD');
+  }
+  
+  if (category === 'vegetables' || category === 'fruits') {
+    return acceptedTypes.includes('FRUITS_VEG');
+  }
+  
+  if (category === 'dairy') {
+    return acceptedTypes.includes('PACKAGED_FOOD') || acceptedTypes.includes('COOKED_VEG') || acceptedTypes.includes('COOKED_NON_VEG');
+  }
+  
+  if (category === 'meat') {
+    return acceptedTypes.includes('COOKED_NON_VEG');
+  }
+
+  return false;
+}
 
 export async function createDonation(formData: any) {
   const session = await getSession();
@@ -80,9 +115,12 @@ export async function createDonation(formData: any) {
       },
     });
 
-    // Notify nearby verified NGOs
+    // Notify nearby verified & available NGOs
     const verifiedNgos = await prisma.nGOProfile.findMany({
-      where: { status: 'VERIFIED' },
+      where: {
+        status: 'VERIFIED',
+        availability: 'AVAILABLE',
+      },
     });
 
     const lat = parseFloat(pickupLatitude);
@@ -90,16 +128,32 @@ export async function createDonation(formData: any) {
 
     const notificationsToCreate = [];
     for (const ngo of verifiedNgos) {
+      // 1. Quick bounding box pre-filter
+      const latChange = ngo.serviceRadiusKm / 111.0;
+      const lngChange = ngo.serviceRadiusKm / (111.0 * Math.cos((ngo.baseLatitude * Math.PI) / 180));
+      const minLat = ngo.baseLatitude - latChange;
+      const maxLat = ngo.baseLatitude + latChange;
+      const minLng = ngo.baseLongitude - lngChange;
+      const maxLng = ngo.baseLongitude + lngChange;
+
+      if (lat < minLat || lat > maxLat || lng < minLng || lng > maxLng) {
+        continue; // skip if outside bounding box
+      }
+
+      // 2. Exact Haversine distance check
       const distance = haversineDistance(lat, lng, ngo.baseLatitude, ngo.baseLongitude);
       if (distance <= ngo.serviceRadiusKm) {
-        notificationsToCreate.push({
-          userId: ngo.userId,
-          type: 'NEW_DONATION',
-          title: 'New Donation Nearby',
-          message: `A new donation "${title}" is available within your service radius (${distance.toFixed(1)} km away).`,
-          relatedDonationId: donation.id,
-          relatedNgoId: ngo.id,
-        });
+        // 3. Accepted Food Category check
+        if (isFoodTypeMatching(donation, ngo.acceptedFoodTypes)) {
+          notificationsToCreate.push({
+            userId: ngo.userId,
+            type: 'NEW_DONATION',
+            title: 'New Donation Nearby',
+            message: `A new donation "${title}" is available within your service radius (${distance.toFixed(1)} km away).`,
+            relatedDonationId: donation.id,
+            relatedNgoId: ngo.id,
+          });
+        }
       }
     }
 
@@ -154,15 +208,25 @@ export async function getNearbyAvailableDonations() {
   });
 
   if (!ngo) throw new Error('NGO profile not found');
-  if (ngo.status !== 'VERIFIED') {
-    return []; // Return empty if not verified yet
+  if (ngo.status !== 'VERIFIED' || ngo.availability !== 'AVAILABLE') {
+    return []; // Return empty if not verified or currently offline/busy
   }
 
-  // Fetch available donations that haven't expired
+  // Bounding Box Optimization
+  const latChange = ngo.serviceRadiusKm / 111.0;
+  const lngChange = ngo.serviceRadiusKm / (111.0 * Math.cos((ngo.baseLatitude * Math.PI) / 180));
+  const minLat = ngo.baseLatitude - latChange;
+  const maxLat = ngo.baseLatitude + latChange;
+  const minLng = ngo.baseLongitude - lngChange;
+  const maxLng = ngo.baseLongitude + lngChange;
+
+  // Fetch available donations within the bounding box that haven't expired
   const availableDonations = await prisma.donation.findMany({
     where: {
       status: 'AVAILABLE',
       pickupDeadlineAt: { gt: new Date() },
+      pickupLatitude: { gte: minLat, lte: maxLat },
+      pickupLongitude: { gte: minLng, lte: maxLng },
     },
     include: {
       donor: true,
@@ -170,8 +234,9 @@ export async function getNearbyAvailableDonations() {
     orderBy: { createdAt: 'desc' },
   });
 
-  // Filter based on Haversine distance
+  // Filter based on food category match and exact Haversine distance
   return availableDonations
+    .filter((donation) => isFoodTypeMatching(donation, ngo.acceptedFoodTypes))
     .map((donation) => {
       const distance = haversineDistance(
         donation.pickupLatitude,
@@ -567,3 +632,149 @@ export async function updateAssignmentStatus(assignmentId: string, action: strin
     return { success: false, error: error.message || 'Failed to update status.' };
   }
 }
+
+export async function divertDonationToBiogas(donationId: string, reason: string) {
+  const session = await getSession();
+  if (!session || (session.role !== 'NGO' && session.role !== 'ADMIN')) {
+    return { success: false, error: 'Unauthorized. Only NGOs or Admins can divert donations.' };
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const donation = await tx.donation.findUnique({
+        where: { id: donationId },
+        include: { acceptedNgo: true },
+      });
+
+      if (!donation) throw new Error('Donation not found');
+
+      // If the caller is an NGO, make sure they are the accepted NGO for this donation
+      if (session.role === 'NGO') {
+        const ngo = await tx.nGOProfile.findUnique({
+          where: { userId: session.userId },
+        });
+        if (!ngo || donation.acceptedNgoId !== ngo.id) {
+          throw new Error('This donation is not assigned to your NGO.');
+        }
+      }
+
+      // Check if it's already completed or cancelled
+      if (donation.status === 'COMPLETED' || donation.status === 'CANCELLED' || donation.status === 'EXPIRED') {
+        throw new Error(`Cannot divert a donation with status ${donation.status}`);
+      }
+
+      // Parse quantity to get weight in kg
+      const parsedWeight = parseFloat(donation.quantity.replace(/[^\d.]/g, ''));
+      const weightKg = isNaN(parsedWeight) || parsedWeight <= 0 ? 10.0 : parsedWeight;
+
+      // Update donation status to EXPIRED (representing recovery)
+      await tx.donation.update({
+        where: { id: donationId },
+        data: {
+          status: 'EXPIRED',
+          cancelledAt: new Date(),
+          cancelledBy: session.userId,
+          cancelReason: `Spoiled / Diverted to Biogas Recovery: ${reason}`,
+        },
+      });
+
+      // Write status history
+      await tx.donationStatusHistory.create({
+        data: {
+          donationId,
+          previousStatus: donation.status,
+          newStatus: 'EXPIRED',
+          changedBy: session.userId,
+          reason: `Diverted to Biogas Recovery: ${reason}`,
+        },
+      });
+
+      // Write audit log
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: 'DIVERT_TO_BIOGAS',
+          entityType: 'Donation',
+          entityId: donationId,
+          newValues: JSON.stringify({ status: 'EXPIRED', cancelReason: `Spoiled / Diverted to Biogas Recovery: ${reason}` }),
+        },
+      });
+
+      // Create ImpactRecord for recovery
+      // CO2 avoided factor = 1.8 kg CO2 per kg food waste diverted to biogas (avoided landfill methane + replacement energy)
+      const co2EquivalentKg = weightKg * 1.8;
+
+      await tx.impactRecord.create({
+        data: {
+          donationId,
+          foodWeightKg: weightKg,
+          estimatedServings: 0, // 0 servings since it is diverted to recovery
+          co2EquivalentKg,
+          waterSavedLiters: 0, // no water saved because it is not consumed
+          calculationMethod: 'BIOGAS_RECOVERY_2026',
+          factorsUsed: `biogas_recovery: co2=1.8, water=0, yield=0.25kwh/kg`,
+        },
+      });
+
+      return { success: true };
+    });
+
+    revalidatePath('/ngo');
+    revalidatePath('/ngo/active');
+    revalidatePath('/admin');
+    revalidatePath('/admin/data');
+    revalidatePath('/donor');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Divert donation to biogas error:', error);
+    return { success: false, error: error.message || 'Failed to divert donation to biogas.' };
+  }
+}
+
+export async function updateNgoSettings(data: {
+  baseAddress: string;
+  baseLatitude: number;
+  baseLongitude: number;
+  serviceRadiusKm: number;
+  availability: NgoAvailability;
+  acceptedFoodTypes: string[];
+}) {
+  const session = await getSession();
+  if (!session || session.role !== 'NGO') {
+    return { success: false, error: 'Unauthorized. Only NGOs can modify settings.' };
+  }
+
+  try {
+    const ngo = await prisma.nGOProfile.findUnique({
+      where: { userId: session.userId },
+    });
+
+    if (!ngo) {
+      return { success: false, error: 'NGO profile not found.' };
+    }
+
+    const currentAvailability = ngo.availability;
+    const newAvailability = data.availability;
+    const isAvailabilityChanged = currentAvailability !== newAvailability;
+
+    await prisma.nGOProfile.update({
+      where: { userId: session.userId },
+      data: {
+        baseAddress: data.baseAddress,
+        baseLatitude: data.baseLatitude,
+        baseLongitude: data.baseLongitude,
+        serviceRadiusKm: data.serviceRadiusKm,
+        availability: newAvailability,
+        availabilityUpdatedAt: isAvailabilityChanged ? new Date() : ngo.availabilityUpdatedAt,
+        acceptedFoodTypes: data.acceptedFoodTypes.join(','),
+      },
+    });
+
+    revalidatePath('/ngo');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Update NGO settings error:', error);
+    return { success: false, error: error.message || 'Failed to update settings.' };
+  }
+}
+

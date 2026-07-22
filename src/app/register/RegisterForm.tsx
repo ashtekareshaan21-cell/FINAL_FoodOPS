@@ -39,6 +39,8 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
   const [ngoRadius, setNgoRadius] = useState('10');
   const [ngoContactPerson, setNgoContactPerson] = useState('');
   const [ngoContactPhone, setNgoContactPhone] = useState('');
+  const [ngoAvailability, setNgoAvailability] = useState<'AVAILABLE' | 'BUSY' | 'OFFLINE'>('AVAILABLE');
+  const [ngoAcceptedFoodTypes, setNgoAcceptedFoodTypes] = useState<string[]>([]);
 
   // Volunteer fields
   const [volName, setVolName] = useState('');
@@ -78,10 +80,22 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
       setLoading(false);
       return;
     }
-    if (role === 'NGO' && (ngoLat === null || ngoLng === null || !ngoAddress)) {
-      setError('Please select your NGO base location on the map.');
-      setLoading(false);
-      return;
+    if (role === 'NGO') {
+      if (ngoLat === null || ngoLng === null || !ngoAddress) {
+        setError('Please select and confirm your NGO operational address on the map.');
+        setLoading(false);
+        return;
+      }
+      if (!ngoRadius) {
+        setError('Please select a service radius.');
+        setLoading(false);
+        return;
+      }
+      if (ngoAcceptedFoodTypes.length === 0) {
+        setError('Please select at least one accepted food category.');
+        setLoading(false);
+        return;
+      }
     }
 
     const baseData = { email, password, phoneNumber };
@@ -106,6 +120,8 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
         baseLatitude: String(ngoLat),
         baseLongitude: String(ngoLng),
         serviceRadiusKm: ngoRadius,
+        availability: ngoAvailability,
+        acceptedFoodTypes: ngoAcceptedFoodTypes,
         contactPerson: ngoContactPerson,
         contactPhone: ngoContactPhone,
       });
@@ -378,32 +394,13 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                Service Radius (km)
-              </label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  min="5"
-                  max="50"
-                  className="flex-grow accent-emerald-600"
-                  value={ngoRadius}
-                  onChange={(e) => setNgoRadius(e.target.value)}
-                />
-                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 min-w-[4ch] text-right font-mono">
-                  {ngoRadius} km
-                </span>
-              </div>
-              <p className="text-[11px] text-zinc-400 mt-1">
-                You&apos;ll see donations within this radius of your base location.
-              </p>
-            </div>
-
-            {/* Location Selection — Google Maps */}
+            {/* Operational Address Selection */}
             <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">NGO Base Location</span>
+              <div>
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 block">Operational Address</span>
+                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 block">
+                  This is where your NGO usually operates from. Nearby food rescue requests will be calculated from this location.
+                </span>
               </div>
 
               {ngoAddress && ngoLat !== null && ngoLng !== null ? (
@@ -437,10 +434,121 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  Select NGO Base Location
+                  Select Operational Address
                 </button>
               )}
             </div>
+
+            {/* Conditional configurations panel — only shown after location is confirmed */}
+            {ngoAddress && ngoLat !== null && ngoLng !== null && (
+              <div className="space-y-6 pt-4 border-t border-zinc-200 dark:border-zinc-800 animate-fadeIn">
+                {/* Predefined radius buttons */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+                    Active Service Radius (km)
+                  </label>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {['2', '5', '10', '15', '20', '25'].map((r) => {
+                      const selected = ngoRadius === r;
+                      return (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setNgoRadius(r)}
+                          className={`py-2 px-3 text-center text-sm font-semibold rounded-lg border transition-all ${
+                            selected
+                              ? 'bg-emerald-600 border-transparent text-white shadow-sm'
+                              : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300'
+                          }`}
+                        >
+                          {r} km
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-1">
+                    You will receive surplus rescue requests within this radius from your operational address.
+                  </p>
+                </div>
+
+                {/* Availability status selector */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+                    Initial Rescue Availability Status
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      { id: 'AVAILABLE', label: '🟢 Available for Rescue' },
+                      { id: 'BUSY', label: '🟡 Busy / At Capacity' },
+                      { id: 'OFFLINE', label: '🔴 Offline' },
+                    ].map((status) => {
+                      const selected = ngoAvailability === status.id;
+                      return (
+                        <button
+                          key={status.id}
+                          type="button"
+                          onClick={() => setNgoAvailability(status.id as any)}
+                          className={`py-2.5 px-3 text-center text-sm font-semibold rounded-lg border transition-all ${
+                            selected
+                              ? status.id === 'AVAILABLE'
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/50 dark:text-emerald-400 font-bold'
+                                : status.id === 'BUSY'
+                                ? 'bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/50 dark:text-amber-400 font-bold'
+                                : 'bg-red-50 border-red-300 text-red-700 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400 font-bold'
+                              : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300'
+                          }`}
+                        >
+                          {status.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Accepted Food Categories checkboxes */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+                    Accepted Food Categories (Select at least one)
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { id: 'COOKED_VEG', label: 'Cooked Vegetarian' },
+                      { id: 'COOKED_NON_VEG', label: 'Cooked Non-Vegetarian' },
+                      { id: 'PACKAGED_FOOD', label: 'Packaged Food' },
+                      { id: 'DRY_RATION', label: 'Dry Ration' },
+                      { id: 'BAKERY', label: 'Bakery Items' },
+                      { id: 'FRUITS_VEG', label: 'Fruits & Vegetables' },
+                    ].map((type) => {
+                      const checked = ngoAcceptedFoodTypes.includes(type.id);
+                      return (
+                        <label
+                          key={type.id}
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                            checked
+                              ? 'bg-emerald-50 border-emerald-300 text-emerald-950 dark:bg-emerald-950/20 dark:border-emerald-900/50 dark:text-emerald-300 font-bold'
+                              : 'bg-white border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 hover:bg-zinc-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600"
+                            checked={checked}
+                            onChange={() => {
+                              if (checked) {
+                                setNgoAcceptedFoodTypes(ngoAcceptedFoodTypes.filter((t) => t !== type.id));
+                              } else {
+                                setNgoAcceptedFoodTypes([...ngoAcceptedFoodTypes, type.id]);
+                              }
+                            }}
+                          />
+                          <span className="text-sm">{type.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -5,6 +5,7 @@ import { getNearbyAvailableDonations, acceptDonation } from '@/app/actions/donat
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
 import Navbar from '@/components/Navbar';
 import AcceptButton from './AcceptButton';
+import NgoSettings from './NgoSettings';
 
 export default async function NgoDashboard() {
   const session = await getSession();
@@ -35,7 +36,7 @@ export default async function NgoDashboard() {
                 {ngo.organizationName}
               </h1>
               <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                Service Radius: {ngo.serviceRadiusKm} km | FSSAI: {ngo.registrationNumber}
+                FSSAI License: {ngo.registrationNumber}
               </p>
             </div>
             
@@ -67,99 +68,127 @@ export default async function NgoDashboard() {
 
         {/* Dashboard Grid */}
         {ngo.status === 'VERIFIED' && (
-          <div>
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mb-6">Nearby Available Donations</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            {/* Available Rescues list (2/3 width) */}
+            <div className="lg:col-span-2 space-y-6">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Nearby Available Donations</h2>
 
-            {availableDonations.length === 0 ? (
-              <div className="text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-12 shadow-sm">
-                <svg
-                  className="mx-auto h-12 w-12 text-zinc-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                <h3 className="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">No donations nearby</h3>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  There are no active available donations within your {ngo.serviceRadiusKm} km service radius at this moment.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2">
-                {availableDonations.map((donation) => (
-                  <div
-                    key={donation.id}
-                    className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm flex flex-col justify-between"
+              {ngo.availability !== 'AVAILABLE' ? (
+                <div className="text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-12 shadow-sm">
+                  <svg
+                    className="mx-auto h-12 w-12 text-zinc-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    <div>
-                      <div className="flex justify-between items-start gap-2 mb-4">
-                        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 leading-snug">
-                          {donation.title}
-                        </h3>
-                        <span className="flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-mono">
-                          {donation.distance.toFixed(1)} km away
-                        </span>
-                      </div>
-
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 line-clamp-3">
-                        {donation.description}
-                      </p>
-
-                      <div className="space-y-2 text-xs text-zinc-500 dark:text-zinc-400 mb-6 bg-zinc-50 dark:bg-zinc-950 p-3 rounded-lg border border-zinc-150 dark:border-zinc-850">
-                        <div>
-                          <span className="font-semibold text-zinc-700 dark:text-zinc-300">Donor:</span>{' '}
-                          {donation.donor.organizationName}
-                        </div>
-                        <div>
-                          <span className="font-semibold text-zinc-700 dark:text-zinc-300">Pickup Address:</span>{' '}
-                          {donation.pickupAddress}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-zinc-200 dark:border-zinc-800 mt-2">
-                          <div>
-                            <span className="font-semibold text-zinc-700 dark:text-zinc-300 font-sans">Qty:</span>{' '}
-                            {donation.quantity} {donation.quantityUnit}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Dietary:</span>{' '}
-                            {donation.vegNonVegMixed}
-                          </div>
-                        </div>
-                        <div className="pt-1">
-                          <a
-                            href={buildGoogleMapsSearchUrl(donation.pickupLatitude, donation.pickupLongitude)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
-                          >
-                            🗺️ View on Google Maps
-                          </a>
-                        </div>
-                        <div className="pt-1 border-t border-zinc-200 dark:border-zinc-800 mt-2">
-                          <span className="font-semibold text-zinc-700 dark:text-zinc-300">Must Collect Before:</span>{' '}
-                          <span className="text-red-600 dark:text-red-400 font-semibold font-mono">
-                            {new Date(donation.pickupDeadlineAt).toLocaleTimeString()} ({new Date(donation.pickupDeadlineAt).toLocaleDateString()})
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                    />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Rescue Status is {ngo.availability === 'BUSY' ? 'Busy' : 'Offline'}</h3>
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    Your status is currently set to "{ngo.availability === 'BUSY' ? 'Busy' : 'Offline'}". Please toggle your status to "Available for Rescue" in the Operational Settings sidebar to discover and claim nearby surplus donations.
+                  </p>
+                </div>
+              ) : availableDonations.length === 0 ? (
+                <div className="text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-12 shadow-sm">
+                  <svg
+                    className="mx-auto h-12 w-12 text-zinc-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">No matching donations nearby</h3>
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    There are no active available donations matching your accepted food types within your {ngo.serviceRadiusKm} km service radius at this moment.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2">
+                  {availableDonations.map((donation) => (
+                    <div
+                      key={donation.id}
+                      className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex justify-between items-start gap-2 mb-4">
+                          <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 leading-snug">
+                            {donation.title}
+                          </h3>
+                          <span className="flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-mono">
+                            {donation.distance.toFixed(1)} km away
                           </span>
                         </div>
-                      </div>
-                    </div>
 
-                    <AcceptButton donationId={donation.id} acceptDonation={acceptDonation} />
-                  </div>
-                ))}
-              </div>
-            )}
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 line-clamp-3">
+                          {donation.description}
+                        </p>
+
+                        <div className="space-y-2 text-xs text-zinc-500 dark:text-zinc-400 mb-6 bg-zinc-50 dark:bg-zinc-950 p-3 rounded-lg border border-zinc-150 dark:border-zinc-850">
+                          <div>
+                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Donor:</span>{' '}
+                            {donation.donor.organizationName}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Pickup Address:</span>{' '}
+                            {donation.pickupAddress}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-zinc-200 dark:border-zinc-800 mt-2">
+                            <div>
+                              <span className="font-semibold text-zinc-700 dark:text-zinc-300 font-sans">Qty:</span>{' '}
+                              {donation.quantity} {donation.quantityUnit}
+                            </div>
+                            <div>
+                              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Dietary:</span>{' '}
+                              {donation.vegNonVegMixed}
+                            </div>
+                          </div>
+                          <div className="pt-1">
+                            <a
+                              href={buildGoogleMapsSearchUrl(donation.pickupLatitude, donation.pickupLongitude)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                            >
+                              🗺️ View on Google Maps
+                            </a>
+                          </div>
+                          <div className="pt-1 border-t border-zinc-200 dark:border-zinc-800 mt-2">
+                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Must Collect Before:</span>{' '}
+                            <span className="text-red-600 dark:text-red-400 font-semibold font-mono">
+                              {new Date(donation.pickupDeadlineAt).toLocaleTimeString()} ({new Date(donation.pickupDeadlineAt).toLocaleDateString()})
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <AcceptButton donationId={donation.id} acceptDonation={acceptDonation} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Operational settings sidebar (1/3 width) */}
+            <div className="lg:col-span-1">
+              <NgoSettings ngo={ngo as any} />
+            </div>
           </div>
         )}
       </main>

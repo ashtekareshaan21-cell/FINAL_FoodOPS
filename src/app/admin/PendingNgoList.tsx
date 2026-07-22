@@ -78,7 +78,7 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-150 dark:border-zinc-850">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-150 dark:border-zinc-850">
                         <div>
                           <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">FSSAI License #</p>
                           <p className="font-semibold text-zinc-900 dark:text-zinc-100 font-mono mt-1">
@@ -86,16 +86,39 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
                           </p>
                         </div>
                         <div>
-                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Base Coordinates</p>
-                          <p className="font-semibold text-zinc-900 dark:text-zinc-100 font-mono mt-1">
-                            {ngo.baseLatitude.toFixed(6)}, {ngo.baseLongitude.toFixed(6)}
+                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Operational Info</p>
+                          <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                            Radius: {ngo.serviceRadiusKm} km
                           </p>
+                          <p className="text-[10px] text-zinc-400 font-mono">
+                            Coords: {ngo.baseLatitude.toFixed(6)}, {ngo.baseLongitude.toFixed(6)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Availability & Status</p>
+                          <span className={`inline-block px-2 py-0.5 mt-1 rounded text-[10px] font-bold ${
+                            ngo.availability === 'AVAILABLE'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900/50'
+                              : ngo.availability === 'BUSY'
+                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-250 dark:border-amber-900/50'
+                              : 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 border border-red-250 dark:border-red-900/50'
+                          }`}>
+                            {ngo.availability || 'AVAILABLE'}
+                          </span>
                         </div>
                         <div>
                           <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Contact Person</p>
                           <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
                             {ngo.contactPerson} ({ngo.contactPhone})
                           </p>
+                        </div>
+                        <div className="sm:col-span-2 md:col-span-4 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Operational Address</p>
+                          <p className="text-zinc-900 dark:text-zinc-200 mt-0.5">{ngo.baseAddress}</p>
+                        </div>
+                        <div className="sm:col-span-2 md:col-span-4 pt-1">
+                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Accepted Food Types</p>
+                          <p className="text-zinc-900 dark:text-zinc-200 mt-0.5 font-mono text-[11px]">{ngo.acceptedFoodTypes || 'None specified'}</p>
                         </div>
                       </div>
 

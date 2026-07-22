@@ -37,6 +37,12 @@ enum NGOStatus {
   INACTIVE
 }
 
+enum NgoAvailability {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
 enum VolunteerStatus {
   ACTIVE
   INACTIVE
@@ -133,6 +139,9 @@ model NGOProfile {
   baseLatitude           Float
   baseLongitude          Float
   serviceRadiusKm        Int @default(10)
+  availability           NgoAvailability @default(AVAILABLE)
+  availabilityUpdatedAt  DateTime @default(now())
+  acceptedFoodTypes      String @default("")
   contactPerson          String
   contactPhone           String
   verificationDocumentUrl String?

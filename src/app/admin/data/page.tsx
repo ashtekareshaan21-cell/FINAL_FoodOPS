@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getAllDonors, getAllNgos, getAllVolunteers, getAllDonations } from '@/app/actions/admin';
 import Navbar from '@/components/Navbar';
+import ForceExpireButton from './ForceExpireButton';
 
 export default async function AdminDataPage() {
   const session = await getSession();
@@ -66,9 +67,12 @@ export default async function AdminDataPage() {
                 <tr className="text-zinc-500 dark:text-zinc-400 uppercase tracking-wider text-[10px] font-bold">
                   <th className="pb-3">NGO Name</th>
                   <th className="pb-3">FSSAI Registration</th>
-                  <th className="pb-3">Service Radius</th>
-                  <th className="pb-3">Status</th>
+                  <th className="pb-3">Operational Address</th>
                   <th className="pb-3">Coordinates</th>
+                  <th className="pb-3">Service Radius</th>
+                  <th className="pb-3">Accepted Food Types</th>
+                  <th className="pb-3">Availability</th>
+                  <th className="pb-3">Status</th>
                   <th className="pb-3 font-mono">Email</th>
                 </tr>
               </thead>
@@ -77,7 +81,21 @@ export default async function AdminDataPage() {
                   <tr key={n.id} className="text-zinc-800 dark:text-zinc-200">
                     <td className="py-3 font-semibold">{n.organizationName}</td>
                     <td className="py-3 font-mono">{n.registrationNumber}</td>
+                    <td className="py-3 max-w-[200px] truncate text-xs" title={n.baseAddress}>{n.baseAddress}</td>
+                    <td className="py-3 font-mono">{n.baseLatitude.toFixed(4)}, {n.baseLongitude.toFixed(4)}</td>
                     <td className="py-3">{n.serviceRadiusKm} km</td>
+                    <td className="py-3 max-w-[150px] truncate font-mono text-[11px]" title={n.acceptedFoodTypes}>{n.acceptedFoodTypes || 'None'}</td>
+                    <td className="py-3">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        n.availability === 'AVAILABLE'
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
+                          : n.availability === 'BUSY'
+                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/20'
+                          : 'bg-red-50 text-red-700 dark:bg-red-950/20'
+                      }`}>
+                        {n.availability || 'AVAILABLE'}
+                      </span>
+                    </td>
                     <td className="py-3">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         n.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20' : 'bg-amber-50 text-amber-700'
@@ -85,7 +103,6 @@ export default async function AdminDataPage() {
                         {n.status}
                       </span>
                     </td>
-                    <td className="py-3 font-mono">{n.baseLatitude.toFixed(4)}, {n.baseLongitude.toFixed(4)}</td>
                     <td className="py-3 text-zinc-500">{n.user.email}</td>
                   </tr>
                 ))}
@@ -140,6 +157,7 @@ export default async function AdminDataPage() {
                   <th className="pb-3">State</th>
                   <th className="pb-3">Claimed NGO</th>
                   <th className="pb-3">Coordinates (Lat, Lng)</th>
+                  <th className="pb-3">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-150 dark:divide-zinc-850">
@@ -155,6 +173,13 @@ export default async function AdminDataPage() {
                       {dn.acceptedNgo?.organizationName || <span className="italic text-zinc-400">Unclaimed</span>}
                     </td>
                     <td className="py-3 font-mono">{dn.pickupLatitude.toFixed(4)}, {dn.pickupLongitude.toFixed(4)}</td>
+                    <td className="py-3">
+                      {(dn.status !== 'COMPLETED' && dn.status !== 'CANCELLED' && dn.status !== 'EXPIRED') ? (
+                        <ForceExpireButton donationId={dn.id} />
+                      ) : (
+                        <span className="text-xs text-zinc-400 italic font-mono">No action</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

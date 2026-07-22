@@ -28,26 +28,33 @@ export default async function AdminPage() {
         </div>
 
         {/* Platform metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-          <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-12">
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
             <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{stats.completedRescues}</p>
             <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Completed Rescues</p>
           </div>
-          <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center">
-            <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{stats.foodWeightKg.toFixed(1)} kg</p>
-            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Total Rescued Weight</p>
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
+            <div>
+              <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{stats.foodWeightKg.toFixed(1)} kg</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{Math.round(stats.waterSavedLiters).toLocaleString()} L water saved</p>
+            </div>
+            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Rescued Food</p>
           </div>
-          <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center">
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
+            <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">{stats.divertedWeightKg.toFixed(1)} kg</p>
+            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Diverted wet waste</p>
+          </div>
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
+            <p className="text-2xl font-extrabold text-violet-600 dark:text-violet-400">{stats.biogasGeneratedKwh.toFixed(1)} kWh</p>
+            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Biogas Potential</p>
+          </div>
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
             <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{Math.round(stats.co2SavedKg).toLocaleString()} kg</p>
             <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">CO₂e Prevented</p>
           </div>
-          <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center">
-            <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{Math.round(stats.waterSavedLiters).toLocaleString()} L</p>
-            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Water Saved</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center col-span-2 lg:col-span-1">
-            <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{stats.verifiedNgos} / {stats.totalNgos}</p>
-            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Verified / Total NGOs</p>
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px] col-span-2 lg:col-span-1">
+            <p className="text-2xl font-extrabold text-zinc-700 dark:text-zinc-350">{stats.verifiedNgos} / {stats.totalNgos}</p>
+            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Verified NGOs</p>
           </div>
         </div>
 

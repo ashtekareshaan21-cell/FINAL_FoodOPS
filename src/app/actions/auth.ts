@@ -67,6 +67,8 @@ export async function registerNGO(formData: any) {
     baseLatitude,
     baseLongitude,
     serviceRadiusKm,
+    availability,
+    acceptedFoodTypes,
     contactPerson,
     contactPhone,
   } = formData;
@@ -109,6 +111,11 @@ export async function registerNGO(formData: any) {
           baseLatitude: parseFloat(baseLatitude),
           baseLongitude: parseFloat(baseLongitude),
           serviceRadiusKm: parseInt(serviceRadiusKm) || 10,
+          availability: availability || 'AVAILABLE',
+          availabilityUpdatedAt: new Date(),
+          acceptedFoodTypes: Array.isArray(acceptedFoodTypes)
+            ? acceptedFoodTypes.join(',')
+            : (acceptedFoodTypes || ''),
           contactPerson,
           contactPhone,
           status: 'VERIFIED', // NGOs start verified directly now
