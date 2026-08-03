@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -90,7 +92,7 @@ export default async function NgoDashboard() {
                   </svg>
                   <h3 className="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Rescue Status is {ngo.availability === 'BUSY' ? 'Busy' : 'Offline'}</h3>
                   <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                    Your status is currently set to "{ngo.availability === 'BUSY' ? 'Busy' : 'Offline'}". Please toggle your status to "Available for Rescue" in the Operational Settings sidebar to discover and claim nearby surplus donations.
+                    Your status is currently set to &quot;{ngo.availability === 'BUSY' ? 'Busy' : 'Offline'}&quot;. Please toggle your status to &quot;Available for Rescue&quot; in the Operational Settings sidebar to discover and claim nearby surplus donations.
                   </p>
                 </div>
               ) : availableDonations.length === 0 ? (
@@ -187,7 +189,7 @@ export default async function NgoDashboard() {
 
             {/* Operational settings sidebar (1/3 width) */}
             <div className="lg:col-span-1">
-              <NgoSettings ngo={ngo as any} />
+              <NgoSettings ngo={ngo} />
             </div>
           </div>
         )}

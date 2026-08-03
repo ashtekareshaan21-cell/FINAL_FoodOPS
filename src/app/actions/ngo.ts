@@ -2,7 +2,6 @@
 
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
-import { revalidatePath } from 'next/cache';
 
 export async function getNgoVolunteers() {
   const session = await getSession();

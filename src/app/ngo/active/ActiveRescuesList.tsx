@@ -5,9 +5,37 @@ import { useRouter } from 'next/navigation';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
 import { divertDonationToBiogas } from '@/app/actions/donations';
 
+export interface ActiveRescueItem {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  assignment?: {
+    volunteer?: {
+      name: string;
+      phoneNumber: string;
+    } | null;
+  } | null;
+  donor: {
+    organizationName: string;
+  };
+  pickupAddress: string;
+  pickupLatitude: number;
+  pickupLongitude: number;
+  quantity: string;
+  quantityUnit: string;
+  estimatedServings?: number | null;
+}
+
+export interface VolunteerItem {
+  id: string;
+  name: string;
+  phoneNumber: string;
+}
+
 interface ActiveRescuesListProps {
-  activeRescues: any[];
-  volunteers: any[];
+  activeRescues: ActiveRescueItem[];
+  volunteers: VolunteerItem[];
   assignVolunteer: (donationId: string, volunteerId: string) => Promise<{ success: boolean; error?: string }>;
 }
 

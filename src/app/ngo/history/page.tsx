@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -50,7 +52,7 @@ export default async function NgoHistoryPage() {
             Rescue History & Impact
           </h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            View completed rescues and monitor your organization's ecological impact.
+            View completed rescues and monitor your organization&apos;s ecological impact.
           </p>
         </div>
 

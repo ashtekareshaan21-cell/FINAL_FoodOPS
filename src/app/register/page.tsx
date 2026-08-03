@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { prisma } from '@/lib/db';
 import RegisterForm from './RegisterForm';
 import Navbar from '@/components/Navbar';

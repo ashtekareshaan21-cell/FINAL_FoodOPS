@@ -56,13 +56,66 @@ export default function LeafletLocationPicker({
   const [searchValue, setSearchValue] = useState(initialAddress || '');
   const [suggestions, setSuggestions] = useState<SearchPrediction[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reverse Geocoding via OSM Nominatim
+  const updateCoordinatesAndAddress = useCallback(async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`,
+        {
+          headers: {
+            'User-Agent': 'FoodOps-Hackathon-MVP/1.0',
+          },
+        }
+      );
+      if (!res.ok) throw new Error('Network failure');
+      const data = await res.json();
+      if (data && data.display_name) {
+        setAddress(data.display_name);
+        setSearchValue(data.display_name);
+      } else {
+        throw new Error('No address found');
+      }
+    } catch {
+      const fallback = `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      setAddress(fallback);
+      setSearchValue(fallback);
+    }
+  }, []);
+
+  const bindMarkerEvents = useCallback((marker: L.Marker) => {
+    marker.on('dragend', () => {
+      const pos = marker.getLatLng();
+      updateCoordinatesAndAddress(pos.lat, pos.lng);
+    });
+  }, [updateCoordinatesAndAddress]);
+
+  const updateMarker = useCallback((lat: number, lng: number, fetchAddress: boolean) => {
+    if (!mapRef.current) return;
+
+    setMarkerPosition([lat, lng]);
+
+    if (markerRef.current) {
+      markerRef.current.setLatLng([lat, lng]);
+    } else {
+      const marker = L.marker([lat, lng], {
+        icon: emeraldIcon,
+        draggable: true,
+      }).addTo(mapRef.current);
+      
+      markerRef.current = marker;
+      bindMarkerEvents(marker);
+    }
+
+    if (fetchAddress) {
+      updateCoordinatesAndAddress(lat, lng);
+    }
+  }, [bindMarkerEvents, updateCoordinatesAndAddress]);
 
   // Initialize Map
   useEffect(() => {
@@ -113,63 +166,7 @@ export default function LeafletLocationPicker({
         mapRef.current = null;
       }
     };
-  }, [initialLatitude, initialLongitude]);
-
-  const bindMarkerEvents = (marker: L.Marker) => {
-    marker.on('dragend', () => {
-      const pos = marker.getLatLng();
-      updateCoordinatesAndAddress(pos.lat, pos.lng);
-    });
-  };
-
-  const updateMarker = (lat: number, lng: number, fetchAddress: boolean) => {
-    if (!mapRef.current) return;
-
-    setMarkerPosition([lat, lng]);
-
-    if (markerRef.current) {
-      markerRef.current.setLatLng([lat, lng]);
-    } else {
-      const marker = L.marker([lat, lng], {
-        icon: emeraldIcon,
-        draggable: true,
-      }).addTo(mapRef.current);
-      
-      markerRef.current = marker;
-      bindMarkerEvents(marker);
-    }
-
-    if (fetchAddress) {
-      updateCoordinatesAndAddress(lat, lng);
-    }
-  };
-
-  // Reverse Geocoding via OSM Nominatim
-  const updateCoordinatesAndAddress = async (lat: number, lng: number) => {
-    setError(null);
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`,
-        {
-          headers: {
-            'User-Agent': 'FoodOps-Hackathon-MVP/1.0',
-          },
-        }
-      );
-      if (!res.ok) throw new Error('Network failure');
-      const data = await res.json();
-      if (data && data.display_name) {
-        setAddress(data.display_name);
-        setSearchValue(data.display_name);
-      } else {
-        throw new Error('No address found');
-      }
-    } catch (err) {
-      const fallback = `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      setAddress(fallback);
-      setSearchValue(fallback);
-    }
-  };
+  }, [initialLatitude, initialLongitude, bindMarkerEvents, updateMarker]);
 
   // Forward Geocoding Search via OSM Nominatim
   const handleSearchChange = (value: string) => {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import LocationPicker, { SelectedLocation } from '@/components/Maps/LocationPicker';
 import MapPreview from '@/components/Maps/MapPreview';
 import { updateNgoSettings } from '@/app/actions/donations';
+import { NgoAvailability } from '@prisma/client';
 
 interface NgoProfile {
   id: string;
@@ -14,7 +15,7 @@ interface NgoProfile {
   baseLatitude: number;
   baseLongitude: number;
   serviceRadiusKm: number;
-  availability: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+  availability: NgoAvailability;
   availabilityUpdatedAt: Date | string;
   acceptedFoodTypes: string;
 }
@@ -303,17 +304,19 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                   Rescue Availability Status
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {[
-                    { id: 'AVAILABLE', label: '🟢 Available for Rescue' },
-                    { id: 'BUSY', label: '🟡 Busy / At Capacity' },
-                    { id: 'OFFLINE', label: '🔴 Offline' },
-                  ].map((status) => {
+                  {(
+                    [
+                      { id: 'AVAILABLE', label: '🟢 Available for Rescue' },
+                      { id: 'BUSY', label: '🟡 Busy / At Capacity' },
+                      { id: 'OFFLINE', label: '🔴 Offline' },
+                    ] as const
+                  ).map((status) => {
                     const selected = availability === status.id;
                     return (
                       <button
                         key={status.id}
                         type="button"
-                        onClick={() => setAvailability(status.id as any)}
+                        onClick={() => setAvailability(status.id)}
                         className={`py-2.5 px-3 text-center text-sm font-semibold rounded-lg border transition-all ${
                           selected
                             ? status.id === 'AVAILABLE'

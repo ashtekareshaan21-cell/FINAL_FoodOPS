@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getAllDonors, getAllNgos, getAllVolunteers, getAllDonations } from '@/app/actions/admin';

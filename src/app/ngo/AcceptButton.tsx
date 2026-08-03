@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 interface AcceptButtonProps {
   donationId: string;
-  acceptDonation: (donationId: string) => Promise<{ success: boolean; error?: string; donation?: any }>;
+  acceptDonation: (donationId: string) => Promise<{ success: boolean; error?: string; donation?: unknown }>;
 }
 
 export default function AcceptButton({ donationId, acceptDonation }: AcceptButtonProps) {

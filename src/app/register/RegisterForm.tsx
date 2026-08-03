@@ -477,17 +477,19 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
                     Initial Rescue Availability Status
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {[
-                      { id: 'AVAILABLE', label: '🟢 Available for Rescue' },
-                      { id: 'BUSY', label: '🟡 Busy / At Capacity' },
-                      { id: 'OFFLINE', label: '🔴 Offline' },
-                    ].map((status) => {
+                    {(
+                      [
+                        { id: 'AVAILABLE', label: '🟢 Available for Rescue' },
+                        { id: 'BUSY', label: '🟡 Busy / At Capacity' },
+                        { id: 'OFFLINE', label: '🔴 Offline' },
+                      ] as const
+                    ).map((status) => {
                       const selected = ngoAvailability === status.id;
                       return (
                         <button
                           key={status.id}
                           type="button"
-                          onClick={() => setNgoAvailability(status.id as any)}
+                          onClick={() => setNgoAvailability(status.id)}
                           className={`py-2.5 px-3 text-center text-sm font-semibold rounded-lg border transition-all ${
                             selected
                               ? status.id === 'AVAILABLE'

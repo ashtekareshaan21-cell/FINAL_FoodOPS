@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getPendingNgos, getAdminStats, verifyNgo, rejectNgo } from '@/app/actions/admin';

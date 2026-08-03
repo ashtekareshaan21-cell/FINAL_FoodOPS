@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
@@ -33,9 +34,10 @@ export async function verifyNgo(ngoId: string) {
 
     revalidatePath('/admin');
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Verify NGO error:', error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : 'Failed to verify NGO.';
+    return { success: false, error: message };
   }
 }
 
@@ -55,9 +57,10 @@ export async function rejectNgo(ngoId: string, reason: string) {
 
     revalidatePath('/admin');
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Reject NGO error:', error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : 'Failed to reject NGO.';
+    return { success: false, error: message };
   }
 }
 
@@ -171,7 +174,7 @@ export async function forceExpireDonation(donationId: string) {
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const donation = await tx.donation.findUnique({
         where: { id: donationId },
       });
@@ -241,8 +244,9 @@ export async function forceExpireDonation(donationId: string) {
     revalidatePath('/admin/data');
     revalidatePath('/ngo');
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Force expire donation error:', error);
-    return { success: false, error: error.message || 'Failed to force expire donation.' };
+    const message = error instanceof Error ? error.message : 'Failed to force expire donation.';
+    return { success: false, error: message };
   }
 }

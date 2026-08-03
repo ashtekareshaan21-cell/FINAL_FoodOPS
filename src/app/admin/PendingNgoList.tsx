@@ -3,8 +3,25 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+export interface PendingNgoItem {
+  id: string;
+  organizationName: string;
+  registrationNumber: string;
+  serviceRadiusKm: number;
+  baseLatitude: number;
+  baseLongitude: number;
+  availability: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+  contactPerson: string;
+  contactPhone: string;
+  baseAddress: string;
+  acceptedFoodTypes: string;
+  user: {
+    email: string;
+  };
+}
+
 interface PendingNgoListProps {
-  pendingNgos: any[];
+  pendingNgos: PendingNgoItem[];
   verifyNgo: (ngoId: string) => Promise<{ success: boolean; error?: string }>;
   rejectNgo: (ngoId: string, reason: string) => Promise<{ success: boolean; error?: string }>;
 }

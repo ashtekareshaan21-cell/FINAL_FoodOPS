@@ -5,8 +5,33 @@ import { useRouter } from 'next/navigation';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
 import MapPreview from '@/components/Maps/MapPreview';
 
+export interface VolunteerAssignmentItem {
+  id: string;
+  status: string;
+  donation: {
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+    pickupAddress: string;
+    pickupLatitude: number;
+    pickupLongitude: number;
+    quantity: string;
+    quantityUnit: string;
+    estimatedServings?: number | null;
+    specialNotes?: string | null;
+    donor: {
+      organizationName: string;
+      contactPerson: string;
+      user: {
+        phoneNumber: string;
+      };
+    };
+  };
+}
+
 interface VolunteerAssignmentListProps {
-  assignments: any[];
+  assignments: VolunteerAssignmentItem[];
   updateAssignmentStatus: (assignmentId: string, action: string) => Promise<{ success: boolean; error?: string; status?: string }>;
 }
 
@@ -174,7 +199,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                       {donation.specialNotes && (
                         <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
                           <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Notes</span>
-                          <span className="text-xs text-zinc-600 dark:text-zinc-400 italic">"{donation.specialNotes}"</span>
+                          <span className="text-xs text-zinc-600 dark:text-zinc-400 italic">&quot;{donation.specialNotes}&quot;</span>
                         </div>
                       )}
                     </div>

@@ -4,8 +4,21 @@ import { prisma } from '@/lib/db';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { setSession, deleteSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { Prisma } from '@prisma/client';
 
-export async function registerDonor(formData: any) {
+export interface RegisterDonorInput {
+  email: string;
+  password?: string;
+  phoneNumber: string;
+  organizationName: string;
+  organizationType: string;
+  contactPerson: string;
+  address: string;
+  latitude: string | number;
+  longitude: string | number;
+}
+
+export async function registerDonor(formData: RegisterDonorInput) {
   const { email, password, phoneNumber, organizationName, organizationType, contactPerson, address, latitude, longitude } = formData;
 
   try {
@@ -19,9 +32,9 @@ export async function registerDonor(formData: any) {
       return { success: false, error: 'Email or Phone number already registered.' };
     }
 
-    const passwordHash = hashPassword(password);
+    const passwordHash = password ? hashPassword(password) : '';
 
-    const user = await prisma.$transaction(async (tx) => {
+    const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const newUser = await tx.user.create({
         data: {
           email,
@@ -40,8 +53,8 @@ export async function registerDonor(formData: any) {
           organizationType,
           contactPerson,
           address,
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude),
+          latitude: typeof latitude === 'string' ? parseFloat(latitude) : latitude,
+          longitude: typeof longitude === 'string' ? parseFloat(longitude) : longitude,
         },
       });
 
@@ -50,13 +63,31 @@ export async function registerDonor(formData: any) {
 
     await setSession({ userId: user.id, role: user.role, email: user.email });
     return { success: true, role: user.role };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Donor registration error:', error);
-    return { success: false, error: error.message || 'Registration failed.' };
+    const message = error instanceof Error ? error.message : 'Registration failed.';
+    return { success: false, error: message };
   }
 }
 
-export async function registerNGO(formData: any) {
+
+export interface RegisterNGOInput {
+  email: string;
+  password?: string;
+  phoneNumber: string;
+  organizationName: string;
+  registrationNumber?: string;
+  baseAddress: string;
+  baseLatitude: string | number;
+  baseLongitude: string | number;
+  serviceRadiusKm?: string | number;
+  availability?: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+  acceptedFoodTypes?: string | string[];
+  contactPerson: string;
+  contactPhone: string;
+}
+
+export async function registerNGO(formData: RegisterNGOInput) {
   const {
     email,
     password,
@@ -84,13 +115,13 @@ export async function registerNGO(formData: any) {
       return { success: false, error: 'Email or Phone number already registered.' };
     }
 
-    const passwordHash = hashPassword(password);
+    const passwordHash = password ? hashPassword(password) : '';
 
     const finalRegNum = registrationNumber && registrationNumber.trim() !== ''
       ? registrationNumber
       : `FSSAI-TEMP-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const user = await prisma.$transaction(async (tx) => {
+    const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const newUser = await tx.user.create({
         data: {
           email,
@@ -108,9 +139,9 @@ export async function registerNGO(formData: any) {
           organizationName,
           registrationNumber: finalRegNum,
           baseAddress,
-          baseLatitude: parseFloat(baseLatitude),
-          baseLongitude: parseFloat(baseLongitude),
-          serviceRadiusKm: parseInt(serviceRadiusKm) || 10,
+          baseLatitude: typeof baseLatitude === 'string' ? parseFloat(baseLatitude) : baseLatitude,
+          baseLongitude: typeof baseLongitude === 'string' ? parseFloat(baseLongitude) : baseLongitude,
+          serviceRadiusKm: typeof serviceRadiusKm === 'string' ? parseInt(serviceRadiusKm) || 10 : serviceRadiusKm || 10,
           availability: availability || 'AVAILABLE',
           availabilityUpdatedAt: new Date(),
           acceptedFoodTypes: Array.isArray(acceptedFoodTypes)
@@ -127,13 +158,22 @@ export async function registerNGO(formData: any) {
 
     await setSession({ userId: user.id, role: user.role, email: user.email });
     return { success: true, role: user.role };
-  } catch (error: any) {
+  } catch (error) {
     console.error('NGO registration error:', error);
-    return { success: false, error: error.message || 'Registration failed.' };
+    const message = error instanceof Error ? error.message : 'Registration failed.';
+    return { success: false, error: message };
   }
 }
 
-export async function registerVolunteer(formData: any) {
+export interface RegisterVolunteerInput {
+  email: string;
+  password?: string;
+  phoneNumber: string;
+  name: string;
+  ngoId: string;
+}
+
+export async function registerVolunteer(formData: RegisterVolunteerInput) {
   const { email, password, phoneNumber, name, ngoId } = formData;
 
   try {
@@ -147,9 +187,9 @@ export async function registerVolunteer(formData: any) {
       return { success: false, error: 'Email or Phone number already registered.' };
     }
 
-    const passwordHash = hashPassword(password);
+    const passwordHash = password ? hashPassword(password) : '';
 
-    const user = await prisma.$transaction(async (tx) => {
+    const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const newUser = await tx.user.create({
         data: {
           email,
@@ -176,13 +216,19 @@ export async function registerVolunteer(formData: any) {
 
     await setSession({ userId: user.id, role: user.role, email: user.email });
     return { success: true, role: user.role };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Volunteer registration error:', error);
-    return { success: false, error: error.message || 'Registration failed.' };
+    const message = error instanceof Error ? error.message : 'Registration failed.';
+    return { success: false, error: message };
   }
 }
 
-export async function login(formData: any) {
+export interface LoginInput {
+  email: string;
+  password?: string;
+}
+
+export async function login(formData: LoginInput) {
   const { email, password } = formData;
 
   try {
@@ -190,7 +236,7 @@ export async function login(formData: any) {
       where: { email },
     });
 
-    if (!user || !user.passwordHash) {
+    if (!user || !user.passwordHash || !password) {
       return { success: false, error: 'Invalid email or password.' };
     }
 
@@ -207,9 +253,10 @@ export async function login(formData: any) {
 
     await setSession({ userId: user.id, role: user.role, email: user.email });
     return { success: true, role: user.role };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Login error:', error);
-    return { success: false, error: error.message || 'Login failed.' };
+    const message = error instanceof Error ? error.message : 'Login failed.';
+    return { success: false, error: message };
   }
 }
 
