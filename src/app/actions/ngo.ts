@@ -1,7 +1,8 @@
 'use server';
 
-import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
+import { volunteerRepository } from '@/repositories/volunteerRepository';
+import { ngoRepository } from '@/repositories/ngoRepository';
 
 export async function getNgoVolunteers() {
   const session = await getSession();
@@ -9,13 +10,10 @@ export async function getNgoVolunteers() {
     throw new Error('Unauthorized');
   }
 
-  const ngo = await prisma.nGOProfile.findUnique({
-    where: { userId: session.userId },
-  });
-
+  const ngo = await ngoRepository.findByUserId(session.userId);
   if (!ngo) throw new Error('NGO profile not found');
 
-  return prisma.volunteer.findMany({
+  return volunteerRepository.findMany({
     where: {
       ngoId: ngo.id,
       status: 'ACTIVE',

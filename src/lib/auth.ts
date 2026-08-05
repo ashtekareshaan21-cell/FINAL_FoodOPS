@@ -10,8 +10,9 @@ interface JWTPayload {
   exp: number;
 }
 
-function base64UrlEncode(str: string): string {
-  return Buffer.from(str)
+function base64UrlEncode(input: Buffer | string): string {
+  const buffer = typeof input === 'string' ? Buffer.from(input) : input;
+  return buffer
     .toString('base64')
     .replace(/=/g, '')
     .replace(/\+/g, '-')
@@ -40,7 +41,7 @@ export function signToken(payload: Omit<JWTPayload, 'exp'>, expiresInSeconds = 8
     .update(signatureInput)
     .digest();
   
-  const encodedSignature = base64UrlEncode(signature.toString('binary'));
+  const encodedSignature = base64UrlEncode(signature);
 
   return `${signatureInput}.${encodedSignature}`;
 }
@@ -58,7 +59,6 @@ export function verifyToken(token: string): JWTPayload | null {
         .createHmac('sha256', JWT_SECRET)
         .update(signatureInput)
         .digest()
-        .toString('binary')
     );
 
     if (encodedSignature !== expectedSignature) {

@@ -1,55 +1,10 @@
 'use server';
 
-import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
-import { NgoAvailability, Donation, Prisma } from '@prisma/client';
-
-import { haversineDistance } from '@/lib/geo';
-
-// CO2 and Water impact factors (from FAO guidelines in the report)
-const IMPACT_FACTORS: Record<string, { co2: number; water: number }> = {
-  'grains': { co2: 1.2, water: 2500 },
-  'vegetables': { co2: 0.5, water: 300 },
-  'fruits': { co2: 0.7, water: 900 },
-  'dairy': { co2: 3.2, water: 1000 },
-  'meat': { co2: 7.0, water: 15000 },
-  'mixed': { co2: 2.5, water: 1500 }, // Default average for prepared meals
-};
-
-function isFoodTypeMatching(donation: Donation, acceptedTypesStr: string): boolean {
-  if (!acceptedTypesStr) return false;
-  const acceptedTypes = acceptedTypesStr.split(',').map(t => t.trim());
-  
-  const category = donation.foodCategory.toLowerCase(); // mixed, grains, vegetables, fruits, dairy, meat
-  const dietary = donation.vegNonVegMixed; // VEG, NON_VEG, MIXED
-
-  if (category === 'mixed') {
-    if (dietary === 'VEG') {
-      return acceptedTypes.includes('COOKED_VEG');
-    } else {
-      return acceptedTypes.includes('COOKED_NON_VEG');
-    }
-  }
-  
-  if (category === 'grains') {
-    return acceptedTypes.includes('DRY_RATION') || acceptedTypes.includes('PACKAGED_FOOD');
-  }
-  
-  if (category === 'vegetables' || category === 'fruits') {
-    return acceptedTypes.includes('FRUITS_VEG');
-  }
-  
-  if (category === 'dairy') {
-    return acceptedTypes.includes('PACKAGED_FOOD') || acceptedTypes.includes('COOKED_VEG') || acceptedTypes.includes('COOKED_NON_VEG');
-  }
-  
-  if (category === 'meat') {
-    return acceptedTypes.includes('COOKED_NON_VEG');
-  }
-
-  return false;
-}
+import { NgoAvailability } from '@prisma/client';
+import { donationService } from '@/services/donationService';
+import { matchingService } from '@/services/matchingService';
 
 export interface CreateDonationInput {
   title: string;
@@ -68,107 +23,29 @@ export interface CreateDonationInput {
   specialNotes?: string | null;
 }
 
+function validateDateTimeTimezone(name: string, val: string | Date | null | undefined) {
+  if (!val) return;
+  if (typeof val === 'string') {
+    // Check if it ends with 'Z' or has a timezone offset like +05:30 or -08:00
+    const hasTz = /Z$|[+-]\d{2}:?\d{2}$/.test(val);
+    if (!hasTz) {
+      throw new Error(`Incoming datetime parameter "${name}" must have an explicit timezone offset or Z suffix. Got: "${val}"`);
+    }
+  }
+}
+
 export async function createDonation(formData: CreateDonationInput) {
   const session = await getSession();
   if (!session || session.role !== 'DONOR') {
     return { success: false, error: 'Unauthorized. Only Donors can create donations.' };
   }
 
-  const {
-    title,
-    description,
-    foodCategory,
-    vegNonVegMixed,
-    quantity,
-    quantityUnit,
-    estimatedServings,
-    preparationTime,
-    pickupAvailableAt,
-    pickupDeadlineAt,
-    pickupAddress,
-    pickupLatitude,
-    pickupLongitude,
-    specialNotes,
-  } = formData;
-
   try {
-    const donor = await prisma.donorProfile.findUnique({
-      where: { userId: session.userId },
-    });
+    validateDateTimeTimezone('pickupAvailableAt', formData.pickupAvailableAt);
+    validateDateTimeTimezone('pickupDeadlineAt', formData.pickupDeadlineAt);
+    validateDateTimeTimezone('preparationTime', formData.preparationTime);
 
-    if (!donor) {
-      return { success: false, error: 'Donor profile not found.' };
-    }
-
-    const donation = await prisma.donation.create({
-      data: {
-        donorId: donor.id,
-        title,
-        description,
-        foodCategory,
-        vegNonVegMixed,
-        quantity,
-        quantityUnit,
-        estimatedServings: typeof estimatedServings === 'string' ? parseInt(estimatedServings) || null : estimatedServings || null,
-        preparationTime: preparationTime ? new Date(preparationTime) : null,
-        pickupAvailableAt: new Date(pickupAvailableAt),
-        pickupDeadlineAt: new Date(pickupDeadlineAt),
-        pickupAddress,
-        pickupLatitude: typeof pickupLatitude === 'string' ? parseFloat(pickupLatitude) : pickupLatitude,
-        pickupLongitude: typeof pickupLongitude === 'string' ? parseFloat(pickupLongitude) : pickupLongitude,
-        specialNotes,
-        status: 'AVAILABLE',
-      },
-    });
-
-    // Create initial status history entry
-    await prisma.donationStatusHistory.create({
-      data: {
-        donationId: donation.id,
-        previousStatus: 'AVAILABLE',
-        newStatus: 'AVAILABLE',
-        changedBy: session.userId,
-        reason: 'Donation created',
-      },
-    });
-
-    // Notify nearby NGOs (within radius)
-    const ngos = await prisma.nGOProfile.findMany({
-      where: { status: 'VERIFIED' },
-    });
-
-    const notificationsToCreate = [];
-
-    for (const ngo of ngos) {
-      // Check distance
-      const distance = haversineDistance(
-        donation.pickupLatitude,
-        donation.pickupLongitude,
-        ngo.baseLatitude,
-        ngo.baseLongitude
-      );
-
-      if (distance <= ngo.serviceRadiusKm) {
-        // Check food category match
-        if (isFoodTypeMatching(donation, ngo.acceptedFoodTypes)) {
-          notificationsToCreate.push({
-            userId: ngo.userId,
-            type: 'NEW_DONATION',
-            title: 'New Donation Nearby',
-            message: `A new donation "${title}" is available within your service radius (${distance.toFixed(1)} km away).`,
-            relatedDonationId: donation.id,
-            relatedNgoId: ngo.id,
-          });
-        }
-      }
-    }
-
-    if (notificationsToCreate.length > 0) {
-      await prisma.notification.createMany({
-        data: notificationsToCreate,
-      });
-    }
-
+    const donation = await donationService.createDonation(session.userId, formData);
     revalidatePath('/donor');
     return { success: true, donationId: donation.id };
   } catch (error) {
@@ -183,25 +60,7 @@ export async function getDonorDonations() {
   if (!session || session.role !== 'DONOR') {
     throw new Error('Unauthorized');
   }
-
-  const donor = await prisma.donorProfile.findUnique({
-    where: { userId: session.userId },
-  });
-
-  if (!donor) throw new Error('Donor profile not found');
-
-  return prisma.donation.findMany({
-    where: { donorId: donor.id },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      acceptedNgo: true,
-      assignment: {
-        include: {
-          volunteer: true,
-        },
-      },
-    },
-  });
+  return donationService.getDonorDonations(session.userId);
 }
 
 export async function getNearbyAvailableDonations() {
@@ -209,144 +68,27 @@ export async function getNearbyAvailableDonations() {
   if (!session || session.role !== 'NGO') {
     throw new Error('Unauthorized');
   }
-
-  const ngo = await prisma.nGOProfile.findUnique({
-    where: { userId: session.userId },
-  });
-
-  if (!ngo) throw new Error('NGO profile not found');
-  if (ngo.status !== 'VERIFIED' || ngo.availability !== 'AVAILABLE') {
-    return []; // Return empty if not verified or currently offline/busy
-  }
-
-  // Bounding Box Optimization
-  const latChange = ngo.serviceRadiusKm / 111.0;
-  const lngChange = ngo.serviceRadiusKm / (111.0 * Math.cos((ngo.baseLatitude * Math.PI) / 180));
-  const minLat = ngo.baseLatitude - latChange;
-  const maxLat = ngo.baseLatitude + latChange;
-  const minLng = ngo.baseLongitude - lngChange;
-  const maxLng = ngo.baseLongitude + lngChange;
-
-  // Fetch available donations within the bounding box that haven't expired
-  const availableDonations = await prisma.donation.findMany({
-    where: {
-      status: 'AVAILABLE',
-      pickupDeadlineAt: { gt: new Date() },
-      pickupLatitude: { gte: minLat, lte: maxLat },
-      pickupLongitude: { gte: minLng, lte: maxLng },
-    },
-    include: {
-      donor: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  // Filter based on food category match and exact Haversine distance
-  return availableDonations
-    .filter((donation) => isFoodTypeMatching(donation, ngo.acceptedFoodTypes))
-    .map((donation) => {
-      const distance = haversineDistance(
-        donation.pickupLatitude,
-        donation.pickupLongitude,
-        ngo.baseLatitude,
-        ngo.baseLongitude
-      );
-      return { ...donation, distance };
-    })
-    .filter((d) => d.distance <= ngo.serviceRadiusKm)
-    .sort((a, b) => a.distance - b.distance);
+  return matchingService.getNearbyAvailableDonations(session.userId);
 }
 
-// NGO accepts donation - CRITICAL ATOMIC LOCKING IMPLEMENTATION
+export async function getNearbyDonationsDiagnostics() {
+  const session = await getSession();
+  if (!session || session.role !== 'NGO') {
+    throw new Error('Unauthorized');
+  }
+  return matchingService.getNearbyDonationsDiagnostics(session.userId);
+}
+
 export async function acceptDonation(donationId: string) {
   const session = await getSession();
   if (!session || session.role !== 'NGO') {
     return { success: false, error: 'Unauthorized. Only NGOs can accept donations.' };
   }
 
-  const ngo = await prisma.nGOProfile.findUnique({
-    where: { userId: session.userId },
-  });
-
-  if (!ngo) {
-    return { success: false, error: 'NGO profile not found.' };
-  }
-
-  if (ngo.status !== 'VERIFIED') {
-    return { success: false, error: 'NGO account is not verified. You cannot accept donations.' };
-  }
-
   try {
-    // Execute a Prisma interactive transaction.
-    // In SQLite, the transaction takes a database write lock, preventing race conditions.
-    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Step 1: Read the donation status.
-      const donation = await tx.donation.findUnique({
-        where: { id: donationId },
-      });
-
-      if (!donation) {
-        throw new Error('DONATION_NOT_FOUND');
-      }
-
-      // Step 2: Check availability. If already claimed, abort.
-      if (donation.status !== 'AVAILABLE') {
-        throw new Error('DONATION_ALREADY_ACCEPTED');
-      }
-
-      // Check if expired
-      if (new Date() > donation.pickupDeadlineAt) {
-        throw new Error('DONATION_EXPIRED');
-      }
-
-      // Step 3: Verify the NGO is within distance.
-      const distance = haversineDistance(
-        donation.pickupLatitude,
-        donation.pickupLongitude,
-        ngo.baseLatitude,
-        ngo.baseLongitude
-      );
-
-      if (distance > ngo.serviceRadiusKm) {
-        throw new Error('DONATION_OUT_OF_RANGE');
-      }
-
-      // Step 4: Claim the donation.
-      const updatedDonation = await tx.donation.update({
-        where: { id: donationId },
-        data: {
-          status: 'ACCEPTED',
-          acceptedNgoId: ngo.id,
-        },
-      });
-
-      // Write status history record
-      await tx.donationStatusHistory.create({
-        data: {
-          donationId,
-          previousStatus: 'AVAILABLE',
-          newStatus: 'ACCEPTED',
-          changedBy: session.userId,
-          reason: 'NGO accepted donation',
-        },
-      });
-
-      // Audit Log
-      await tx.auditLog.create({
-        data: {
-          userId: session.userId,
-          action: 'ACCEPT_DONATION',
-          entityType: 'Donation',
-          entityId: donationId,
-          newValues: JSON.stringify({ status: 'ACCEPTED', acceptedNgoId: ngo.id }),
-        },
-      });
-
-      return updatedDonation;
-    });
-
+    const donation = await donationService.acceptDonation(session.userId, donationId);
     revalidatePath('/ngo');
-    return { success: true, donation: result };
+    return { success: true, donation };
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
     console.error('Accept donation error:', message);
@@ -363,42 +105,13 @@ export async function acceptDonation(donationId: string) {
   }
 }
 
+
 export async function getNgoAcceptedDonations() {
   const session = await getSession();
   if (!session || session.role !== 'NGO') {
     throw new Error('Unauthorized');
   }
-
-  const ngo = await prisma.nGOProfile.findUnique({
-    where: { userId: session.userId },
-  });
-
-  if (!ngo) throw new Error('NGO profile not found');
-
-  return prisma.donation.findMany({
-    where: {
-      acceptedNgoId: ngo.id,
-      status: {
-        in: [
-          'ACCEPTED',
-          'VOLUNTEER_ASSIGNED',
-          'PICKUP_IN_PROGRESS',
-          'PICKED_UP',
-          'DELIVERY_IN_PROGRESS',
-          'DELIVERED',
-        ],
-      },
-    },
-    include: {
-      donor: true,
-      assignment: {
-        include: {
-          volunteer: true,
-        },
-      },
-    },
-    orderBy: { updatedAt: 'desc' },
-  });
+  return donationService.getNgoAcceptedDonations(session.userId);
 }
 
 export async function getNgoHistory() {
@@ -406,92 +119,17 @@ export async function getNgoHistory() {
   if (!session || session.role !== 'NGO') {
     throw new Error('Unauthorized');
   }
-
-  const ngo = await prisma.nGOProfile.findUnique({
-    where: { userId: session.userId },
-  });
-
-  if (!ngo) throw new Error('NGO profile not found');
-
-  return prisma.donation.findMany({
-    where: {
-      acceptedNgoId: ngo.id,
-      status: {
-        in: ['COMPLETED', 'CANCELLED'],
-      },
-    },
-    include: {
-      donor: true,
-      assignment: {
-        include: {
-          volunteer: true,
-        },
-      },
-    },
-    orderBy: { updatedAt: 'desc' },
-  });
+  return donationService.getNgoHistory(session.userId);
 }
 
-// Assign volunteer to an accepted donation
 export async function assignVolunteer(donationId: string, volunteerId: string) {
   const session = await getSession();
   if (!session || session.role !== 'NGO') {
     return { success: false, error: 'Unauthorized. Only NGOs can assign volunteers.' };
   }
 
-  const ngo = await prisma.nGOProfile.findUnique({
-    where: { userId: session.userId },
-  });
-
-  if (!ngo) throw new Error('NGO profile not found');
-
   try {
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const donation = await tx.donation.findUnique({
-        where: { id: donationId },
-      });
-
-      if (!donation || donation.acceptedNgoId !== ngo.id) {
-        throw new Error('Donation not owned by this NGO');
-      }
-
-      if (donation.status !== 'ACCEPTED' && donation.status !== 'VOLUNTEER_ASSIGNED') {
-        throw new Error('Donation is not in a assignable state');
-      }
-
-      // If there's an existing assignment, delete or cancel it
-      await tx.volunteerAssignment.deleteMany({
-        where: { donationId },
-      });
-
-      // Create new assignment record
-      await tx.volunteerAssignment.create({
-        data: {
-          donationId,
-          volunteerId,
-          ngoId: ngo.id,
-          status: 'ASSIGNED',
-        },
-      });
-
-      // Update donation status
-      await tx.donation.update({
-        where: { id: donationId },
-        data: { status: 'VOLUNTEER_ASSIGNED' },
-      });
-
-      // Create history record
-      await tx.donationStatusHistory.create({
-        data: {
-          donationId,
-          previousStatus: donation.status,
-          newStatus: 'VOLUNTEER_ASSIGNED',
-          changedBy: session.userId,
-          reason: `Assigned volunteer to rescue`,
-        },
-      });
-    });
-
+    await donationService.assignVolunteer(session.userId, donationId, volunteerId);
     revalidatePath('/ngo');
     return { success: true };
   } catch (error) {
@@ -501,42 +139,14 @@ export async function assignVolunteer(donationId: string, volunteerId: string) {
   }
 }
 
-// Get active assignments for a volunteer
 export async function getVolunteerAssignments() {
   const session = await getSession();
   if (!session || session.role !== 'VOLUNTEER') {
     throw new Error('Unauthorized');
   }
-
-  const volunteer = await prisma.volunteer.findUnique({
-    where: { userId: session.userId },
-  });
-
-  if (!volunteer) throw new Error('Volunteer profile not found');
-
-  return prisma.volunteerAssignment.findMany({
-    where: {
-      volunteerId: volunteer.id,
-      status: {
-        in: ['ASSIGNED', 'STARTED', 'ARRIVED'],
-      },
-    },
-    include: {
-      donation: {
-        include: {
-          donor: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: { assignedAt: 'desc' },
-  });
+  return donationService.getVolunteerAssignments(session.userId);
 }
 
-// Update assignment and donation state through the state machine
 export async function updateAssignmentStatus(assignmentId: string, action: string) {
   const session = await getSession();
   if (!session || (session.role !== 'VOLUNTEER' && session.role !== 'NGO')) {
@@ -544,102 +154,10 @@ export async function updateAssignmentStatus(assignmentId: string, action: strin
   }
 
   try {
-    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const assignment = await tx.volunteerAssignment.findUnique({
-        where: { id: assignmentId },
-        include: { donation: true },
-      });
-
-      if (!assignment) throw new Error('Assignment not found');
-
-      let nextAssignmentStatus = assignment.status;
-      let nextDonationStatus = assignment.donation.status;
-      const updates: Prisma.VolunteerAssignmentUpdateInput = {};
-      const donationUpdates: Prisma.DonationUpdateInput = {};
-
-      if (action === 'START_PICKUP') {
-        if (assignment.status !== 'ASSIGNED') throw new Error('Invalid state transition');
-        nextAssignmentStatus = 'STARTED';
-        nextDonationStatus = 'PICKUP_IN_PROGRESS';
-        updates.startedAt = new Date();
-      } else if (action === 'ARRIVE_AT_DONOR') {
-        if (assignment.status !== 'STARTED') throw new Error('Invalid state transition');
-        nextAssignmentStatus = 'ARRIVED';
-        updates.arrivedAt = new Date();
-      } else if (action === 'CONFIRM_PICKUP') {
-        if (assignment.status !== 'ARRIVED') throw new Error('Invalid state transition');
-        nextAssignmentStatus = 'ARRIVED'; // remain arrived in assignment status, or set custom
-        nextDonationStatus = 'PICKED_UP';
-        updates.pickupConfirmedAt = new Date();
-      } else if (action === 'START_DELIVERY') {
-        if (assignment.donation.status !== 'PICKED_UP') throw new Error('Invalid state transition');
-        nextDonationStatus = 'DELIVERY_IN_PROGRESS';
-        updates.deliveryStartedAt = new Date();
-      } else if (action === 'CONFIRM_DELIVERY') {
-        if (assignment.donation.status !== 'DELIVERY_IN_PROGRESS') throw new Error('Invalid state transition');
-        nextAssignmentStatus = 'COMPLETED';
-        nextDonationStatus = 'COMPLETED';
-        updates.deliveryConfirmedAt = new Date();
-
-        // Calculate impact metrics upon completion
-        const weightKg = parseFloat(assignment.donation.quantity) || 10.0; // fallback if text isn't a clean number
-        const category = assignment.donation.foodCategory.toLowerCase();
-        const factor = IMPACT_FACTORS[category] || IMPACT_FACTORS['mixed'];
-
-        const co2Saved = weightKg * factor.co2;
-        const waterSaved = weightKg * factor.water;
-        const servings = assignment.donation.estimatedServings || Math.round(weightKg / 0.3); // 300g per serving
-
-        await tx.impactRecord.create({
-          data: {
-            donationId: assignment.donationId,
-            foodWeightKg: weightKg,
-            estimatedServings: servings,
-            co2EquivalentKg: co2Saved,
-            waterSavedLiters: waterSaved,
-            calculationMethod: 'FAO_FACTORS_2026',
-            factorsUsed: `${category}: co2=${factor.co2}, water=${factor.water}`,
-          },
-        });
-      } else {
-        throw new Error('Unknown action');
-      }
-
-      // Update assignment
-      await tx.volunteerAssignment.update({
-        where: { id: assignmentId },
-        data: {
-          status: nextAssignmentStatus,
-          ...updates,
-        },
-      });
-
-      // Update donation
-      await tx.donation.update({
-        where: { id: assignment.donationId },
-        data: {
-          status: nextDonationStatus,
-          ...donationUpdates,
-        },
-      });
-
-      // Write history
-      await tx.donationStatusHistory.create({
-        data: {
-          donationId: assignment.donationId,
-          previousStatus: assignment.donation.status,
-          newStatus: nextDonationStatus,
-          changedBy: session.userId,
-          reason: `Volunteer performed action: ${action}`,
-        },
-      });
-
-      return { nextDonationStatus };
-    });
-
+    const nextDonationStatus = await donationService.updateAssignmentStatus(session.userId, assignmentId, action);
     revalidatePath('/volunteer');
     revalidatePath('/ngo');
-    return { success: true, status: result.nextDonationStatus };
+    return { success: true, status: nextDonationStatus };
   } catch (error) {
     console.error('Update assignment status error:', error);
     const message = error instanceof Error ? error.message : 'Failed to update status.';
@@ -654,85 +172,7 @@ export async function divertDonationToBiogas(donationId: string, reason: string)
   }
 
   try {
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const donation = await tx.donation.findUnique({
-        where: { id: donationId },
-        include: { acceptedNgo: true },
-      });
-
-      if (!donation) throw new Error('Donation not found');
-
-      // If the caller is an NGO, make sure they are the accepted NGO for this donation
-      if (session.role === 'NGO') {
-        const ngo = await tx.nGOProfile.findUnique({
-          where: { userId: session.userId },
-        });
-        if (!ngo || donation.acceptedNgoId !== ngo.id) {
-          throw new Error('This donation is not assigned to your NGO.');
-        }
-      }
-
-      // Check if it's already completed or cancelled
-      if (donation.status === 'COMPLETED' || donation.status === 'CANCELLED' || donation.status === 'EXPIRED') {
-        throw new Error(`Cannot divert a donation with status ${donation.status}`);
-      }
-
-      // Parse quantity to get weight in kg
-      const parsedWeight = parseFloat(donation.quantity.replace(/[^\d.]/g, ''));
-      const weightKg = isNaN(parsedWeight) || parsedWeight <= 0 ? 10.0 : parsedWeight;
-
-      // Update donation status to EXPIRED (representing recovery)
-      await tx.donation.update({
-        where: { id: donationId },
-        data: {
-          status: 'EXPIRED',
-          cancelledAt: new Date(),
-          cancelledBy: session.userId,
-          cancelReason: `Spoiled / Diverted to Biogas Recovery: ${reason}`,
-        },
-      });
-
-      // Write status history
-      await tx.donationStatusHistory.create({
-        data: {
-          donationId,
-          previousStatus: donation.status,
-          newStatus: 'EXPIRED',
-          changedBy: session.userId,
-          reason: `Diverted to Biogas Recovery: ${reason}`,
-        },
-      });
-
-      // Write audit log
-      await tx.auditLog.create({
-        data: {
-          userId: session.userId,
-          action: 'DIVERT_TO_BIOGAS',
-          entityType: 'Donation',
-          entityId: donationId,
-          newValues: JSON.stringify({ status: 'EXPIRED', cancelReason: `Spoiled / Diverted to Biogas Recovery: ${reason}` }),
-        },
-      });
-
-      // Create ImpactRecord for recovery
-      // CO2 avoided factor = 1.8 kg CO2 per kg food waste diverted to biogas (avoided landfill methane + replacement energy)
-      const co2EquivalentKg = weightKg * 1.8;
-
-      await tx.impactRecord.create({
-        data: {
-          donationId,
-          foodWeightKg: weightKg,
-          estimatedServings: 0, // 0 servings since it is diverted to recovery
-          co2EquivalentKg,
-          waterSavedLiters: 0, // no water saved because it is not consumed
-          calculationMethod: 'BIOGAS_RECOVERY_2026',
-          factorsUsed: `biogas_recovery: co2=1.8, water=0, yield=0.25kwh/kg`,
-        },
-      });
-
-      return { success: true };
-    });
-
+    await donationService.divertDonationToBiogas(session.userId, donationId, reason);
     revalidatePath('/ngo');
     revalidatePath('/ngo/active');
     revalidatePath('/admin');
@@ -760,31 +200,7 @@ export async function updateNgoSettings(data: {
   }
 
   try {
-    const ngo = await prisma.nGOProfile.findUnique({
-      where: { userId: session.userId },
-    });
-
-    if (!ngo) {
-      return { success: false, error: 'NGO profile not found.' };
-    }
-
-    const currentAvailability = ngo.availability;
-    const newAvailability = data.availability;
-    const isAvailabilityChanged = currentAvailability !== newAvailability;
-
-    await prisma.nGOProfile.update({
-      where: { userId: session.userId },
-      data: {
-        baseAddress: data.baseAddress,
-        baseLatitude: data.baseLatitude,
-        baseLongitude: data.baseLongitude,
-        serviceRadiusKm: data.serviceRadiusKm,
-        availability: newAvailability,
-        availabilityUpdatedAt: isAvailabilityChanged ? new Date() : ngo.availabilityUpdatedAt,
-        acceptedFoodTypes: data.acceptedFoodTypes.join(','),
-      },
-    });
-
+    await donationService.updateNgoSettings(session.userId, data);
     revalidatePath('/ngo');
     return { success: true };
   } catch (error) {
@@ -793,4 +209,3 @@ export async function updateNgoSettings(data: {
     return { success: false, error: message };
   }
 }
-

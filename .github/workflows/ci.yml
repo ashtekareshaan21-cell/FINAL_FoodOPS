@@ -1,0 +1,62 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: foodops
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Set up Environment
+        run: |
+          echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/foodops?schema=public" >> .env
+          echo "JWT_SECRET=github_actions_test_secret" >> .env
+
+      - name: Run Prisma Prepare
+        run: node prisma/prepare.js
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run ESLint Linter
+        run: npm run lint
+
+      - name: Run TypeScript Compiler Check
+        run: npx tsc --noEmit
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Run Production Build
+        run: npm run build

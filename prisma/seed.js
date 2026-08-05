@@ -1,5 +1,5 @@
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
-const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
 const crypto = require('crypto');
 
 // Hash password with native crypto (must match password.ts)
@@ -9,14 +9,30 @@ function hashPassword(password) {
   return `${salt}:${hash}`;
 }
 
+const isPostgres = process.env.DATABASE_URL && (
+  process.env.DATABASE_URL.startsWith('postgresql://') || 
+  process.env.DATABASE_URL.startsWith('postgres://')
+);
+
 async function main() {
   console.log('Seeding database...');
   
-  // Set up Prisma Client with SQLite adapter correctly
-  const adapter = new PrismaBetterSqlite3({
-    url: 'file:./dev.db',
-  });
-  const prisma = new PrismaClient({ adapter });
+  let prisma;
+  if (isPostgres) {
+    console.log('Using PostgreSQL driver adapter for seeding...');
+    const { Pool } = require('pg');
+    const { PrismaPg } = require('@prisma/adapter-pg');
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const adapter = new PrismaPg(pool);
+    prisma = new PrismaClient({ adapter });
+  } else {
+    console.log('Using SQLite driver adapter for seeding...');
+    const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
+    const adapter = new PrismaBetterSqlite3({
+      url: 'file:./dev.db',
+    });
+    prisma = new PrismaClient({ adapter });
+  }
 
   // Clear existing data
   await prisma.auditLog.deleteMany();
@@ -148,7 +164,7 @@ async function main() {
       userId: ngoPendingUser.id,
       organizationName: 'Care & Share Society',
       registrationNumber: 'FSSAI-29623000000003',
-      status: 'VERIFIED',
+      status: 'PENDING_VERIFICATION',
       baseAddress: '30, Indiranagar, Bengaluru',
       baseLatitude: 12.9916,
       baseLongitude: 77.6146,

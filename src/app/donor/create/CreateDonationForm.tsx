@@ -24,7 +24,12 @@ export default function CreateDonationForm() {
   // Available now
   const now = new Date();
   const formatDateTime = (date: Date) => {
-    return date.toISOString().slice(0, 16);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
   const [pickupAvailableAt, setPickupAvailableAt] = useState(formatDateTime(now));
   
@@ -60,6 +65,11 @@ export default function CreateDonationForm() {
       return;
     }
 
+    // Convert datetime-local values (which are local to browser) to proper UTC ISO strings
+    const isoPreparationTime = preparationTime ? new Date(preparationTime).toISOString() : '';
+    const isoPickupAvailableAt = new Date(pickupAvailableAt).toISOString();
+    const isoPickupDeadlineAt = new Date(pickupDeadlineAt).toISOString();
+
     const res = await createDonation({
       title,
       description,
@@ -68,9 +78,9 @@ export default function CreateDonationForm() {
       quantity,
       quantityUnit,
       estimatedServings,
-      preparationTime,
-      pickupAvailableAt,
-      pickupDeadlineAt,
+      preparationTime: isoPreparationTime,
+      pickupAvailableAt: isoPickupAvailableAt,
+      pickupDeadlineAt: isoPickupDeadlineAt,
       pickupAddress,
       pickupLatitude: String(pickupLatitude),
       pickupLongitude: String(pickupLongitude),
@@ -136,6 +146,7 @@ export default function CreateDonationForm() {
             >
               <option value="mixed">Mixed/Prepared Meals (Biryani, Curry)</option>
               <option value="grains">Grains/Rice (Dry food)</option>
+              <option value="bakery">Bakery Items (Bread, Cakes, Pastries)</option>
               <option value="vegetables">Vegetables/Salad</option>
               <option value="fruits">Fruits</option>
               <option value="dairy">Dairy Products</option>

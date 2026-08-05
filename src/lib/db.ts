@@ -11,12 +11,15 @@ const isPostgres = process.env.DATABASE_URL && (
 
 function createPrismaClient(): PrismaClient {
   if (isPostgres) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Pool } = require('pg');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaPg } = require('@prisma/adapter-pg');
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter });
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
     const adapter = new PrismaBetterSqlite3({
       url: 'file:./dev.db',

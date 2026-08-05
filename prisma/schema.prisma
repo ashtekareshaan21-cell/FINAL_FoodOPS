@@ -1,7 +1,7 @@
 // Prisma schema for FoodOps platform
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 generator client {

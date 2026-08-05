@@ -57,9 +57,13 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
   return (
     <div className="space-y-6">
       {assignments.length === 0 ? (
-        <div className="text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-12 shadow-sm">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            You do not have any active pickups assigned at this moment.
+        <div className="text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-16 shadow-sm">
+          <span className="text-3xl block mb-3">🚴</span>
+          <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            No Active Pickups Assigned
+          </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs mx-auto">
+            When your NGO registers or assigns you a surplus food rescue, it will display here with location maps.
           </p>
         </div>
       ) : (
@@ -78,9 +82,9 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                   type="button"
                   disabled={loading}
                   onClick={() => handleUpdate(asg.id, 'START_PICKUP')}
-                  className="w-full py-3 px-4 border border-transparent rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors shadow-sm"
+                  className="w-full py-3 px-4 border border-transparent rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/10 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                 >
-                  {loading ? 'Processing...' : '🚴 Start Pickup'}
+                  {loading ? 'Routing pickup...' : '🚴 Start Pickup'}
                 </button>
               );
             } else if (asg.status === 'STARTED') {
@@ -89,9 +93,9 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                   type="button"
                   disabled={loading}
                   onClick={() => handleUpdate(asg.id, 'ARRIVE_AT_DONOR')}
-                  className="w-full py-3 px-4 border border-transparent rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm transition-colors shadow-sm"
+                  className="w-full py-3 px-4 border border-transparent rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold text-sm shadow-md shadow-amber-500/10 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                 >
-                  {loading ? 'Processing...' : '📍 Arrived at Donor'}
+                  {loading ? 'Confirming details...' : '📍 Arrived at Donor'}
                 </button>
               );
             } else if (asg.status === 'ARRIVED' && donation.status !== 'PICKED_UP' && donation.status !== 'DELIVERY_IN_PROGRESS') {
@@ -100,9 +104,9 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                   type="button"
                   disabled={loading}
                   onClick={() => handleUpdate(asg.id, 'CONFIRM_PICKUP')}
-                  className="w-full py-3 px-4 border border-transparent rounded bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm transition-colors shadow-sm"
+                  className="w-full py-3 px-4 border border-transparent rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm shadow-md shadow-orange-500/10 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                 >
-                  {loading ? 'Processing...' : '📦 Confirm Pickup (Food Collected)'}
+                  {loading ? 'Logging collection...' : '📦 Confirm Pickup (Food Collected)'}
                 </button>
               );
             } else if (donation.status === 'PICKED_UP') {
@@ -111,9 +115,9 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                   type="button"
                   disabled={loading}
                   onClick={() => handleUpdate(asg.id, 'START_DELIVERY')}
-                  className="w-full py-3 px-4 border border-transparent rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-colors shadow-sm"
+                  className="w-full py-3 px-4 border border-transparent rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-500/10 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                 >
-                  {loading ? 'Processing...' : '🚚 Start Delivery Transit'}
+                  {loading ? 'Starting route...' : '🚚 Start Delivery Transit'}
                 </button>
               );
             } else if (donation.status === 'DELIVERY_IN_PROGRESS') {
@@ -122,9 +126,9 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                   type="button"
                   disabled={loading}
                   onClick={() => handleUpdate(asg.id, 'CONFIRM_DELIVERY')}
-                  className="w-full py-3 px-4 border border-transparent rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors shadow-sm"
+                  className="w-full py-3 px-4 border border-transparent rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-500/10 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                 >
-                  {loading ? 'Processing...' : '🏁 Confirm Delivery & Complete'}
+                  {loading ? 'Completing rescue...' : '🏁 Confirm Delivery & Complete'}
                 </button>
               );
             }
@@ -132,82 +136,93 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
             return (
               <div
                 key={asg.id}
-                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm flex flex-col gap-6"
+                className="bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm flex flex-col gap-6"
               >
-                <div className="flex justify-between items-start flex-wrap gap-2">
-                  <div>
-                    <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{donation.title}</h3>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{donation.description}</p>
+                <div className="flex justify-between items-start flex-wrap gap-4">
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">{donation.title}</h3>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-xl">{donation.description}</p>
                   </div>
-                  <div className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                    Shipment ID: {asg.id.slice(-6).toUpperCase()}
-                  </div>
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 font-mono">
+                    ID: {asg.id.slice(-6).toUpperCase()}
+                  </span>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Address and Contacts */}
                   <div className="space-y-4">
-                    <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-3">
+                    <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-xl border border-zinc-150 dark:border-zinc-850 space-y-3">
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Donor Venue</p>
+                        <span className="block text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Donor Venue</span>
                         <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{donor.organizationName}</p>
                       </div>
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Contact Person</p>
-                        <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                          {donor.contactPerson} ({donation.donor.user.phoneNumber})
-                        </p>
+                      <div className="grid grid-cols-2 gap-4 border-t border-zinc-200/50 dark:border-zinc-800/40 pt-2.5">
+                        <div>
+                          <span className="block text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Contact Person</span>
+                          <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">{donor.contactPerson}</p>
+                        </div>
+                        <div>
+                          <span className="block text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Call Contact</span>
+                          <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">{donation.donor.user.phoneNumber}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Pickup Point</p>
-                        <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{donation.pickupAddress}</p>
+                      <div className="border-t border-zinc-200/50 dark:border-zinc-800/40 pt-2.5">
+                        <span className="block text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Pickup Point</span>
+                        <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 mt-0.5 leading-relaxed">{donation.pickupAddress}</p>
                       </div>
                     </div>
 
-                    <MapPreview
-                      latitude={donation.pickupLatitude}
-                      longitude={donation.pickupLongitude}
-                      address={donation.pickupAddress}
-                      height="140px"
-                    />
+                    <div className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-805">
+                      <MapPreview
+                        latitude={donation.pickupLatitude}
+                        longitude={donation.pickupLongitude}
+                        address={donation.pickupAddress}
+                        height="150px"
+                      />
+                    </div>
 
                     <a
                       href={buildGoogleMapsSearchUrl(donation.pickupLatitude, donation.pickupLongitude)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 rounded font-semibold text-xs transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 rounded-xl font-bold text-xs shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                     >
                       🗺️ Open Location in Google Maps
                     </a>
                   </div>
 
                   {/* Status and Action Buttons */}
-                  <div className="flex flex-col justify-between">
-                    <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-2">
+                  <div className="flex flex-col justify-between space-y-6 md:space-y-0">
+                    <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-xl border border-zinc-150 dark:border-zinc-850 space-y-4">
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Shipment Status</span>
-                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        <span className="block text-[9px] uppercase font-bold text-zinc-400 tracking-wider mb-1">Shipment Status</span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-850 font-mono">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                           {donation.status.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Quantity Details</span>
-                        <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                          {donation.quantity} {donation.quantityUnit} ({donation.estimatedServings || 'N/A'} meals)
-                        </span>
+                      
+                      <div className="border-t border-zinc-200/50 dark:border-zinc-800/40 pt-3">
+                        <span className="block text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Quantity Details</span>
+                        <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
+                          {donation.quantity} {donation.quantityUnit} &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">{donation.estimatedServings || 'N/A'} meals</span>
+                        </p>
                       </div>
+
                       {donation.specialNotes && (
-                        <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
-                          <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Notes</span>
-                          <span className="text-xs text-zinc-600 dark:text-zinc-400 italic">&quot;{donation.specialNotes}&quot;</span>
+                        <div className="pt-3 border-t border-zinc-200/50 dark:border-zinc-800/40">
+                          <span className="block text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Special Notes from Kitchen</span>
+                          <p className="text-xs text-zinc-650 dark:text-zinc-400 italic mt-1 leading-relaxed bg-zinc-100/50 dark:bg-zinc-900/50 p-2.5 rounded-lg border border-zinc-200/40 dark:border-zinc-800/45">
+                            &quot;{donation.specialNotes}&quot;
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    <div className="mt-6 md:mt-0">
+                    <div className="mt-auto">
                       {error && (
-                        <div className="mb-3 p-3 rounded bg-red-50 border border-red-200 text-red-600 text-xs dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400">
-                          {error}
+                        <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-200 text-red-650 text-xs font-semibold dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400">
+                          ⚠ {error}
                         </div>
                       )}
 
