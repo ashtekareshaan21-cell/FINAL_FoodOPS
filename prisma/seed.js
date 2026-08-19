@@ -28,8 +28,11 @@ async function main() {
   } else {
     console.log('Using SQLite driver adapter for seeding...');
     const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
+    const sqliteUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('file:')
+      ? process.env.DATABASE_URL
+      : 'file:./dev.db';
     const adapter = new PrismaBetterSqlite3({
-      url: 'file:./dev.db',
+      url: sqliteUrl,
     });
     prisma = new PrismaClient({ adapter });
   }

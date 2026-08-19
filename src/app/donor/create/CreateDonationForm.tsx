@@ -6,6 +6,18 @@ import { createDonation, analyzeListingAction } from '@/app/actions/donations';
 import LocationPicker, { SelectedLocation } from '@/components/Maps/LocationPicker';
 import MapPreview from '@/components/Maps/MapPreview';
 
+interface AuditResult {
+  id: string;
+  status: string;
+  foodCategory?: string;
+  estimatedServings?: number;
+  estimatedQuantityKg?: number;
+  packagingObservation?: string | null;
+  visualObservations?: string[] | null;
+  warnings?: string[] | null;
+  confidence?: number;
+}
+
 export default function CreateDonationForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -17,7 +29,7 @@ export default function CreateDonationForm() {
   const [mimeType, setMimeType] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [auditId, setAuditId] = useState<string | null>(null);
-  const [auditResult, setAuditResult] = useState<any | null>(null);
+  const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -391,6 +403,7 @@ export default function CreateDonationForm() {
               )}
             </div>
           )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

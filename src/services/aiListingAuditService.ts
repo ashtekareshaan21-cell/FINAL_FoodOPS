@@ -115,10 +115,10 @@ export const aiListingAuditService = {
       if (typeof data.packagingObservation !== 'string') {
         throw new Error('Invalid packagingObservation.');
       }
-      if (!Array.isArray(data.visualObservations) || data.visualObservations.some((x: any) => typeof x !== 'string')) {
+      if (!Array.isArray(data.visualObservations) || data.visualObservations.some((x: unknown) => typeof x !== 'string')) {
         throw new Error('Invalid visualObservations.');
       }
-      if (!Array.isArray(data.warnings) || data.warnings.some((x: any) => typeof x !== 'string')) {
+      if (!Array.isArray(data.warnings) || data.warnings.some((x: unknown) => typeof x !== 'string')) {
         throw new Error('Invalid warnings.');
       }
       if (typeof data.confidence !== 'number' || data.confidence < 0 || data.confidence > 100) {

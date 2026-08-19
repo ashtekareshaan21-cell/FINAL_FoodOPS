@@ -45,7 +45,6 @@ describe('AI Listing Audit Flow & Security Constraints', () => {
   let donorUserA: any;
   let donorUserB: any;
   let donorProfileA: any;
-  let donorProfileB: any;
 
   beforeAll(async () => {
     // Switch to dedicated test database
@@ -96,7 +95,7 @@ describe('AI Listing Audit Flow & Security Constraints', () => {
       },
     });
 
-    donorProfileB = await prisma.donorProfile.create({
+    await prisma.donorProfile.create({
       data: {
         userId: donorUserB.id,
         organizationName: 'Donor B Org',
