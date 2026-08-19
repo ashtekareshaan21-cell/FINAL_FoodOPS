@@ -1,5 +1,6 @@
 import { donationRepository } from '@/repositories/donationRepository';
 import { ngoRepository } from '@/repositories/ngoRepository';
+import crypto from 'crypto';
 import { donorRepository } from '@/repositories/donorRepository';
 import { volunteerRepository } from '@/repositories/volunteerRepository';
 import { emailService } from './emailService';
@@ -21,7 +22,7 @@ const IMPACT_FACTORS: Record<string, { co2: number; water: number }> = {
 };
 
 export const donationService = {
-  async createDonation(userId: string, input: CreateDonationInput) {
+  async createDonation(userId: string, input: CreateDonationInput & { auditId?: string | null }) {
     const donor = await donorRepository.findByUserId(userId);
     if (!donor) throw new Error('Donor profile not found.');
 
@@ -40,6 +41,7 @@ export const donationService = {
       pickupLatitude,
       pickupLongitude,
       specialNotes,
+      auditId,
     } = input;
 
     const parsedLat = typeof pickupLatitude === 'string' ? parseFloat(pickupLatitude) : pickupLatitude;
@@ -52,6 +54,27 @@ export const donationService = {
     }
 
     const donation = await prisma.$transaction(async (tx) => {
+      // 1. If auditId is provided, validate it first
+      let auditRecord = null;
+      if (auditId) {
+        auditRecord = await tx.foodListingAudit.findUnique({
+          where: { id: auditId },
+        });
+
+        if (!auditRecord) {
+          throw new Error('Audit record not found.');
+        }
+
+        if (auditRecord.donorId !== donor.id) {
+          throw new Error('Unauthorized: Audit does not belong to this donor.');
+        }
+
+        if (auditRecord.donationId !== null) {
+          throw new Error('AUDIT_ALREADY_ATTACHED');
+        }
+      }
+
+      // 2. Create the donation
       const newDonation = await tx.donation.create({
         data: {
           donorId: donor.id,
@@ -72,6 +95,30 @@ export const donationService = {
           status: 'AVAILABLE',
         },
       });
+
+      // 3. Link audit if valid
+      if (auditId && auditRecord) {
+        await tx.foodListingAudit.update({
+          where: { id: auditId },
+          data: { donationId: newDonation.id },
+        });
+
+        await auditService.log(tx, {
+          userId,
+          role: 'DONOR',
+          action: 'AI_LISTING_AUDITED',
+          entityType: 'Donation',
+          entityId: newDonation.id,
+          newValues: {
+            auditId: auditRecord.id,
+            status: auditRecord.status,
+            foodCategory: auditRecord.foodCategory,
+            confidence: auditRecord.confidence,
+            provider: auditRecord.provider,
+            model: auditRecord.model,
+          },
+        });
+      }
 
       await tx.donationStatusHistory.create({
         data: {
@@ -403,10 +450,52 @@ export const donationService = {
     });
   },
 
-  async updateAssignmentStatus(userId: string, assignmentId: string, action: string) {
+  async updateAssignmentStatus(userId: string, assignmentId: string, action: string, otp?: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found');
+
+    const assignmentCheck = await prisma.volunteerAssignment.findUnique({
+      where: { id: assignmentId },
+      include: { volunteer: true },
+    });
+    if (!assignmentCheck) throw new Error('Assignment not found');
+
+    if (action === 'CONFIRM_PICKUP') {
+      // 1. Authorization check: assigned volunteer or ADMIN only
+      if (user.role !== 'ADMIN' && assignmentCheck.volunteer.userId !== userId) {
+        throw new Error('UNAUTHORIZED_OWNER');
+      }
+
+      // 2. Verification checks
+      if (!otp) {
+        throw new Error('OTP is required for confirming pickup.');
+      }
+      if (!assignmentCheck.pickupOtpHash || !assignmentCheck.pickupOtpExpiresAt) {
+        throw new Error('No active OTP found. Please generate an OTP first.');
+      }
+      if (new Date() > new Date(assignmentCheck.pickupOtpExpiresAt)) {
+        throw new Error('OTP has expired.');
+      }
+      if (assignmentCheck.pickupOtpAttempts >= 3) {
+        throw new Error('Maximum verification attempts exceeded. Please generate a new OTP.');
+      }
+
+      const inputHash = crypto.createHash('sha256').update(otp).digest('hex');
+      const buf1 = Buffer.from(assignmentCheck.pickupOtpHash, 'hex');
+      const buf2 = Buffer.from(inputHash, 'hex');
+
+      if (buf1.length !== buf2.length || !crypto.timingSafeEqual(buf1, buf2)) {
+        await prisma.volunteerAssignment.update({
+          where: { id: assignmentId },
+          data: { pickupOtpAttempts: { increment: 1 } },
+        });
+        throw new Error('Invalid OTP.');
+      }
+    }
+
     const result = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({ where: { id: userId } });
-      if (!user) throw new Error('User not found');
+      const txUser = await tx.user.findUnique({ where: { id: userId } });
+      if (!txUser) throw new Error('User not found');
 
       const assignment = await tx.volunteerAssignment.findUnique({
         where: { id: assignmentId },
@@ -463,6 +552,9 @@ export const donationService = {
         nextAssignmentStatus = 'ARRIVED';
         nextDonationStatus = 'PICKED_UP';
         updates.pickupConfirmedAt = new Date();
+        updates.pickupOtpHash = null;
+        updates.pickupOtpExpiresAt = null;
+        updates.pickupOtpAttempts = 0;
         auditAction = 'PICKUP_CONFIRMED';
       } else if (action === 'START_DELIVERY') {
         operation = 'START_DELIVERY';
@@ -646,6 +738,162 @@ export const donationService = {
     });
 
     return true;
+  },
+
+  async escalateDonation(userId: string, donationId: string) {
+    await prisma.$transaction(async (tx) => {
+      const donation = await tx.donation.findUnique({
+        where: { id: donationId },
+      });
+      if (!donation) throw new Error('Donation not found');
+
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) throw new Error('User not found');
+
+      validateStateTransition(donation.status, 'RECOVERY_ESCALATED', 'ESCALATE', {
+        actorRole: user.role,
+        actorId: userId,
+        isOwner: user.role === 'ADMIN',
+      });
+
+      await tx.donation.update({
+        where: { id: donationId },
+        data: { status: 'RECOVERY_ESCALATED' },
+      });
+
+      await tx.donationStatusHistory.create({
+        data: {
+          donationId,
+          previousStatus: donation.status,
+          newStatus: 'RECOVERY_ESCALATED',
+          changedBy: userId,
+          reason: 'Donation escalated to recovery verification',
+        },
+      });
+
+      await auditService.log(tx, {
+        userId,
+        role: user.role,
+        action: 'RECOVERY_ESCALATED',
+        entityType: 'Donation',
+        entityId: donationId,
+        previousValues: { status: donation.status },
+        newValues: { status: 'RECOVERY_ESCALATED' },
+      });
+    });
+    return true;
+  },
+
+  async resolveOrganicDonation(userId: string, donationId: string) {
+    await prisma.$transaction(async (tx) => {
+      const donation = await tx.donation.findUnique({
+        where: { id: donationId },
+      });
+      if (!donation) throw new Error('Donation not found');
+
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) throw new Error('User not found');
+
+      validateStateTransition(donation.status, 'ORGANIC_RECOVERY', 'RESOLVE_ORGANIC', {
+        actorRole: user.role,
+        actorId: userId,
+        isOwner: user.role === 'ADMIN',
+      });
+
+      await tx.donation.update({
+        where: { id: donationId },
+        data: { status: 'ORGANIC_RECOVERY' },
+      });
+
+      await tx.donationStatusHistory.create({
+        data: {
+          donationId,
+          previousStatus: donation.status,
+          newStatus: 'ORGANIC_RECOVERY',
+          changedBy: userId,
+          reason: 'Donation resolved via organic recovery pathways',
+        },
+      });
+
+      await auditService.log(tx, {
+        userId,
+        role: user.role,
+        action: 'ORGANIC_RECOVERY',
+        entityType: 'Donation',
+        entityId: donationId,
+        previousValues: { status: donation.status },
+        newValues: { status: 'ORGANIC_RECOVERY' },
+      });
+    });
+    return true;
+  },
+
+  async generatePickupOtp(userId: string, assignmentId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found');
+
+    const assignment = await prisma.volunteerAssignment.findUnique({
+      where: { id: assignmentId },
+      include: {
+        volunteer: true,
+        ngo: true,
+        donation: {
+          include: {
+            donor: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!assignment) throw new Error('Assignment not found');
+
+    let isAuthorized = false;
+    if (user.role === 'ADMIN') {
+      isAuthorized = true;
+    } else if (user.role === 'VOLUNTEER') {
+      isAuthorized = assignment.volunteer.userId === userId;
+    } else if (user.role === 'DONOR') {
+      isAuthorized = assignment.donation.donor.userId === userId;
+    } else if (user.role === 'NGO') {
+      isAuthorized = assignment.ngo.userId === userId;
+    }
+
+    if (!isAuthorized) {
+      throw new Error('Unauthorized to generate OTP for this assignment.');
+    }
+
+    const otpVal = crypto.randomInt(100000, 999999).toString();
+    const hash = crypto.createHash('sha256').update(otpVal).digest('hex');
+
+    await prisma.volunteerAssignment.update({
+      where: { id: assignmentId },
+      data: {
+        pickupOtpHash: hash,
+        pickupOtpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        pickupOtpAttempts: 0,
+      },
+    });
+
+    const donorEmail = assignment.donation.donor.user.email;
+    const donationTitle = assignment.donation.title;
+    await emailService.sendPickupOtpEmail(donorEmail, donationTitle, otpVal);
+
+    if (user.role === 'VOLUNTEER') {
+      return {
+        success: true,
+        message: 'A secure handover OTP has been generated and sent to the donor.',
+      };
+    } else {
+      return {
+        success: true,
+        otp: otpVal,
+        message: 'OTP generated successfully.',
+      };
+    }
   },
 
   async updateNgoSettings(

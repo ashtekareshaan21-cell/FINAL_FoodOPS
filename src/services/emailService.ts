@@ -87,4 +87,19 @@ export const emailService = {
        <p>The FoodOps Team</p>`
     );
   },
+
+  async sendPickupOtpEmail(email: string, title: string, otp: string) {
+    return this.sendEmail(
+      email,
+      'Surplus Pickup Secure Handover OTP 🔑',
+      `<h1>Secure Handover OTP</h1>
+       <p>A volunteer has arrived to pick up your surplus food listing <strong>"${title}"</strong>.</p>
+       <p>Provide the following secure 6-digit OTP to the volunteer to verify pickup handover:</p>
+       <h2 style="font-size: 24px; letter-spacing: 4px; font-family: monospace;">${otp}</h2>
+       <p>This OTP is valid for 10 minutes and can only be used once.</p>
+       <br/>
+       <p>Best regards,</p>
+       <p>The FoodOps Team</p>`
+    );
+  },
 };

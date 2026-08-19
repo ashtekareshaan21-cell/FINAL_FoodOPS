@@ -5,6 +5,10 @@ import { revalidatePath } from 'next/cache';
 import { NgoAvailability } from '@prisma/client';
 import { donationService } from '@/services/donationService';
 import { matchingService } from '@/services/matchingService';
+import { matchingDiagnosticsService } from '@/services/matchingDiagnosticsService';
+import { prisma } from '@/lib/db';
+import { donorRepository } from '@/repositories/donorRepository';
+import { aiListingAuditService } from '@/services/aiListingAuditService';
 
 export interface CreateDonationInput {
   title: string;
@@ -21,6 +25,7 @@ export interface CreateDonationInput {
   pickupLatitude: string | number;
   pickupLongitude: string | number;
   specialNotes?: string | null;
+  auditId?: string | null;
 }
 
 function validateDateTimeTimezone(name: string, val: string | Date | null | undefined) {
@@ -31,6 +36,27 @@ function validateDateTimeTimezone(name: string, val: string | Date | null | unde
     if (!hasTz) {
       throw new Error(`Incoming datetime parameter "${name}" must have an explicit timezone offset or Z suffix. Got: "${val}"`);
     }
+  }
+}
+
+export async function analyzeListingAction(base64Image: string, mimeType: string) {
+  const session = await getSession();
+  if (!session || session.role !== 'DONOR') {
+    return { success: false, error: 'Unauthorized. Only Donors can perform audits.' };
+  }
+
+  try {
+    const donor = await donorRepository.findByUserId(session.userId);
+    if (!donor) {
+      return { success: false, error: 'Donor profile not found.' };
+    }
+
+    const audit = await aiListingAuditService.runAudit(base64Image, mimeType, donor.id);
+    return { success: true, auditId: audit.id, audit };
+  } catch (error) {
+    console.error('analyzeListingAction error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to analyze listing image.';
+    return { success: false, error: message };
   }
 }
 
@@ -147,14 +173,14 @@ export async function getVolunteerAssignments() {
   return donationService.getVolunteerAssignments(session.userId);
 }
 
-export async function updateAssignmentStatus(assignmentId: string, action: string) {
+export async function updateAssignmentStatus(assignmentId: string, action: string, otp?: string) {
   const session = await getSession();
   if (!session || (session.role !== 'VOLUNTEER' && session.role !== 'NGO')) {
     return { success: false, error: 'Unauthorized.' };
   }
 
   try {
-    const nextDonationStatus = await donationService.updateAssignmentStatus(session.userId, assignmentId, action);
+    const nextDonationStatus = await donationService.updateAssignmentStatus(session.userId, assignmentId, action, otp);
     revalidatePath('/volunteer');
     revalidatePath('/ngo');
     return { success: true, status: nextDonationStatus };
@@ -206,6 +232,89 @@ export async function updateNgoSettings(data: {
   } catch (error) {
     console.error('Update NGO settings error:', error);
     const message = error instanceof Error ? error.message : 'Failed to update settings.';
+    return { success: false, error: message };
+  }
+}
+
+export async function getDonationMatchDiagnostics(donationId: string) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  // Authorization checks
+  if (session.role !== 'ADMIN') {
+    if (session.role === 'DONOR') {
+      const donation = await prisma.donation.findUnique({
+        where: { id: donationId },
+        include: { donor: true },
+      });
+      if (!donation || donation.donor.userId !== session.userId) {
+        return { success: false, error: 'Unauthorized. You do not own this donation.' };
+      }
+    } else {
+      return { success: false, error: 'Unauthorized' };
+    }
+  }
+
+  try {
+    const diagnostics = await matchingDiagnosticsService.traceDonationMatches(donationId);
+    return { success: true, diagnostics };
+  } catch (error) {
+    console.error('Get donation match diagnostics error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to retrieve diagnostics.';
+    return { success: false, error: message };
+  }
+}
+
+export async function escalateDonation(donationId: string) {
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    return { success: false, error: 'Unauthorized. Only Admins can escalate recovery.' };
+  }
+
+  try {
+    await donationService.escalateDonation(session.userId, donationId);
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    console.error('Escalate donation error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to escalate donation.';
+    return { success: false, error: message };
+  }
+}
+
+export async function resolveOrganicDonation(donationId: string) {
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    return { success: false, error: 'Unauthorized. Only Admins can resolve organic recovery.' };
+  }
+
+  try {
+    await donationService.resolveOrganicDonation(session.userId, donationId);
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    console.error('Resolve organic recovery error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to resolve organic recovery.';
+    return { success: false, error: message };
+  }
+}
+
+export async function generatePickupOtp(assignmentId: string) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: 'Unauthorized.' };
+  }
+
+  try {
+    const result = await donationService.generatePickupOtp(session.userId, assignmentId);
+    revalidatePath('/volunteer');
+    revalidatePath('/donor');
+    return result;
+  } catch (error) {
+    console.error('Generate OTP error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to generate OTP.';
     return { success: false, error: message };
   }
 }

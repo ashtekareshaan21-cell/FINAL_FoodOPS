@@ -204,6 +204,7 @@ model Donation {
   statusHistory     DonationStatusHistory[]
   assignment        VolunteerAssignment?
   images            DonationImage[]
+  audits            FoodListingAudit[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   cancelledAt       DateTime?
@@ -242,25 +243,30 @@ model DonationStatusHistory {
 }
 
 model VolunteerAssignment {
-  id                String @id @default(cuid())
-  donationId        String @unique
-  donation          Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
-  volunteerId       String
-  volunteer         Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
-  ngoId             String
-  ngo               NGOProfile @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  status            AssignmentStatus @default(ASSIGNED)
-  assignedAt        DateTime @default(now())
-  startedAt         DateTime?
-  arrivedAt         DateTime?
-  pickupConfirmedAt DateTime?
-  deliveryStartedAt DateTime?
+  id                 String @id @default(cuid())
+  donationId         String @unique
+  donation           Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  volunteerId        String
+  volunteer          Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
+  ngoId              String
+  ngo                NGOProfile @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  status             AssignmentStatus @default(ASSIGNED)
+  assignedAt         DateTime @default(now())
+  startedAt          DateTime?
+  arrivedAt          DateTime?
+  pickupConfirmedAt  DateTime?
+  deliveryStartedAt  DateTime?
   deliveryConfirmedAt DateTime?
-  cancelledAt       DateTime?
-  cancelReason      String?
+  cancelledAt        DateTime?
+  cancelReason       String?
   lastLocationUpdate DateTime?
-  lastLatitude      Float?
-  lastLongitude     Float?
+  lastLatitude       Float?
+  lastLongitude      Float?
+  
+  // Secure Handover OTP
+  pickupOtpHash      String?
+  pickupOtpExpiresAt DateTime?
+  pickupOtpAttempts  Int @default(0)
 
   @@index([volunteerId])
   @@index([ngoId])
@@ -312,3 +318,25 @@ model AuditLog {
   @@index([userId])
   @@index([timestamp])
 }
+
+model FoodListingAudit {
+  id                    String    @id @default(cuid())
+  donationId            String?
+  donation              Donation? @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  donorId               String?
+  status                String    // "COMPLETED" | "AI_UNAVAILABLE" | "FAILED"
+  foodCategory          String?
+  estimatedServings     Int?
+  estimatedQuantityKg   Float?
+  packagingObservation  String?
+  visualObservations    Json?     // Stored as JSON array
+  warnings              Json?     // Stored as JSON array
+  confidence            Float?
+  provider              String?
+  model                 String?
+  createdAt             DateTime  @default(now())
+
+  @@index([donationId])
+  @@index([donorId])
+}
+
