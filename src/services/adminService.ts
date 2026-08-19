@@ -4,6 +4,8 @@ import { volunteerRepository } from '@/repositories/volunteerRepository';
 import { donationRepository } from '@/repositories/donationRepository';
 import { emailService } from './emailService';
 import { prisma } from '@/lib/db';
+import { auditService } from './auditService';
+import { validateStateTransition } from './donationStateMachine';
 
 export const adminService = {
   async getPendingNgos() {
@@ -16,7 +18,7 @@ export const adminService = {
     });
   },
 
-  async verifyNgo(ngoId: string) {
+  async verifyNgo(adminUserId: string, ngoId: string) {
     const updated = await ngoRepository.updateStatus(ngoId, {
       status: 'VERIFIED',
       verificationApprovedAt: new Date(),
@@ -27,15 +29,35 @@ export const adminService = {
       await emailService.sendNGOApprovedEmail(ngo.user.email, ngo.organizationName);
     }
 
+    await auditService.log(prisma, {
+      userId: adminUserId,
+      role: 'ADMIN',
+      action: 'NGO_APPROVED',
+      entityType: 'NGOProfile',
+      entityId: ngoId,
+      newValues: { status: 'VERIFIED' },
+    });
+
     return updated;
   },
 
-  async rejectNgo(ngoId: string, reason: string) {
-    return ngoRepository.updateStatus(ngoId, {
+  async rejectNgo(adminUserId: string, ngoId: string, reason: string) {
+    const updated = await ngoRepository.updateStatus(ngoId, {
       status: 'SUSPENDED',
       rejectionReason: reason,
       verificationRejectedAt: new Date(),
     });
+
+    await auditService.log(prisma, {
+      userId: adminUserId,
+      role: 'ADMIN',
+      action: 'NGO_REJECTED',
+      entityType: 'NGOProfile',
+      entityId: ngoId,
+      newValues: { status: 'SUSPENDED', rejectionReason: reason },
+    });
+
+    return updated;
   },
 
   async getAdminStats() {
@@ -131,9 +153,11 @@ export const adminService = {
 
       if (!donation) throw new Error('Donation not found');
 
-      if (donation.status === 'COMPLETED' || donation.status === 'CANCELLED' || donation.status === 'EXPIRED') {
-        throw new Error(`Cannot expire a donation with status ${donation.status}`);
-      }
+      validateStateTransition(donation.status, 'EXPIRED', 'FORCE_EXPIRE', {
+        actorRole: 'ADMIN',
+        actorId: userId,
+        isOwner: false,
+      });
 
       const parsedWeight = parseFloat(donation.quantity.replace(/[^\d.]/g, ''));
       const weightKg = isNaN(parsedWeight) || parsedWeight <= 0 ? 10.0 : parsedWeight;
@@ -158,14 +182,14 @@ export const adminService = {
         },
       });
 
-      await tx.auditLog.create({
-        data: {
-          userId,
-          action: 'FORCE_EXPIRE_DIVERT',
-          entityType: 'Donation',
-          entityId: donationId,
-          newValues: JSON.stringify({ status: 'EXPIRED', cancelReason: 'Admin Force Expired / Diverted to Biogas Recovery' }),
-        },
+      await auditService.log(tx, {
+        userId,
+        role: 'ADMIN',
+        action: 'DONATION_EXPIRED',
+        entityType: 'Donation',
+        entityId: donationId,
+        previousValues: { status: donation.status },
+        newValues: { status: 'EXPIRED', cancelReason: 'Admin Force Expired / Diverted to Biogas Recovery' },
       });
 
       const co2EquivalentKg = weightKg * 1.8;

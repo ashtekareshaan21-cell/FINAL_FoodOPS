@@ -13,6 +13,11 @@ vi.mock('../repositories/ngoRepository');
 vi.mock('../repositories/donorRepository');
 vi.mock('../repositories/volunteerRepository');
 vi.mock('../services/emailService');
+vi.mock('../services/auditService', () => ({
+  auditService: {
+    log: vi.fn().mockResolvedValue({} as any),
+  },
+}));
 vi.mock('../lib/db', () => ({
   prisma: {
     $transaction: vi.fn((cb) => cb(prisma)),

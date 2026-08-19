@@ -181,8 +181,8 @@ describe('MatchingService End-to-End matching & diagnostics', () => {
       foodCategory: 'mixed',
       vegNonVegMixed: 'VEG',
       pickupDeadlineAt: new Date(Date.now() + 3600000),
-      pickupLatitude: null as any,
-      pickupLongitude: null as any
+      pickupLatitude: null as unknown as number,
+      pickupLongitude: null as unknown as number
     };
 
     const matchRes = matchDonationToNgo(donation, verifiedNgo);

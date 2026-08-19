@@ -5,6 +5,7 @@ import { volunteerRepository } from '@/repositories/volunteerRepository';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { prisma } from '@/lib/db';
 import { RegisterDonorInput, RegisterNGOInput, RegisterVolunteerInput, LoginInput } from '@/app/actions/auth';
+import { auditService } from './auditService';
 
 export const authService = {
   async registerDonor(input: RegisterDonorInput) {
@@ -36,6 +37,15 @@ export const authService = {
         latitude: typeof latitude === 'string' ? parseFloat(latitude) : latitude,
         longitude: typeof longitude === 'string' ? parseFloat(longitude) : longitude,
       }, tx);
+
+      await auditService.log(tx, {
+        userId: newUser.id,
+        role: 'DONOR',
+        action: 'REGISTER',
+        entityType: 'User',
+        entityId: newUser.id,
+        newValues: { email: newUser.email, role: newUser.role },
+      });
 
       return newUser;
     });
@@ -99,6 +109,15 @@ export const authService = {
         status: 'PENDING_VERIFICATION',
       }, tx);
 
+      await auditService.log(tx, {
+        userId: newUser.id,
+        role: 'NGO',
+        action: 'REGISTER',
+        entityType: 'User',
+        entityId: newUser.id,
+        newValues: { email: newUser.email, role: newUser.role },
+      });
+
       return newUser;
     });
 
@@ -133,6 +152,15 @@ export const authService = {
         status: 'ACTIVE',
       }, tx);
 
+      await auditService.log(tx, {
+        userId: newUser.id,
+        role: 'VOLUNTEER',
+        action: 'REGISTER',
+        entityType: 'User',
+        entityId: newUser.id,
+        newValues: { email: newUser.email, role: newUser.role },
+      });
+
       return newUser;
     });
 
@@ -153,6 +181,16 @@ export const authService = {
     }
 
     await userRepository.updateLastLogin(user.id);
+    
+    await auditService.log(prisma, {
+      userId: user.id,
+      role: user.role,
+      action: 'LOGIN',
+      entityType: 'User',
+      entityId: user.id,
+      newValues: { lastLoginAt: new Date() },
+    });
+
     return user;
   },
 };

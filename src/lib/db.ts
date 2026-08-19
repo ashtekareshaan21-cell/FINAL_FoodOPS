@@ -21,8 +21,11 @@ function createPrismaClient(): PrismaClient {
   } else {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
+    const sqliteUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('file:')
+      ? process.env.DATABASE_URL
+      : 'file:./dev.db';
     const adapter = new PrismaBetterSqlite3({
-      url: 'file:./dev.db',
+      url: sqliteUrl,
     });
     return new PrismaClient({ adapter });
   }

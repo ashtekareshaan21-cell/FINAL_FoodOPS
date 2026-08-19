@@ -7,7 +7,9 @@
     "build": "node prisma/prepare.js && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:seed": "node prisma/seed.js",
+    "db:reset-dev": "node prisma/reset-dev.js"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.8.0",

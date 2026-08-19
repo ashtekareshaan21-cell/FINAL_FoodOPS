@@ -1,8 +1,11 @@
 'use server';
 
 import { authService } from '@/services/authService';
-import { setSession, deleteSession } from '@/lib/auth';
+import { setSession, deleteSession, getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { auditService } from '@/services/auditService';
+import { prisma } from '@/lib/db';
+import { UserRole } from '@prisma/client';
 
 export interface RegisterDonorInput {
   email: string;
@@ -94,6 +97,16 @@ export async function login(formData: LoginInput) {
 }
 
 export async function logout() {
+  const session = await getSession();
+  if (session) {
+    await auditService.log(prisma, {
+      userId: session.userId,
+      role: session.role as UserRole,
+      action: 'LOGOUT',
+      entityType: 'User',
+      entityId: session.userId,
+    });
+  }
   await deleteSession();
   revalidatePath('/');
 }

@@ -28,6 +28,8 @@ enum DonationStatus {
   COMPLETED
   CANCELLED
   EXPIRED
+  RECOVERY_ESCALATED
+  ORGANIC_RECOVERY
 }
 
 enum NGOStatus {
@@ -298,11 +300,13 @@ model ImpactRecord {
 model AuditLog {
   id                String @id @default(cuid())
   userId            String?
+  role              String?
   action            String
   entityType        String
   entityId          String?
   previousValues    String?
   newValues         String?
+  metadata          String?
   timestamp         DateTime @default(now())
 
   @@index([userId])

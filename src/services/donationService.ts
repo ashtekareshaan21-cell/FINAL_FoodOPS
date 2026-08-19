@@ -4,9 +4,11 @@ import { donorRepository } from '@/repositories/donorRepository';
 import { volunteerRepository } from '@/repositories/volunteerRepository';
 import { emailService } from './emailService';
 import { prisma } from '@/lib/db';
-import { Donation, NgoAvailability, Prisma } from '@prisma/client';
+import { NgoAvailability, Prisma } from '@prisma/client';
 import { CreateDonationInput } from '@/app/actions/donations';
 import { normalizeFoodCategory, matchingService } from './matchingService';
+import { auditService } from './auditService';
+import { validateStateTransition, DonationOperation } from './donationStateMachine';
 
 const IMPACT_FACTORS: Record<string, { co2: number; water: number }> = {
   'grains': { co2: 1.2, water: 2500 },
@@ -81,6 +83,15 @@ export const donationService = {
         },
       });
 
+      await auditService.log(tx, {
+        userId,
+        role: 'DONOR',
+        action: 'DONATION_CREATED',
+        entityType: 'Donation',
+        entityId: newDonation.id,
+        newValues: { status: 'AVAILABLE', title: newDonation.title },
+      });
+
       return newDonation;
     });
 
@@ -144,6 +155,9 @@ export const donationService = {
     if (ngo.status !== 'VERIFIED') {
       throw new Error('NGO account is not verified.');
     }
+    if (ngo.availability === 'OFFLINE') {
+      throw new Error('NGO is offline.');
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const donation = await tx.donation.findUnique({
@@ -173,13 +187,28 @@ export const donationService = {
         throw new Error(`DONATION_NOT_MATCHED: ${matchRes.reasons.join(', ')}`);
       }
 
-      const updated = await tx.donation.update({
-        where: { id: donationId },
+      // Validate state transition through machine
+      validateStateTransition(donation.status, 'ACCEPTED', 'CLAIM', {
+        actorRole: 'NGO',
+        actorId: userId,
+        isOwner: false,
+      });
+
+      // Atomic conditional update
+      const affected = await tx.donation.updateMany({
+        where: {
+          id: donationId,
+          status: 'AVAILABLE',
+        },
         data: {
           status: 'ACCEPTED',
           acceptedNgoId: ngo.id,
         },
       });
+
+      if (affected.count === 0) {
+        throw new Error('DONATION_ALREADY_ACCEPTED');
+      }
 
       await tx.donationStatusHistory.create({
         data: {
@@ -191,17 +220,17 @@ export const donationService = {
         },
       });
 
-      await tx.auditLog.create({
-        data: {
-          userId,
-          action: 'ACCEPT_DONATION',
-          entityType: 'Donation',
-          entityId: donationId,
-          newValues: JSON.stringify({ status: 'ACCEPTED', acceptedNgoId: ngo.id }),
-        },
+      await auditService.log(tx, {
+        userId,
+        role: 'NGO',
+        action: 'DONATION_CLAIMED',
+        entityType: 'Donation',
+        entityId: donationId,
+        previousValues: { status: 'AVAILABLE' },
+        newValues: { status: 'ACCEPTED', acceptedNgoId: ngo.id },
       });
 
-      return { updated, donorEmail: donation.donor.user.email, title: donation.title };
+      return { updated: { ...donation, status: 'ACCEPTED' as const, acceptedNgoId: ngo.id }, donorEmail: donation.donor.user.email, title: donation.title };
     });
 
     // Notify Donor by Email
@@ -285,19 +314,24 @@ export const donationService = {
         throw new Error('Donation not owned by this NGO');
       }
 
-      if (donation.status !== 'ACCEPTED' && donation.status !== 'VOLUNTEER_ASSIGNED') {
-        throw new Error('Donation is not in a assignable state');
-      }
-
-      await tx.volunteerAssignment.deleteMany({
-        where: { donationId },
-      });
-
       const volunteer = await tx.volunteer.findUnique({
         where: { id: volunteerId },
       });
 
       if (!volunteer) throw new Error('Volunteer not found');
+      if (volunteer.ngoId !== ngo.id) {
+        throw new Error('Volunteer does not belong to this NGO');
+      }
+
+      validateStateTransition(donation.status, 'VOLUNTEER_ASSIGNED', 'ASSIGN_VOLUNTEER', {
+        actorRole: 'NGO',
+        actorId: userId,
+        isOwner: donation.acceptedNgoId === ngo.id,
+      });
+
+      await tx.volunteerAssignment.deleteMany({
+        where: { donationId },
+      });
 
       await tx.volunteerAssignment.create({
         data: {
@@ -321,6 +355,16 @@ export const donationService = {
           changedBy: userId,
           reason: `Assigned volunteer to rescue`,
         },
+      });
+
+      await auditService.log(tx, {
+        userId,
+        role: 'NGO',
+        action: 'VOLUNTEER_ASSIGNED',
+        entityType: 'Donation',
+        entityId: donationId,
+        previousValues: { status: donation.status },
+        newValues: { status: 'VOLUNTEER_ASSIGNED', volunteerId },
       });
 
       return { volunteerName: volunteer.name, donorEmail: donation.donor.user.email, title: donation.title };
@@ -361,9 +405,14 @@ export const donationService = {
 
   async updateAssignmentStatus(userId: string, assignmentId: string, action: string) {
     const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) throw new Error('User not found');
+
       const assignment = await tx.volunteerAssignment.findUnique({
         where: { id: assignmentId },
         include: { 
+          volunteer: true,
+          ngo: true,
           donation: {
             include: {
               donor: {
@@ -378,36 +427,55 @@ export const donationService = {
 
       if (!assignment) throw new Error('Assignment not found');
 
+      // Ownership and affiliation control
+      let isOwner = false;
+      if (user.role === 'VOLUNTEER') {
+        isOwner = assignment.volunteer.userId === userId;
+      } else if (user.role === 'NGO') {
+        isOwner = assignment.ngo.userId === userId;
+      }
+      if (!isOwner && user.role !== 'ADMIN') {
+        throw new Error('UNAUTHORIZED_OWNER');
+      }
+
       let nextAssignmentStatus = assignment.status;
       let nextDonationStatus = assignment.donation.status;
+      let operation: DonationOperation | null = null;
+      let auditAction = '';
+
       const updates: Prisma.VolunteerAssignmentUpdateInput = {};
       const donationUpdates: Prisma.DonationUpdateInput = {};
       let isCompleted = false;
 
       if (action === 'START_PICKUP') {
-        if (assignment.status !== 'ASSIGNED') throw new Error('Invalid state transition');
+        operation = 'START_PICKUP';
         nextAssignmentStatus = 'STARTED';
         nextDonationStatus = 'PICKUP_IN_PROGRESS';
         updates.startedAt = new Date();
+        auditAction = 'PICKUP_STARTED';
       } else if (action === 'ARRIVE_AT_DONOR') {
         if (assignment.status !== 'STARTED') throw new Error('Invalid state transition');
         nextAssignmentStatus = 'ARRIVED';
         updates.arrivedAt = new Date();
+        auditAction = 'ARRIVED_AT_DONOR';
       } else if (action === 'CONFIRM_PICKUP') {
-        if (assignment.status !== 'ARRIVED') throw new Error('Invalid state transition');
+        operation = 'CONFIRM_PICKUP';
         nextAssignmentStatus = 'ARRIVED';
         nextDonationStatus = 'PICKED_UP';
         updates.pickupConfirmedAt = new Date();
+        auditAction = 'PICKUP_CONFIRMED';
       } else if (action === 'START_DELIVERY') {
-        if (assignment.donation.status !== 'PICKED_UP') throw new Error('Invalid state transition');
+        operation = 'START_DELIVERY';
         nextDonationStatus = 'DELIVERY_IN_PROGRESS';
         updates.deliveryStartedAt = new Date();
+        auditAction = 'DELIVERY_STARTED';
       } else if (action === 'CONFIRM_DELIVERY') {
-        if (assignment.donation.status !== 'DELIVERY_IN_PROGRESS') throw new Error('Invalid state transition');
+        operation = 'CONFIRM_DELIVERY';
         nextAssignmentStatus = 'COMPLETED';
         nextDonationStatus = 'COMPLETED';
         updates.deliveryConfirmedAt = new Date();
         isCompleted = true;
+        auditAction = 'DONATION_COMPLETED';
 
         const weightKg = parseFloat(assignment.donation.quantity) || 10.0;
         const category = assignment.donation.foodCategory.toLowerCase();
@@ -430,6 +498,14 @@ export const donationService = {
         });
       } else {
         throw new Error('Unknown action');
+      }
+
+      if (operation) {
+        validateStateTransition(assignment.donation.status, nextDonationStatus, operation, {
+          actorRole: user.role,
+          actorId: userId,
+          isOwner,
+        });
       }
 
       await tx.volunteerAssignment.update({
@@ -458,6 +534,26 @@ export const donationService = {
         },
       });
 
+      await auditService.log(tx, {
+        userId,
+        role: user.role,
+        action: auditAction,
+        entityType: 'Donation',
+        entityId: assignment.donationId,
+        previousValues: { status: assignment.donation.status },
+        newValues: { status: nextDonationStatus },
+      });
+
+      if (action === 'CONFIRM_DELIVERY') {
+        await auditService.log(tx, {
+          userId,
+          role: user.role,
+          action: 'DELIVERY_CONFIRMED',
+          entityType: 'Donation',
+          entityId: assignment.donationId,
+        });
+      }
+
       return { 
         nextDonationStatus, 
         isCompleted, 
@@ -484,6 +580,7 @@ export const donationService = {
       const user = await tx.user.findUnique({ where: { id: userId } });
       if (!user) throw new Error('User not found');
 
+      let isOwner = false;
       if (user.role === 'NGO') {
         const ngo = await tx.nGOProfile.findUnique({
           where: { userId },
@@ -491,11 +588,14 @@ export const donationService = {
         if (!ngo || donation.acceptedNgoId !== ngo.id) {
           throw new Error('This donation is not assigned to your NGO.');
         }
+        isOwner = true;
       }
 
-      if (donation.status === 'COMPLETED' || donation.status === 'CANCELLED' || donation.status === 'EXPIRED') {
-        throw new Error(`Cannot divert a donation with status ${donation.status}`);
-      }
+      validateStateTransition(donation.status, 'EXPIRED', 'DIVERT', {
+        actorRole: user.role,
+        actorId: userId,
+        isOwner: user.role === 'ADMIN' ? true : isOwner,
+      });
 
       const parsedWeight = parseFloat(donation.quantity.replace(/[^\d.]/g, ''));
       const weightKg = isNaN(parsedWeight) || parsedWeight <= 0 ? 10.0 : parsedWeight;
@@ -520,14 +620,14 @@ export const donationService = {
         },
       });
 
-      await tx.auditLog.create({
-        data: {
-          userId,
-          action: 'DIVERT_TO_BIOGAS',
-          entityType: 'Donation',
-          entityId: donationId,
-          newValues: JSON.stringify({ status: 'EXPIRED', cancelReason: `Spoiled / Diverted to Biogas Recovery: ${reason}` }),
-        },
+      await auditService.log(tx, {
+        userId,
+        role: user.role,
+        action: 'DONATION_EXPIRED',
+        entityType: 'Donation',
+        entityId: donationId,
+        previousValues: { status: donation.status },
+        newValues: { status: 'EXPIRED', cancelReason: `Spoiled / Diverted to Biogas Recovery: ${reason}` },
       });
 
       const co2EquivalentKg = weightKg * 1.8;

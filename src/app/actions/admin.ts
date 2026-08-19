@@ -6,16 +6,18 @@ import { revalidatePath } from 'next/cache';
 
 export async function getPendingNgos() {
   const session = await getSession();
-  if (!session) throw new Error('Unauthorized');
+  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getPendingNgos();
 }
 
 export async function verifyNgo(ngoId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: 'Unauthorized' };
+  if (!session || session.role !== 'ADMIN') {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
-    await adminService.verifyNgo(ngoId);
+    await adminService.verifyNgo(session.userId, ngoId);
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
@@ -27,10 +29,12 @@ export async function verifyNgo(ngoId: string) {
 
 export async function rejectNgo(ngoId: string, reason: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: 'Unauthorized' };
+  if (!session || session.role !== 'ADMIN') {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
-    await adminService.rejectNgo(ngoId, reason);
+    await adminService.rejectNgo(session.userId, ngoId, reason);
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
@@ -41,6 +45,11 @@ export async function rejectNgo(ngoId: string, reason: string) {
 }
 
 export async function getAdminStats() {
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    throw new Error('Unauthorized');
+  }
+
   try {
     return await adminService.getAdminStats();
   } catch (error) {
@@ -63,18 +72,26 @@ export async function getAdminStats() {
 }
 
 export async function getAllDonors() {
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getAllDonors();
 }
 
 export async function getAllNgos() {
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getAllNgos();
 }
 
 export async function getAllVolunteers() {
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getAllVolunteers();
 }
 
 export async function getAllDonations() {
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getAllDonations();
 }
 
@@ -96,3 +113,4 @@ export async function forceExpireDonation(donationId: string) {
     return { success: false, error: message };
   }
 }
+

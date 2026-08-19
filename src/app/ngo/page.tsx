@@ -25,7 +25,7 @@ export default async function NgoDashboard() {
   }
 
   const availableDonations = await getNearbyAvailableDonations();
-  let diagnostics: any[] = [];
+  let diagnostics: Awaited<ReturnType<typeof getNearbyDonationsDiagnostics>> = [];
   if (availableDonations.length === 0) {
     diagnostics = await getNearbyDonationsDiagnostics();
   }
