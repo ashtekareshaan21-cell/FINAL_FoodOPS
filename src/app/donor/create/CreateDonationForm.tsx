@@ -9,13 +9,13 @@ import MapPreview from '@/components/Maps/MapPreview';
 interface AuditResult {
   id: string;
   status: string;
-  foodCategory?: string;
-  estimatedServings?: number;
-  estimatedQuantityKg?: number;
+  foodCategory?: string | null;
+  estimatedServings?: number | null;
+  estimatedQuantityKg?: number | null;
   packagingObservation?: string | null;
   visualObservations?: string[] | null;
   warnings?: string[] | null;
-  confidence?: number;
+  confidence?: number | null;
 }
 
 export default function CreateDonationForm() {
@@ -77,8 +77,8 @@ export default function CreateDonationForm() {
     try {
       const res = await analyzeListingAction(base64Image, mimeType);
       if (res.success) {
-        setAuditId(res.auditId);
-        setAuditResult(res.audit);
+        setAuditId(res.auditId ?? null);
+        setAuditResult((res.audit as unknown as AuditResult) ?? null);
       } else {
         setAuditError(res.error || 'AI analysis failed.');
       }
@@ -293,10 +293,10 @@ export default function CreateDonationForm() {
                         <p className="text-[10px] text-zinc-400 font-semibold uppercase">Category Suggestion</p>
                         <p className="font-semibold text-zinc-900 dark:text-zinc-100 capitalize mt-0.5">{auditResult.foodCategory}</p>
                       </div>
-                      {foodCategory !== auditResult.foodCategory && (
+                      {foodCategory !== (auditResult.foodCategory || 'mixed') && (
                         <button
                           type="button"
-                          onClick={() => setFoodCategory(auditResult.foodCategory)}
+                          onClick={() => setFoodCategory(auditResult.foodCategory || 'mixed')}
                           className="px-2 py-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded transition-colors dark:bg-emerald-950/50 dark:text-emerald-400 dark:hover:bg-emerald-900/50 cursor-pointer"
                         >
                           Apply
@@ -310,10 +310,10 @@ export default function CreateDonationForm() {
                         <p className="text-[10px] text-zinc-400 font-semibold uppercase">Servings Suggestion</p>
                         <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">{auditResult.estimatedServings} servings</p>
                       </div>
-                      {String(estimatedServings) !== String(auditResult.estimatedServings) && (
+                      {String(estimatedServings) !== String(auditResult.estimatedServings ?? '') && (
                         <button
                           type="button"
-                          onClick={() => setEstimatedServings(String(auditResult.estimatedServings))}
+                          onClick={() => setEstimatedServings(String(auditResult.estimatedServings ?? ''))}
                           className="px-2 py-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded transition-colors dark:bg-emerald-950/50 dark:text-emerald-400 dark:hover:bg-emerald-900/50 cursor-pointer"
                         >
                           Apply
@@ -327,11 +327,11 @@ export default function CreateDonationForm() {
                         <p className="text-[10px] text-zinc-400 font-semibold uppercase">Quantity Suggestion</p>
                         <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">{auditResult.estimatedQuantityKg} kg</p>
                       </div>
-                      {(quantity !== String(auditResult.estimatedQuantityKg) || quantityUnit !== 'KG') && (
+                      {(quantity !== String(auditResult.estimatedQuantityKg ?? '') || quantityUnit !== 'KG') && (
                         <button
                           type="button"
                           onClick={() => {
-                            setQuantity(String(auditResult.estimatedQuantityKg));
+                            setQuantity(String(auditResult.estimatedQuantityKg ?? ''));
                             setQuantityUnit('KG');
                           }}
                           className="px-2 py-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded transition-colors dark:bg-emerald-950/50 dark:text-emerald-400 dark:hover:bg-emerald-900/50 cursor-pointer"
