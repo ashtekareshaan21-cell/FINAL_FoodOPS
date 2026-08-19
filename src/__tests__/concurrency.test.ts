@@ -45,6 +45,11 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
     } catch {}
 
     console.log('Initializing isolated test database...');
+    // Sync provider in schema.prisma with test database protocol
+    execSync('node prisma/prepare.js', {
+      env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+      stdio: 'ignore',
+    });
     // Generate test database tables
     execSync('npx prisma db push --accept-data-loss', {
       env: { ...process.env, DATABASE_URL: TEST_DB_URL },
@@ -571,5 +576,11 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
       where: { action: 'ORGANIC_RECOVERY', entityId: donation.id },
     });
     expect(auditRes).not.toBeNull();
+  });
+
+  afterAll(async () => {
+    // Restore the database schema provider to match local .env settings
+    execSync('node prisma/prepare.js', { stdio: 'ignore' });
+    execSync('npx prisma generate', { stdio: 'ignore' });
   });
 });

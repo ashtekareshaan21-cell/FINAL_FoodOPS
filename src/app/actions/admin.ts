@@ -45,11 +45,6 @@ export async function rejectNgo(ngoId: string, reason: string) {
 }
 
 export async function getAdminStats() {
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    throw new Error('Unauthorized');
-  }
-
   try {
     return await adminService.getAdminStats();
   } catch (error) {

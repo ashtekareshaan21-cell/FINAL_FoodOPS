@@ -18,7 +18,9 @@ export default async function ActiveRescuesPage() {
     where: { userId: session.userId },
   });
 
-  if (!ngo) throw new Error('NGO not found');
+  if (!ngo) {
+    redirect('/login');
+  }
 
   const activeRescues = await getNgoAcceptedDonations();
   const volunteers = await getNgoVolunteers();

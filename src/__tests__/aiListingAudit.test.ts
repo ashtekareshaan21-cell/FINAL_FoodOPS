@@ -50,6 +50,12 @@ describe('AI Listing Audit Flow & Security Constraints', () => {
     // Switch to dedicated test database
     process.env.DATABASE_URL = TEST_DB_URL;
 
+    // Sync provider in schema.prisma with test database protocol
+    execSync('node prisma/prepare.js', {
+      env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+      stdio: 'ignore',
+    });
+
     // Run migrations to prepare schema
     execSync('npx prisma db push --accept-data-loss', {
       env: { ...process.env, DATABASE_URL: TEST_DB_URL },
@@ -371,5 +377,11 @@ describe('AI Listing Audit Flow & Security Constraints', () => {
       expect(content).toContain('AI estimates visual characteristics and quantity. It does not detect pathogens or certify food as safe for consumption.');
       expect(content).toContain('This confidence score represents the visual characteristics analysis only. It does not reflect food-safety certification.');
     });
+  });
+
+  afterAll(async () => {
+    // Restore the database schema provider to match local .env settings
+    execSync('node prisma/prepare.js', { stdio: 'ignore' });
+    execSync('npx prisma generate', { stdio: 'ignore' });
   });
 });

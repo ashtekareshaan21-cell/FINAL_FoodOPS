@@ -153,7 +153,7 @@ export default async function DonorDashboard() {
   });
 
   if (!donor) {
-    throw new Error('Donor profile not found');
+    redirect('/login');
   }
 
   const donations = await getDonorDonations();

@@ -21,7 +21,7 @@ export default async function NgoDashboard() {
   });
 
   if (!ngo) {
-    throw new Error('NGO profile not found');
+    redirect('/login');
   }
 
   const availableDonations = await getNearbyAvailableDonations();

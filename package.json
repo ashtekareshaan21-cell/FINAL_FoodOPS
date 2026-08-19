@@ -7,7 +7,7 @@
     "build": "node prisma/prepare.js && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run",
+    "test": "node prisma/prepare-test.js && vitest run",
     "db:seed": "node prisma/seed.js",
     "db:reset-dev": "node prisma/reset-dev.js"
   },

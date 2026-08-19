@@ -17,7 +17,9 @@ export default async function VolunteerDashboard() {
     where: { userId: session.userId },
   });
 
-  if (!volunteer) throw new Error('Volunteer profile not found');
+  if (!volunteer) {
+    redirect('/login');
+  }
 
   const assignments = await getVolunteerAssignments();
 
