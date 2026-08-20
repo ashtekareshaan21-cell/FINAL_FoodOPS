@@ -1,7 +1,11 @@
 import { cookies } from 'next/headers';
 import * as crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_foodops';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET environment variable is required in production.');
+}
+const effectiveSecret = JWT_SECRET || 'fallback_secret_for_foodops';
 
 interface JWTPayload {
   userId: string;
@@ -37,7 +41,7 @@ export function signToken(payload: Omit<JWTPayload, 'exp'>, expiresInSeconds = 8
 
   const signatureInput = `${encodedHeader}.${encodedPayload}`;
   const signature = crypto
-    .createHmac('sha256', JWT_SECRET)
+    .createHmac('sha256', effectiveSecret)
     .update(signatureInput)
     .digest();
   
@@ -56,7 +60,7 @@ export function verifyToken(token: string): JWTPayload | null {
 
     const expectedSignature = base64UrlEncode(
       crypto
-        .createHmac('sha256', JWT_SECRET)
+        .createHmac('sha256', effectiveSecret)
         .update(signatureInput)
         .digest()
     );
