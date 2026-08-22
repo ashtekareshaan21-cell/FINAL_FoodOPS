@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth';
 import { getAllDonors, getAllNgos, getAllVolunteers, getAllDonations } from '@/app/actions/admin';
 import Navbar from '@/components/Navbar';
 import ForceExpireButton from './ForceExpireButton';
+import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 
 export default async function AdminDataPage() {
   const session = await getSession();
@@ -18,7 +19,8 @@ export default async function AdminDataPage() {
   const donations = await getAllDonations();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-transparent flex flex-col relative">
+      <FoodOpsBackground variant="admin" />
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 animate-fade-in">

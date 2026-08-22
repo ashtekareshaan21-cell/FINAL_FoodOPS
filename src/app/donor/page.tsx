@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 import { getDonorDonations } from '@/app/actions/donations';
 import Navbar from '@/components/Navbar';
 import DonorDonationsList from './DonorDonationsList';
+import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 
 const STATUS_STYLING: Record<string, { bg: string; label: string; dot: string }> = {
   AVAILABLE: { 
@@ -159,7 +160,8 @@ export default async function DonorDashboard() {
   const donations = await getDonorDonations();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-transparent flex flex-col relative">
+      <FoodOpsBackground variant="dashboard" />
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">

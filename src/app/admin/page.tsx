@@ -6,6 +6,7 @@ import { getPendingNgos, getAdminStats, verifyNgo, rejectNgo } from '@/app/actio
 import PendingNgoList from './PendingNgoList';
 import AdminMetrics from './AdminMetrics';
 import Navbar from '@/components/Navbar';
+import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 
 export default async function AdminPage() {
   const session = await getSession();
@@ -17,7 +18,8 @@ export default async function AdminPage() {
   const stats = await getAdminStats();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-transparent flex flex-col relative">
+      <FoodOpsBackground variant="admin" />
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">

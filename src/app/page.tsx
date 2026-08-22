@@ -7,6 +7,7 @@ import HeroSection from '@/components/Home/HeroSection';
 import LifecyclePipeline from '@/components/Home/LifecyclePipeline';
 import EsgMetrics from '@/components/Home/EsgMetrics';
 import RoadmapSection from '@/components/Home/RoadmapSection';
+import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 
 export default async function Home() {
   let stats = {
@@ -25,7 +26,8 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground transition-colors duration-300">
+    <div className="flex flex-col min-h-screen bg-transparent text-foreground transition-colors duration-300 relative">
+      <FoodOpsBackground variant="hero" />
       <Navbar />
 
       <main className="flex-grow">

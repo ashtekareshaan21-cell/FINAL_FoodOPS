@@ -6,12 +6,12 @@ import { motion, useReducedMotion } from 'motion/react';
 const PIPELINE_STAGES = [
   { label: '1. SURPLUS', icon: '🏨', desc: 'Listing declared' },
   { label: '2. AI AUDIT', icon: '🤖', desc: 'Gemini visual scan' },
-  { label: '3. SMART MATCH', icon: '📍', desc: 'Radius checks' },
-  { label: '4. ATOMIC CLAIM', icon: '🔒', desc: 'Concurrency lock' },
-  { label: '5. PICKUP', icon: '🚴', desc: 'Volunteer routed' },
-  { label: '6. SECURE OTP', icon: '🔑', desc: 'Handover check' },
+  { label: '3. NGO MATCH', icon: '📍', desc: 'Radius checks' },
+  { label: '4. CLAIM', icon: '🔒', desc: 'Atomic db lock' },
+  { label: '5. VOLUNTEER PICKUP', icon: '🚴', desc: 'Rider dispatched' },
+  { label: '6. SECURE HANDOVER', icon: '🔑', desc: 'OTP verification' },
   { label: '7. DELIVERY', icon: '🍽️', desc: 'Redistribution' },
-  { label: '8. RECOVERY', icon: '♻️', desc: 'Biogas diversion' },
+  { label: '8. IMPACT', icon: '♻️', desc: 'Carbon registration' },
 ];
 
 export default function LifecyclePipeline() {
@@ -47,7 +47,7 @@ export default function LifecyclePipeline() {
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-      <div className="bg-surface border border-border rounded-lg p-8 md:p-10 shadow-sm relative overflow-hidden">
+      <div className="bg-surface/50 backdrop-blur-md border border-border rounded-lg p-8 md:p-10 shadow-sm relative overflow-hidden">
         <div className="text-center mb-8">
           <span className="text-[10px] font-bold text-muted-light uppercase tracking-widest">Platform Core Architecture</span>
           <h3 className="text-lg font-bold text-foreground mt-1">End-To-End Operational Routing</h3>

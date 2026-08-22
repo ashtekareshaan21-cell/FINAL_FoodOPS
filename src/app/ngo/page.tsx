@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import AcceptButton from './AcceptButton';
 import NgoSettings from './NgoSettings';
 import NearbyDonationsList from './NearbyDonationsList';
+import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 
 export default async function NgoDashboard() {
   const session = await getSession();
@@ -31,7 +32,8 @@ export default async function NgoDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-transparent flex flex-col relative">
+      <FoodOpsBackground variant="dashboard" />
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">

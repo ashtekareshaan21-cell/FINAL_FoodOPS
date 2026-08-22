@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import CreateDonationForm from './CreateDonationForm';
 import Navbar from '@/components/Navbar';
+import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 
 export default async function CreateDonationPage() {
   const session = await getSession();
@@ -23,7 +24,8 @@ export default async function CreateDonationPage() {
   });
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col">
+    <div className="min-h-screen bg-transparent flex flex-col relative">
+      <FoodOpsBackground variant="dashboard" />
       <Navbar />
 
       <main className="flex-grow max-w-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">

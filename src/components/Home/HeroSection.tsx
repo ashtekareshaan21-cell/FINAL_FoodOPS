@@ -28,11 +28,6 @@ export default function HeroSection() {
 
   return (
     <section className="relative overflow-hidden pt-24 pb-20 sm:pt-32 sm:pb-28">
-      {/* Ambient Climate-Tech Background Decorations */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 opacity-30 pointer-events-none -z-10">
-        <div className="absolute -top-40 left-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-emerald-500/10 to-teal-400/5 blur-[120px]" />
-        <div className="absolute -top-30 right-1/4 w-[500px] h-[500px] rounded-full bg-gradient-to-bl from-emerald-600/10 to-teal-500/5 blur-[100px]" />
-      </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div 
