@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, useReducedMotion, AnimatePresence } from 'motion/react';
 
 export interface PendingNgoItem {
   id: string;
@@ -33,6 +34,28 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
   const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
   const [activeRejectMap, setActiveRejectMap] = useState<Record<string, boolean>>({});
 
+  const shouldReduceMotion = useReducedMotion();
+  const yOffset = shouldReduceMotion ? 0 : 10;
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: shouldReduceMotion ? 0 : 0.05,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: yOffset },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.35, ease: 'easeOut' as const },
+    },
+  };
+
   const handleApprove = async (ngoId: string) => {
     setLoadingMap(prev => ({ ...prev, [ngoId]: true }));
     setErrorMap(prev => ({ ...prev, [ngoId]: null }));
@@ -57,7 +80,6 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
     setLoadingMap(prev => ({ ...prev, [ngoId]: false }));
 
     if (res.success) {
-      // Reset state
       setActiveRejectMap(prev => ({ ...prev, [ngoId]: false }));
       router.refresh();
     } else {
@@ -68,102 +90,125 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
   return (
     <div className="space-y-6">
       {pendingNgos.length === 0 ? (
-        <div className="text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-12 shadow-sm">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <div className="text-center bg-surface border border-border rounded-lg p-12 shadow-sm animate-pulse">
+          <p className="text-sm text-muted-text font-medium">
             No pending NGO verification requests.
           </p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-          <ul role="list" className="divide-y divide-zinc-200 dark:divide-zinc-800">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm"
+        >
+          <ul role="list" className="divide-y divide-border">
             {pendingNgos.map((ngo) => {
               const error = errorMap[ngo.id];
               const loading = loadingMap[ngo.id];
               const isRejectActive = activeRejectMap[ngo.id];
 
               return (
-                <li key={ngo.id} className="p-6">
+                <motion.li 
+                  key={ngo.id} 
+                  variants={itemVariants}
+                  className="p-6"
+                >
                   <div className="flex flex-col lg:flex-row justify-between gap-6">
                     {/* Organization details */}
                     <div className="flex-grow space-y-3">
                       <div>
-                        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                        <h3 className="text-lg font-bold text-foreground">
                           {ngo.organizationName}
                         </h3>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">
+                        <p className="text-xs text-muted-light font-mono mt-0.5">
                           NGO ID: {ngo.id} | Email: {ngo.user.email}
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-150 dark:border-zinc-850">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs bg-surface-muted p-4 rounded-md border border-border font-medium text-muted-text">
                         <div>
-                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">FSSAI License #</p>
-                          <p className="font-semibold text-zinc-900 dark:text-zinc-100 font-mono mt-1">
+                          <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">FSSAI License #</p>
+                          <p className="font-semibold text-foreground font-mono mt-1">
                             {ngo.registrationNumber}
                           </p>
                         </div>
                         <div>
-                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Operational Info</p>
-                          <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                          <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Operational Info</p>
+                          <p className="font-semibold text-foreground mt-1">
                             Radius: {ngo.serviceRadiusKm} km
                           </p>
-                          <p className="text-[10px] text-zinc-400 font-mono">
+                          <p className="text-[10px] text-muted-light font-mono mt-0.5">
                             Coords: {ngo.baseLatitude.toFixed(6)}, {ngo.baseLongitude.toFixed(6)}
                           </p>
                         </div>
                         <div>
-                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Availability & Status</p>
-                          <span className={`inline-block px-2 py-0.5 mt-1 rounded text-[10px] font-bold ${
+                          <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Availability</p>
+                          <span className={`inline-block px-2 py-0.5 mt-1 rounded-sm text-[10px] font-bold ${
                             ngo.availability === 'AVAILABLE'
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900/50'
+                              ? 'bg-success-bg text-success border border-success-border'
                               : ngo.availability === 'BUSY'
-                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-250 dark:border-amber-900/50'
-                              : 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 border border-red-250 dark:border-red-900/50'
+                              ? 'bg-warning-bg text-warning border border-warning-border'
+                              : 'bg-danger-bg text-danger border border-danger-border'
                           }`}>
                             {ngo.availability || 'AVAILABLE'}
                           </span>
                         </div>
                         <div>
-                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Contact Person</p>
-                          <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                          <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Contact Person</p>
+                          <p className="font-semibold text-foreground mt-1">
                             {ngo.contactPerson} ({ngo.contactPhone})
                           </p>
                         </div>
-                        <div className="sm:col-span-2 md:col-span-4 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Operational Address</p>
-                          <p className="text-zinc-900 dark:text-zinc-200 mt-0.5">{ngo.baseAddress}</p>
+                        <div className="sm:col-span-2 md:col-span-4 pt-2 border-t border-border mt-1">
+                          <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Operational Address</p>
+                          <p className="text-foreground mt-0.5 leading-relaxed">{ngo.baseAddress}</p>
                         </div>
                         <div className="sm:col-span-2 md:col-span-4 pt-1">
-                          <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Accepted Food Types</p>
-                          <p className="text-zinc-900 dark:text-zinc-200 mt-0.5 font-mono text-[11px]">{ngo.acceptedFoodTypes || 'None specified'}</p>
+                          <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Accepted Food Types</p>
+                          <p className="text-foreground mt-0.5 font-mono text-[11px]">{ngo.acceptedFoodTypes || 'None specified'}</p>
                         </div>
                       </div>
 
-                      {isRejectActive && (
-                        <div className="mt-4 pt-2">
-                          <label className="block text-xs font-semibold text-red-600 mb-1">
-                            Rejection Reason
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full px-3 py-1.5 border border-red-300 rounded text-xs focus:ring-red-500 focus:border-red-500 dark:bg-zinc-950 dark:border-red-900 dark:text-zinc-200"
-                            value={rejectionReasons[ngo.id] || ''}
-                            onChange={(e) =>
-                              setRejectionReasons(prev => ({ ...prev, [ngo.id]: e.target.value }))
-                            }
-                            placeholder="Enter description why FSSAI validation failed..."
-                          />
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {isRejectActive && (
+                          <motion.div 
+                            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                            className="mt-4 pt-2 overflow-hidden"
+                          >
+                            <label className="label-premium text-danger">
+                              Rejection Reason Notice
+                            </label>
+                            <input
+                              type="text"
+                              className="input-premium border-danger/40 focus:ring-danger focus:border-danger"
+                              value={rejectionReasons[ngo.id] || ''}
+                              onChange={(e) =>
+                                setRejectionReasons(prev => ({ ...prev, [ngo.id]: e.target.value }))
+                              }
+                              placeholder="Enter description why FSSAI validation failed..."
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex-shrink-0 flex flex-col justify-center min-w-[200px] border-t lg:border-t-0 lg:border-l border-zinc-200 dark:border-zinc-800 pt-4 lg:pt-0 lg:pl-6 gap-2">
-                      {error && (
-                        <div className="p-2 rounded bg-red-50 border border-red-200 text-red-600 text-[10px] dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400">
-                          {error}
-                        </div>
-                      )}
+                    <div className="flex-shrink-0 flex flex-col justify-center min-w-[200px] border-t lg:border-t-0 lg:border-l border-border pt-4 lg:pt-0 lg:pl-6 gap-2">
+                      <AnimatePresence mode="wait">
+                        {error && (
+                          <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="p-3 rounded-sm bg-danger-bg border border-danger-border text-danger text-xs font-semibold"
+                          >
+                            {error}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
                       {!isRejectActive ? (
                         <>
@@ -171,7 +216,7 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
                             type="button"
                             disabled={loading}
                             onClick={() => handleApprove(ngo.id)}
-                            className="w-full py-2 px-4 border border-transparent rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors"
+                            className="w-full btn-primary py-2.5 hover:scale-[1.01]"
                           >
                             ✓ Approve NGO Partner
                           </button>
@@ -179,7 +224,7 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
                             type="button"
                             disabled={loading}
                             onClick={() => setActiveRejectMap(prev => ({ ...prev, [ngo.id]: true }))}
-                            className="w-full py-2 px-4 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 rounded text-sm transition-colors"
+                            className="w-full btn-secondary py-2.5 hover:scale-[1.01]"
                           >
                             ✕ Reject License
                           </button>
@@ -190,7 +235,7 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
                             type="button"
                             disabled={loading}
                             onClick={() => handleReject(ngo.id)}
-                            className="w-full py-2 px-4 border border-transparent rounded bg-red-600 hover:bg-red-700 text-white font-semibold text-sm transition-colors"
+                            className="w-full btn-primary py-2.5 hover:scale-[1.01] bg-danger hover:bg-danger/95 shadow-none"
                           >
                             Confirm Rejection
                           </button>
@@ -198,7 +243,7 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
                             type="button"
                             disabled={loading}
                             onClick={() => setActiveRejectMap(prev => ({ ...prev, [ngo.id]: false }))}
-                            className="w-full py-2 px-4 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 rounded text-sm transition-colors"
+                            className="w-full btn-secondary py-2.5 hover:scale-[1.01]"
                           >
                             Cancel
                           </button>
@@ -206,11 +251,11 @@ export default function PendingNgoList({ pendingNgos, verifyNgo, rejectNgo }: Pe
                       )}
                     </div>
                   </div>
-                </li>
+                </motion.li>
               );
             })}
           </ul>
-        </div>
+        </motion.div>
       )}
     </div>
   );

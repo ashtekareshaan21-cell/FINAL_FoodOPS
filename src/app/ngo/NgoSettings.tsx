@@ -107,13 +107,12 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm flex flex-col justify-between space-y-6">
+    <div className="bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col justify-between space-y-6">
       <div>
-        <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4 mb-4">
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Operational Settings</h2>
+        <div className="flex items-center justify-between border-b border-border pb-4 mb-4">
+          <h2 className="text-lg font-bold text-foreground">Operational Settings</h2>
           <button
             onClick={() => {
-              // Reset values to props before opening
               setBaseAddress(ngo.baseAddress);
               setBaseLat(ngo.baseLatitude);
               setBaseLng(ngo.baseLongitude);
@@ -124,7 +123,7 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
               );
               setIsEditing(true);
             }}
-            className="px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/40 rounded-lg border border-emerald-200 dark:border-emerald-900/50 transition-colors"
+            className="btn-secondary text-[11px] font-bold px-3 py-1.5 hover:scale-[1.01]"
           >
             ✏️ Edit Settings
           </button>
@@ -134,17 +133,17 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
         <div className="space-y-4 text-xs">
           {/* Availability Status */}
           <div>
-            <span className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block text-[10px] mb-1">
+            <span className="font-bold text-muted uppercase tracking-wider block text-[10px] mb-1">
               Rescue Availability
             </span>
             <div className="flex items-center gap-2">
               <span
                 className={`px-3 py-1 rounded-full font-semibold border ${
                   ngo.availability === 'AVAILABLE'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-400 dark:border-emerald-900/30'
+                    ? 'bg-success-bg border-success-border text-success'
                     : ngo.availability === 'BUSY'
-                    ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/25 dark:text-amber-400 dark:border-amber-900/30'
-                    : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950/25 dark:text-red-400 dark:border-red-900/30'
+                    ? 'bg-warning-bg border-warning-border text-warning'
+                    : 'bg-danger-bg border-danger-border text-danger'
                 }`}
               >
                 {ngo.availability === 'AVAILABLE'
@@ -153,7 +152,7 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                   ? '🟡 Busy'
                   : '🔴 Offline'}
               </span>
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+              <span className="text-[10px] text-muted-light font-mono">
                 Last updated: {formatTimestamp(ngo.availabilityUpdatedAt)}
               </span>
             </div>
@@ -161,30 +160,30 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
 
           {/* Operational Address */}
           <div>
-            <span className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block text-[10px] mb-1">
+            <span className="font-bold text-muted uppercase tracking-wider block text-[10px] mb-1">
               Operational Address
             </span>
-            <p className="font-medium text-zinc-800 dark:text-zinc-200 break-words">
+            <p className="font-medium text-foreground break-words">
               {ngo.baseAddress}
             </p>
-            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">
+            <p className="text-[10px] text-muted-light font-mono mt-0.5">
               Coordinates: {ngo.baseLatitude.toFixed(6)}, {ngo.baseLongitude.toFixed(6)}
             </p>
           </div>
 
           {/* Service Radius */}
           <div>
-            <span className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block text-[10px] mb-1">
+            <span className="font-bold text-muted uppercase tracking-wider block text-[10px] mb-1">
               Active Service Radius
             </span>
-            <p className="font-medium text-zinc-800 dark:text-zinc-200">
+            <p className="font-medium text-foreground">
               {ngo.serviceRadiusKm} km
             </p>
           </div>
 
           {/* Accepted Categories */}
           <div>
-            <span className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block text-[10px] mb-1">
+            <span className="font-bold text-muted uppercase tracking-wider block text-[10px] mb-1">
               Accepted Food Categories
             </span>
             {currentAcceptedLabels.length > 0 ? (
@@ -192,14 +191,14 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                 {currentAcceptedLabels.map((lbl, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700"
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-sm text-[10px] font-semibold bg-surface-muted text-foreground border border-border"
                   >
                     {lbl}
                   </span>
                 ))}
               </div>
             ) : (
-              <p className="text-zinc-400 italic">None selected</p>
+              <p className="text-muted-light italic">None selected</p>
             )}
           </div>
         </div>
@@ -208,13 +207,13 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
       {/* Editor Modal */}
       {isEditing && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col my-8">
+          <div className="bg-surface rounded-lg shadow-2xl w-full max-w-2xl border border-border overflow-hidden flex flex-col my-8 animate-fade-in">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">🛠️ Edit Operational Settings</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
+              <h2 className="text-lg font-bold text-foreground">🛠️ Edit Operational Settings</h2>
               <button
                 onClick={() => setIsEditing(false)}
-                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1"
+                className="text-muted hover:text-foreground transition-colors p-1"
                 aria-label="Close"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -226,17 +225,17 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
             {/* Form Content */}
             <form onSubmit={handleSave} className="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
               {error && (
-                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400">
+                <div className="p-3 rounded-sm bg-danger-bg border border-danger-border text-xs text-danger font-semibold">
                   {error}
                 </div>
               )}
 
               {/* Operational Address Selector */}
-              <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-3">
+              <div className="bg-surface-muted p-4 rounded-md border border-border space-y-3">
                 <div>
-                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 block">Operational Address</span>
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 block">
-                    This is where your NGO usually operates from. Nearby food rescue requests will be calculated from this location.
+                  <span className="text-xs font-bold text-foreground block">Operational Address</span>
+                  <span className="text-[10px] text-muted-text mt-0.5 block">
+                    Nearby food rescue requests will be calculated relative to this address coordinates baseline.
                   </span>
                 </div>
 
@@ -244,17 +243,17 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 break-words">
+                        <p className="text-xs font-semibold text-foreground break-words">
                           {baseAddress}
                         </p>
-                        <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                        <p className="text-[10px] text-muted-light font-mono mt-0.5">
                           {baseLat.toFixed(6)}, {baseLng.toFixed(6)}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setShowMapPicker(true)}
-                        className="flex-shrink-0 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold transition-colors"
+                        className="flex-shrink-0 text-xs text-primary font-bold hover:underline"
                       >
                         Change
                       </button>
@@ -265,7 +264,7 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                   <button
                     type="button"
                     onClick={() => setShowMapPicker(true)}
-                    className="w-full py-2.5 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:border-emerald-500 hover:text-emerald-600 dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 border-2 border-dashed border-border rounded-md text-xs font-semibold text-muted hover:border-primary/45 hover:text-primary transition-colors flex items-center justify-center gap-2 bg-surface cursor-pointer"
                   >
                     Select Location
                   </button>
@@ -274,7 +273,7 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
 
               {/* Service Radius Predefined Buttons */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wide mb-2">
                   Active Service Radius (km)
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -285,10 +284,10 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                         key={r}
                         type="button"
                         onClick={() => setServiceRadius(r)}
-                        className={`py-2 px-3 text-center text-sm font-semibold rounded-lg border transition-all ${
+                        className={`py-2 px-3 text-center text-xs font-semibold rounded-sm border transition-all cursor-pointer ${
                           selected
-                            ? 'bg-emerald-600 border-transparent text-white shadow-sm'
-                            : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300'
+                            ? 'bg-primary border-transparent text-primary-foreground shadow-sm font-bold'
+                            : 'bg-surface border-border text-foreground hover:bg-surface-muted'
                         }`}
                       >
                         {r} km
@@ -298,15 +297,15 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                 </div>
               </div>
 
-              {/* Availability Enum selector */}
+              {/* Availability Status */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wide mb-2">
                   Rescue Availability Status
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {(
                     [
-                      { id: 'AVAILABLE', label: '🟢 Available for Rescue' },
+                      { id: 'AVAILABLE', label: '🟢 Available' },
                       { id: 'BUSY', label: '🟡 Busy / At Capacity' },
                       { id: 'OFFLINE', label: '🔴 Offline' },
                     ] as const
@@ -317,14 +316,14 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                         key={status.id}
                         type="button"
                         onClick={() => setAvailability(status.id)}
-                        className={`py-2.5 px-3 text-center text-sm font-semibold rounded-lg border transition-all ${
+                        className={`py-2.5 px-3 text-center text-xs sm:text-sm font-semibold rounded-sm border transition-all cursor-pointer ${
                           selected
                             ? status.id === 'AVAILABLE'
-                              ? 'bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/50 dark:text-emerald-400 font-bold'
+                              ? 'bg-success-bg border-success-border text-success font-bold'
                               : status.id === 'BUSY'
-                              ? 'bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/50 dark:text-amber-400 font-bold'
-                              : 'bg-red-50 border-red-300 text-red-700 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400 font-bold'
-                            : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300'
+                              ? 'bg-warning-bg border-warning-border text-warning font-bold'
+                              : 'bg-danger-bg border-danger-border text-danger font-bold'
+                            : 'bg-surface border-border text-foreground hover:bg-surface-muted'
                         }`}
                       >
                         {status.label}
@@ -336,8 +335,8 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
 
               {/* Accepted Food Categories */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
-                  Accepted Food Categories (Select at least one)
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wide mb-2">
+                  Accepted Food Categories
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {FOOD_CATEGORIES.map((type) => {
@@ -345,15 +344,15 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                     return (
                       <label
                         key={type.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-all ${
                           checked
-                            ? 'bg-emerald-50 border-emerald-300 text-emerald-950 dark:bg-emerald-950/20 dark:border-emerald-900/50 dark:text-emerald-300 font-bold'
-                            : 'bg-white border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-350 hover:bg-zinc-50'
+                            ? 'bg-success-bg border-success-border text-success font-bold'
+                            : 'bg-surface border-border text-foreground hover:bg-surface-muted'
                         }`}
                       >
                         <input
                           type="checkbox"
-                          className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600"
+                          className="rounded border-border text-primary focus:ring-primary accent-primary"
                           checked={checked}
                           onChange={() => {
                             if (checked) {
@@ -363,7 +362,7 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                             }
                           }}
                         />
-                        <span className="text-sm">{type.label}</span>
+                        <span className="text-xs font-semibold">{type.label}</span>
                       </label>
                     );
                   })}
@@ -371,19 +370,19 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex-shrink-0">
+              <div className="flex gap-2 pt-4 border-t border-border flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm font-semibold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                  className="flex-1 btn-secondary py-3 hover:scale-[1.01]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors disabled:opacity-50"
+                  className="flex-1 btn-primary py-3 hover:scale-[1.01]"
                 >
                   {loading ? 'Saving...' : 'Save Changes'}
                 </button>

@@ -6,6 +6,7 @@ import { registerDonor, registerNGO, registerVolunteer } from '@/app/actions/aut
 import Link from 'next/link';
 import LocationPicker, { SelectedLocation } from '@/components/Maps/LocationPicker';
 import MapPreview from '@/components/Maps/MapPreview';
+import { motion, useReducedMotion, AnimatePresence } from 'motion/react';
 
 interface RegisterFormProps {
   ngos: Array<{ id: string; organizationName: string }>;
@@ -13,6 +14,7 @@ interface RegisterFormProps {
 
 export default function RegisterForm({ ngos }: RegisterFormProps) {
   const router = useRouter();
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [role, setRole] = useState<'DONOR' | 'NGO' | 'VOLUNTEER'>('DONOR');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +52,28 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [locationPickerTarget, setLocationPickerTarget] = useState<'DONOR' | 'NGO'>('DONOR');
 
+  const shouldReduceMotion = useReducedMotion();
+  const yOffset = shouldReduceMotion ? 0 : 12;
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: shouldReduceMotion ? 0 : 0.05,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: yOffset },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.35, ease: 'easeOut' as const },
+    },
+  };
+
   const openLocationPicker = (target: 'DONOR' | 'NGO') => {
     setLocationPickerTarget(target);
     setShowLocationPicker(true);
@@ -69,6 +93,26 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
     setError(null);
   };
 
+  const handleStep1Submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !phoneNumber || !password) {
+      setError('Please fill in all setup credentials.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    setError(null);
+    setStep(2);
+  };
+
+  const handleRoleSelect = (selectedRole: 'DONOR' | 'NGO' | 'VOLUNTEER') => {
+    setRole(selectedRole);
+    setStep(3);
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -76,7 +120,7 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
 
     // Validate location for Donor and NGO
     if (role === 'DONOR' && (donorLat === null || donorLng === null || !donorAddress)) {
-      setError('Please select your organization location on the map.');
+      setError('Please select and confirm your organization address on the map.');
       setLoading(false);
       return;
     }
@@ -101,525 +145,619 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
     const baseData = { email, password, phoneNumber };
 
     let res;
-    if (role === 'DONOR') {
-      res = await registerDonor({
-        ...baseData,
-        organizationName: donorOrgName,
-        organizationType: donorOrgType,
-        contactPerson: donorContactPerson,
-        address: donorAddress,
-        latitude: String(donorLat),
-        longitude: String(donorLng),
-      });
-    } else if (role === 'NGO') {
-      res = await registerNGO({
-        ...baseData,
-        organizationName: ngoOrgName,
-        registrationNumber: ngoRegNum,
-        baseAddress: ngoAddress,
-        baseLatitude: String(ngoLat),
-        baseLongitude: String(ngoLng),
-        serviceRadiusKm: ngoRadius,
-        availability: ngoAvailability,
-        acceptedFoodTypes: ngoAcceptedFoodTypes,
-        contactPerson: ngoContactPerson,
-        contactPhone: ngoContactPhone,
-      });
-    } else {
-      res = await registerVolunteer({
-        ...baseData,
-        name: volName,
-        ngoId: volNgoId,
-      });
-    }
-
-    setLoading(false);
-
-    if (res.success) {
+    try {
       if (role === 'DONOR') {
-        router.push('/donor');
+        res = await registerDonor({
+          ...baseData,
+          organizationName: donorOrgName,
+          organizationType: donorOrgType,
+          contactPerson: donorContactPerson,
+          address: donorAddress,
+          latitude: String(donorLat),
+          longitude: String(donorLng),
+        });
       } else if (role === 'NGO') {
-        router.push('/ngo');
+        res = await registerNGO({
+          ...baseData,
+          organizationName: ngoOrgName,
+          registrationNumber: ngoRegNum,
+          baseAddress: ngoAddress,
+          baseLatitude: String(ngoLat),
+          baseLongitude: String(ngoLng),
+          serviceRadiusKm: ngoRadius,
+          availability: ngoAvailability,
+          acceptedFoodTypes: ngoAcceptedFoodTypes,
+          contactPerson: ngoContactPerson,
+          contactPhone: ngoContactPhone,
+        });
       } else {
-        router.push('/volunteer');
+        res = await registerVolunteer({
+          ...baseData,
+          name: volName,
+          ngoId: volNgoId,
+        });
       }
-      router.refresh();
-    } else {
-      setError(res.error || 'An error occurred during registration.');
+
+      setLoading(false);
+
+      if (res.success) {
+        if (role === 'DONOR') {
+          router.push('/donor');
+        } else if (role === 'NGO') {
+          router.push('/ngo');
+        } else {
+          router.push('/volunteer');
+        }
+        router.refresh();
+      } else {
+        setError(res.error || 'An error occurred during registration.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('A connection error occurred. Please try again.');
+      setLoading(false);
     }
   };
 
   return (
-    <div>
-      {/* Tabs */}
-      <div className="flex border-b border-zinc-200 dark:border-zinc-800 mb-8">
-        <button
-          type="button"
-          className={`flex-1 py-3 text-center font-medium border-b-2 text-sm transition-all duration-150 ${
-            role === 'DONOR'
-              ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-          }`}
-          onClick={() => setRole('DONOR')}
-        >
-          Donor
-        </button>
-        <button
-          type="button"
-          className={`flex-1 py-3 text-center font-medium border-b-2 text-sm transition-all duration-150 ${
-            role === 'NGO'
-              ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-          }`}
-          onClick={() => setRole('NGO')}
-        >
-          NGO
-        </button>
-        <button
-          type="button"
-          className={`flex-1 py-3 text-center font-medium border-b-2 text-sm transition-all duration-150 ${
-            role === 'VOLUNTEER'
-              ? 'border-emerald-600 text-emerald-600'
-              : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-          }`}
-          onClick={() => setRole('VOLUNTEER')}
-        >
-          Volunteer
-        </button>
+    <div className="space-y-6">
+      {/* Onboarding Steps Indicators */}
+      <div className="flex items-center justify-between mb-8 max-w-xs mx-auto text-[10px] font-bold uppercase tracking-widest text-muted-light">
+        <span className={`pb-1.5 border-b-2 transition-colors duration-300 ${step >= 1 ? 'border-primary text-primary font-black' : 'border-transparent'}`}>Account</span>
+        <span className="text-border">──</span>
+        <span className={`pb-1.5 border-b-2 transition-colors duration-300 ${step >= 2 ? 'border-primary text-primary font-black' : 'border-transparent'}`}>Role</span>
+        <span className="text-border">──</span>
+        <span className={`pb-1.5 border-b-2 transition-colors duration-300 ${step === 3 ? 'border-primary text-primary font-black' : 'border-transparent'}`}>Details</span>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400">
-          {error}
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="p-4 rounded-sm bg-danger-bg border border-danger-border text-danger text-xs font-semibold"
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Credentials - Common to all roles */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              required
-              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. contact@domain.com"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              required
-              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="e.g. +91 9876543210"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-          </div>
-        </div>
-
-        {/* DONOR Form */}
-        {role === 'DONOR' && (
-          <div className="space-y-6">
+      <AnimatePresence mode="wait">
+        {/* STEP 1: Account Credentials */}
+        {step === 1 && (
+          <motion.form 
+            key="step1"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -yOffset }}
+            onSubmit={handleStep1Submit} 
+            className="space-y-6"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Organization Name
+              <motion.div variants={itemVariants}>
+                <label className="label-premium">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  className="input-premium"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="contact@domain.com"
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <label className="label-premium">
+                  Phone Number
                 </label>
                 <input
                   type="text"
                   required
-                  className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-                  value={donorOrgName}
-                  onChange={(e) => setDonorOrgName(e.target.value)}
-                  placeholder="e.g. Grand Banquet Hall"
+                  className="input-premium"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="+91 9876543210"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Organization Type
-                </label>
-                <select
-                  className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-                  value={donorOrgType}
-                  onChange={(e) => setDonorOrgType(e.target.value)}
-                >
-                  <option value="RESTAURANT">Restaurant</option>
-                  <option value="HOTEL">Hotel</option>
-                  <option value="CATERER">Caterer</option>
-                  <option value="CORPORATE_CANTEEN">Corporate Canteen</option>
-                  <option value="INDIVIDUAL">Individual</option>
-                </select>
-              </div>
+              </motion.div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                Contact Person Name
+            <motion.div variants={itemVariants}>
+              <label className="label-premium">
+                Create Password
               </label>
               <input
-                type="text"
+                type="password"
                 required
-                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-                value={donorContactPerson}
-                onChange={(e) => setDonorContactPerson(e.target.value)}
-                placeholder="e.g. Rahul Sharma"
+                className="input-premium"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="•••••••• (Min 6 characters)"
               />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <motion.button
+                type="submit"
+                whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
+                className="btn-primary w-full py-3.5 shadow-md shadow-primary/10"
+              >
+                Continue to Role Selection &rarr;
+              </motion.button>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="text-center text-sm text-muted-text">
+              Already have an account?{' '}
+              <Link href="/login" className="font-semibold text-primary hover:underline">
+                Sign In
+              </Link>
+            </motion.div>
+          </motion.form>
+        )}
+
+        {/* STEP 2: Role Selection Card Grid */}
+        {step === 2 && (
+          <motion.div 
+            key="step2"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -yOffset }}
+            className="space-y-6"
+          >
+            <motion.div variants={itemVariants} className="text-center mb-4">
+              <h3 className="text-lg font-bold text-foreground">Select Platform Role</h3>
+              <p className="text-xs text-muted-text mt-1">Select the operational profile that describes your rescue purpose.</p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Donor */}
+              <motion.button
+                variants={itemVariants}
+                type="button"
+                onClick={() => handleRoleSelect('DONOR')}
+                whileHover={shouldReduceMotion ? {} : { scale: 1.02, y: -2 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+                className="card-premium p-6 text-left hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px] cursor-pointer group"
+              >
+                <div className="text-2xl group-hover:scale-105 transition-transform duration-300">🏨</div>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground mt-3">Surplus Donor</h4>
+                  <p className="text-[11px] text-muted-text mt-1 leading-relaxed font-medium">
+                    Share surplus food with nearby verified organizations.
+                  </p>
+                </div>
+              </motion.button>
+
+              {/* NGO */}
+              <motion.button
+                variants={itemVariants}
+                type="button"
+                onClick={() => handleRoleSelect('NGO')}
+                whileHover={shouldReduceMotion ? {} : { scale: 1.02, y: -2 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+                className="card-premium p-6 text-left hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px] cursor-pointer group"
+              >
+                <div className="text-2xl group-hover:scale-105 transition-transform duration-300">🌍</div>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground mt-3">Verified NGO</h4>
+                  <p className="text-[11px] text-muted-text mt-1 leading-relaxed font-medium">
+                    Discover, verify, and rescue available surplus food.
+                  </p>
+                </div>
+              </motion.button>
+
+              {/* Volunteer */}
+              <motion.button
+                variants={itemVariants}
+                type="button"
+                onClick={() => handleRoleSelect('VOLUNTEER')}
+                whileHover={shouldReduceMotion ? {} : { scale: 1.02, y: -2 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+                className="card-premium p-6 text-left hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px] cursor-pointer group"
+              >
+                <div className="text-2xl group-hover:scale-105 transition-transform duration-300">🚴</div>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground mt-3">Rescue Rider</h4>
+                  <p className="text-[11px] text-muted-text mt-1 leading-relaxed font-medium">
+                    Coordinate pickups and delivery transit.
+                  </p>
+                </div>
+              </motion.button>
             </div>
 
-            {/* Location Selection — Google Maps */}
-            <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Organization Location</span>
-              </div>
+            <motion.button
+              variants={itemVariants}
+              type="button"
+              onClick={() => setStep(1)}
+              whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
+              whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
+              className="btn-secondary w-full py-3.5"
+            >
+              &larr; Back to Account Details
+            </motion.button>
+          </motion.div>
+        )}
 
-              {donorAddress && donorLat !== null && donorLng !== null ? (
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 break-words">
-                        {donorAddress}
-                      </p>
-                      <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
-                        {donorLat.toFixed(6)}, {donorLng.toFixed(6)}
-                      </p>
-                    </div>
+        {/* STEP 3: Profile Configuration Details */}
+        {step === 3 && (
+          <motion.form 
+            key="step3"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -yOffset }}
+            onSubmit={handleSubmit} 
+            className="space-y-6"
+          >
+            <motion.div variants={itemVariants} className="text-center mb-2">
+              <span className="badge-premium bg-primary/5 text-primary border border-primary/10 uppercase">
+                Role Profile: {role}
+              </span>
+            </motion.div>
+
+            {/* DONOR Form */}
+            {role === 'DONOR' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <motion.div variants={itemVariants}>
+                    <label className="label-premium">
+                      Organization Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="input-premium"
+                      value={donorOrgName}
+                      onChange={(e) => setDonorOrgName(e.target.value)}
+                      placeholder="e.g. Grand Banquet Hall"
+                    />
+                  </motion.div>
+                  <motion.div variants={itemVariants}>
+                    <label className="label-premium">
+                      Organization Type
+                    </label>
+                    <select
+                      className="input-premium"
+                      value={donorOrgType}
+                      onChange={(e) => setDonorOrgType(e.target.value)}
+                    >
+                      <option value="RESTAURANT">Restaurant</option>
+                      <option value="HOTEL">Hotel</option>
+                      <option value="CATERER">Caterer</option>
+                      <option value="CORPORATE_CANTEEN">Corporate Canteen</option>
+                      <option value="INDIVIDUAL">Individual</option>
+                    </select>
+                  </motion.div>
+                </div>
+
+                <motion.div variants={itemVariants}>
+                  <label className="label-premium">
+                    Contact Person Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="input-premium"
+                    value={donorContactPerson}
+                    onChange={(e) => setDonorContactPerson(e.target.value)}
+                    placeholder="e.g. Rahul Sharma"
+                  />
+                </motion.div>
+
+                {/* Location Picker Map */}
+                <motion.div variants={itemVariants} className="bg-surface-muted p-4 rounded-md border border-border space-y-4">
+                  <span className="text-xs font-bold text-foreground block">Organization Location</span>
+                  {donorAddress && donorLat !== null && donorLng !== null ? (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground break-words">{donorAddress}</p>
+                          <p className="text-[11px] text-muted-light font-mono mt-0.5">{donorLat.toFixed(6)}, {donorLng.toFixed(6)}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openLocationPicker('DONOR')}
+                          className="flex-shrink-0 text-xs text-primary hover:underline font-semibold"
+                        >
+                          Change
+                        </button>
+                      </div>
+                      <MapPreview latitude={donorLat} longitude={donorLng} address={donorAddress} height="150px" />
+                    </motion.div>
+                  ) : (
                     <button
                       type="button"
                       onClick={() => openLocationPicker('DONOR')}
-                      className="flex-shrink-0 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold transition-colors"
+                      className="w-full py-4 px-4 border-2 border-dashed border-border hover:border-primary/45 rounded-md text-xs font-semibold text-muted-text hover:text-primary transition-colors flex items-center justify-center gap-2 cursor-pointer bg-surface"
                     >
-                      Change
+                      📍 Select Organization Location
                     </button>
-                  </div>
-                  <MapPreview latitude={donorLat} longitude={donorLng} address={donorAddress} height="140px" />
+                  )}
+                </motion.div>
+              </div>
+            )}
+
+            {/* NGO Form */}
+            {role === 'NGO' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <motion.div variants={itemVariants}>
+                    <label className="label-premium">
+                      NGO Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="input-premium"
+                      value={ngoOrgName}
+                      onChange={(e) => setNgoOrgName(e.target.value)}
+                      placeholder="e.g. Save Food Foundation"
+                    />
+                  </motion.div>
+                  <motion.div variants={itemVariants}>
+                    <label className="label-premium">
+                      FSSAI License / Registration
+                    </label>
+                    <input
+                      type="text"
+                      className="input-premium"
+                      value={ngoRegNum}
+                      onChange={(e) => setNgoRegNum(e.target.value)}
+                      placeholder="e.g. FSSAI-29623000000001"
+                    />
+                  </motion.div>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => openLocationPicker('DONOR')}
-                  className="w-full py-3 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-sm font-semibold text-zinc-600 dark:text-zinc-300 hover:border-emerald-500 hover:text-emerald-600 dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Select Organization Location
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* NGO Form */}
-        {role === 'NGO' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  NGO Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-                  value={ngoOrgName}
-                  onChange={(e) => setNgoOrgName(e.target.value)}
-                  placeholder="e.g. Save Food India"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  FSSAI Registration / License Number
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-                  value={ngoRegNum}
-                  onChange={(e) => setNgoRegNum(e.target.value)}
-                  placeholder="e.g. FSSAI-29623000000000 (Optional)"
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <motion.div variants={itemVariants}>
+                    <label className="label-premium">
+                      Contact Person Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="input-premium"
+                      value={ngoContactPerson}
+                      onChange={(e) => setNgoContactPerson(e.target.value)}
+                      placeholder="e.g. Preeti Nair"
+                    />
+                  </motion.div>
+                  <motion.div variants={itemVariants}>
+                    <label className="label-premium">
+                      Contact Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="input-premium"
+                      value={ngoContactPhone}
+                      onChange={(e) => setNgoContactPhone(e.target.value)}
+                      placeholder="e.g. +91 9876543221"
+                    />
+                  </motion.div>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Contact Person
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-                  value={ngoContactPerson}
-                  onChange={(e) => setNgoContactPerson(e.target.value)}
-                  placeholder="e.g. Preeti Nair"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Contact Phone Number
-                </label>
-                <input
-                  type="tel"
-                  required
-                  className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-                  value={ngoContactPhone}
-                  onChange={(e) => setNgoContactPhone(e.target.value)}
-                  placeholder="e.g. 9876543222"
-                />
-              </div>
-            </div>
-
-            {/* Operational Address Selection */}
-            <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 space-y-4">
-              <div>
-                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 block">Operational Address</span>
-                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 block">
-                  This is where your NGO usually operates from. Nearby food rescue requests will be calculated from this location.
-                </span>
-              </div>
-
-              {ngoAddress && ngoLat !== null && ngoLng !== null ? (
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 break-words">
-                        {ngoAddress}
-                      </p>
-                      <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
-                        {ngoLat.toFixed(6)}, {ngoLng.toFixed(6)}
-                      </p>
-                    </div>
+                {/* NGO Base Location Picker */}
+                <motion.div variants={itemVariants} className="bg-surface-muted p-4 rounded-md border border-border space-y-4">
+                  <div>
+                    <span className="text-xs font-bold text-foreground block">NGO Base Address</span>
+                    <span className="text-[10px] text-muted-text mt-0.5 block">Surplus matches are calculated relative to this coordinates baseline.</span>
+                  </div>
+                  {ngoAddress && ngoLat !== null && ngoLng !== null ? (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground break-words">{ngoAddress}</p>
+                          <p className="text-[11px] text-muted-light font-mono mt-0.5">{ngoLat.toFixed(6)}, {ngoLng.toFixed(6)}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openLocationPicker('NGO')}
+                          className="flex-shrink-0 text-xs text-primary hover:underline font-semibold"
+                        >
+                          Change
+                        </button>
+                      </div>
+                      <MapPreview latitude={ngoLat} longitude={ngoLng} address={ngoAddress} height="150px" />
+                    </motion.div>
+                  ) : (
                     <button
                       type="button"
                       onClick={() => openLocationPicker('NGO')}
-                      className="flex-shrink-0 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold transition-colors"
+                      className="w-full py-4 px-4 border-2 border-dashed border-border hover:border-primary/45 rounded-md text-xs font-semibold text-muted-text hover:text-primary transition-colors flex items-center justify-center gap-2 cursor-pointer bg-surface"
                     >
-                      Change
+                      📍 Select Operational Address
                     </button>
-                  </div>
-                  <MapPreview latitude={ngoLat} longitude={ngoLng} address={ngoAddress} height="140px" />
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => openLocationPicker('NGO')}
-                  className="w-full py-3 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-sm font-semibold text-zinc-600 dark:text-zinc-300 hover:border-emerald-500 hover:text-emerald-600 dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Select Operational Address
-                </button>
-              )}
-            </div>
+                  )}
+                </motion.div>
 
-            {/* Conditional configurations panel — only shown after location is confirmed */}
-            {ngoAddress && ngoLat !== null && ngoLng !== null && (
-              <div className="space-y-6 pt-4 border-t border-zinc-200 dark:border-zinc-800 animate-fadeIn">
-                {/* Predefined radius buttons */}
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
-                    Active Service Radius (km)
-                  </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {['2', '5', '10', '15', '20', '25'].map((r) => {
-                      const selected = ngoRadius === r;
-                      return (
-                        <button
-                          key={r}
-                          type="button"
-                          onClick={() => setNgoRadius(r)}
-                          className={`py-2 px-3 text-center text-sm font-semibold rounded-lg border transition-all ${
-                            selected
-                              ? 'bg-emerald-600 border-transparent text-white shadow-sm'
-                              : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300'
-                          }`}
-                        >
-                          {r} km
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[11px] text-zinc-400 mt-1">
-                    You will receive surplus rescue requests within this radius from your operational address.
-                  </p>
-                </div>
+                {ngoAddress && ngoLat !== null && ngoLng !== null && (
+                  <motion.div 
+                    initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                    animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, height: 'auto' }}
+                    className="space-y-6 pt-4 border-t border-border overflow-hidden"
+                  >
+                    {/* Service Radius */}
+                    <motion.div variants={itemVariants}>
+                      <label className="label-premium">
+                        Rescue Coverage Radius
+                      </label>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        {['2', '5', '10', '15', '20', '25'].map((r) => {
+                          const selected = ngoRadius === r;
+                          return (
+                            <button
+                              key={r}
+                              type="button"
+                              onClick={() => setNgoRadius(r)}
+                              className={`py-2 px-3 text-center text-xs sm:text-sm font-semibold rounded-sm border transition-all cursor-pointer ${
+                                selected
+                                  ? 'bg-primary border-transparent text-primary-foreground shadow-sm'
+                                  : 'bg-surface border-border text-foreground hover:bg-surface-muted'
+                              }`}
+                            >
+                              {r} km
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
 
-                {/* Availability status selector */}
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
-                    Initial Rescue Availability Status
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {(
-                      [
-                        { id: 'AVAILABLE', label: '🟢 Available for Rescue' },
-                        { id: 'BUSY', label: '🟡 Busy / At Capacity' },
-                        { id: 'OFFLINE', label: '🔴 Offline' },
-                      ] as const
-                    ).map((status) => {
-                      const selected = ngoAvailability === status.id;
-                      return (
-                        <button
-                          key={status.id}
-                          type="button"
-                          onClick={() => setNgoAvailability(status.id)}
-                          className={`py-2.5 px-3 text-center text-sm font-semibold rounded-lg border transition-all ${
-                            selected
-                              ? status.id === 'AVAILABLE'
-                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/50 dark:text-emerald-400 font-bold'
-                                : status.id === 'BUSY'
-                                ? 'bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900/50 dark:text-amber-400 font-bold'
-                                : 'bg-red-50 border-red-300 text-red-700 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400 font-bold'
-                              : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300'
-                          }`}
-                        >
-                          {status.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                    {/* Availability */}
+                    <motion.div variants={itemVariants}>
+                      <label className="label-premium">
+                        Rescue Availability State
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(
+                          [
+                            { id: 'AVAILABLE', label: '🟢 Active' },
+                            { id: 'BUSY', label: '🟡 Busy' },
+                            { id: 'OFFLINE', label: '🔴 Offline' },
+                          ] as const
+                        ).map((status) => {
+                          const selected = ngoAvailability === status.id;
+                          return (
+                            <button
+                              key={status.id}
+                              type="button"
+                              onClick={() => setNgoAvailability(status.id)}
+                              className={`py-2.5 px-3 text-center text-xs sm:text-sm font-semibold rounded-sm border transition-all cursor-pointer ${
+                                selected
+                                  ? 'bg-success-bg border-success-border text-success font-bold'
+                                  : 'bg-surface border-border text-foreground hover:bg-surface-muted'
+                              }`}
+                            >
+                              {status.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
 
-                {/* Accepted Food Categories checkboxes */}
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
-                    Accepted Food Categories (Select at least one)
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      { id: 'COOKED_VEG', label: 'Cooked Vegetarian' },
-                      { id: 'COOKED_NON_VEG', label: 'Cooked Non-Vegetarian' },
-                      { id: 'PACKAGED_FOOD', label: 'Packaged Food' },
-                      { id: 'DRY_RATION', label: 'Dry Ration' },
-                      { id: 'BAKERY', label: 'Bakery Items' },
-                      { id: 'FRUITS_VEG', label: 'Fruits & Vegetables' },
-                    ].map((type) => {
-                      const checked = ngoAcceptedFoodTypes.includes(type.id);
-                      return (
-                        <label
-                          key={type.id}
-                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                            checked
-                              ? 'bg-emerald-50 border-emerald-300 text-emerald-950 dark:bg-emerald-950/20 dark:border-emerald-900/50 dark:text-emerald-300 font-bold'
-                              : 'bg-white border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 hover:bg-zinc-50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600"
-                            checked={checked}
-                            onChange={() => {
-                              if (checked) {
-                                setNgoAcceptedFoodTypes(ngoAcceptedFoodTypes.filter((t) => t !== type.id));
-                              } else {
-                                setNgoAcceptedFoodTypes([...ngoAcceptedFoodTypes, type.id]);
-                              }
-                            }}
-                          />
-                          <span className="text-sm">{type.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
+                    {/* Food types checklist */}
+                    <motion.div variants={itemVariants}>
+                      <label className="label-premium">
+                        Accepted Food Categories
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {[
+                          { id: 'COOKED_VEG', label: 'Cooked Vegetarian' },
+                          { id: 'COOKED_NON_VEG', label: 'Cooked Non-Vegetarian' },
+                          { id: 'PACKAGED_FOOD', label: 'Packaged Food' },
+                          { id: 'DRY_RATION', label: 'Dry Ration' },
+                          { id: 'BAKERY', label: 'Bakery Items' },
+                          { id: 'FRUITS_VEG', label: 'Fruits & Vegetables' },
+                        ].map((type) => {
+                          const checked = ngoAcceptedFoodTypes.includes(type.id);
+                          return (
+                            <label
+                              key={type.id}
+                              className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-all ${
+                                checked
+                                  ? 'bg-success-bg border-success-border text-success font-bold'
+                                  : 'bg-surface border-border text-foreground hover:bg-surface-muted'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="rounded border-border text-primary focus:ring-primary accent-primary"
+                                checked={checked}
+                                onChange={() => {
+                                  if (checked) {
+                                    setNgoAcceptedFoodTypes(ngoAcceptedFoodTypes.filter((t) => t !== type.id));
+                                  } else {
+                                    setNgoAcceptedFoodTypes([...ngoAcceptedFoodTypes, type.id]);
+                                  }
+                                }}
+                              />
+                              <span className="text-xs font-semibold">{type.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
               </div>
             )}
-          </div>
+
+            {/* VOLUNTEER Form */}
+            {role === 'VOLUNTEER' && (
+              <div className="space-y-6">
+                <motion.div variants={itemVariants}>
+                  <label className="label-premium">
+                    Rider Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="input-premium"
+                    value={volName}
+                    onChange={(e) => setVolName(e.target.value)}
+                    placeholder="e.g. John Doe"
+                  />
+                </motion.div>
+
+                <motion.div variants={itemVariants}>
+                  <label className="label-premium">
+                    Affiliated NGO Organization
+                  </label>
+                  {ngos.length > 0 ? (
+                    <select
+                      required
+                      className="input-premium"
+                      value={volNgoId}
+                      onChange={(e) => setVolNgoId(e.target.value)}
+                    >
+                      {ngos.map((ngo) => (
+                        <option key={ngo.id} value={ngo.id}>
+                          {ngo.organizationName}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="p-4 rounded-md bg-danger-bg border border-danger-border text-danger text-xs font-semibold">
+                      No NGOs are currently registered on FoodOps. An NGO must be onboarded first before volunteers can link.
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            )}
+
+            {/* Bottom actions */}
+            <motion.div variants={itemVariants} className="flex gap-4 pt-4 border-t border-border">
+              <motion.button
+                type="button"
+                onClick={() => setStep(2)}
+                whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
+                className="btn-secondary flex-1 py-3"
+              >
+                &larr; Back
+              </motion.button>
+              <motion.button
+                type="submit"
+                disabled={loading || (role === 'VOLUNTEER' && ngos.length === 0)}
+                whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
+                className="btn-primary flex-grow py-3 shadow-md shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Completing Setup...' : 'Complete Registration'}
+              </motion.button>
+            </motion.div>
+          </motion.form>
         )}
+      </AnimatePresence>
 
-        {/* VOLUNTEER Form */}
-        {role === 'VOLUNTEER' && (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                Volunteer Full Name
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-                value={volName}
-                onChange={(e) => setVolName(e.target.value)}
-                placeholder="e.g. John Doe"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                Affiliated NGO
-              </label>
-              {ngos.length > 0 ? (
-                <select
-                  required
-                  className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
-                  value={volNgoId}
-                  onChange={(e) => setVolNgoId(e.target.value)}
-                >
-                  {ngos.map((ngo) => (
-                    <option key={ngo.id} value={ngo.id}>
-                      {ngo.organizationName}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/20 p-4 rounded-md border border-red-200 dark:border-red-900/50">
-                  No NGOs are currently registered. An NGO must register first before volunteers can join.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Submit */}
-        <div>
-          <button
-            type="submit"
-            disabled={loading || (role === 'VOLUNTEER' && ngos.length === 0)}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Registering...' : 'Register'}
-          </button>
-        </div>
-
-        <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-          Already have an account?{' '}
-          <Link href="/login" className="font-semibold text-emerald-600 hover:underline">
-            Sign In
-          </Link>
-        </div>
-      </form>
-
-      {/* Location Picker Modal */}
+      {/* Location Picker Overlay Map Modal */}
       {showLocationPicker && (
         <LocationPicker
-          title={locationPickerTarget === 'DONOR' ? 'Select Organization Location' : 'Select NGO Base Location'}
+          title={locationPickerTarget === 'DONOR' ? 'Select Organization Address' : 'Select NGO Base Address'}
           initialAddress={locationPickerTarget === 'DONOR' ? donorAddress || undefined : ngoAddress || undefined}
           initialLatitude={locationPickerTarget === 'DONOR' ? donorLat ?? undefined : ngoLat ?? undefined}
           initialLongitude={locationPickerTarget === 'DONOR' ? donorLng ?? undefined : ngoLng ?? undefined}

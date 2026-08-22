@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getPendingNgos, getAdminStats, verifyNgo, rejectNgo } from '@/app/actions/admin';
 import PendingNgoList from './PendingNgoList';
+import AdminMetrics from './AdminMetrics';
 import Navbar from '@/components/Navbar';
 
 export default async function AdminPage() {
@@ -16,52 +17,24 @@ export default async function AdminPage() {
   const stats = await getAdminStats();
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
       <Navbar />
 
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 pb-5 border-b border-zinc-200 dark:border-zinc-800">
-          <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">
-            System Administation Coordinator
+      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-10 pb-6 border-b border-border">
+          <h1 className="text-3xl font-extrabold text-foreground tracking-tight font-display">
+            System Administration Coordinator
           </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1.5 text-sm text-muted-text font-medium">
             Verify FSSAI licenses for onboarding NGOs, monitor network health, and track climate impact metrics.
           </p>
         </div>
 
         {/* Platform metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-12">
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
-            <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{stats.completedRescues}</p>
-            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Completed Rescues</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
-            <div>
-              <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{stats.foodWeightKg.toFixed(1)} kg</p>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{Math.round(stats.waterSavedLiters).toLocaleString()} L water saved</p>
-            </div>
-            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Rescued Food</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
-            <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">{stats.divertedWeightKg.toFixed(1)} kg</p>
-            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Diverted wet waste</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
-            <p className="text-2xl font-extrabold text-violet-600 dark:text-violet-400">{stats.biogasGeneratedKwh.toFixed(1)} kWh</p>
-            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Biogas Potential</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px]">
-            <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{Math.round(stats.co2SavedKg).toLocaleString()} kg</p>
-            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">CO₂e Prevented</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm text-center flex flex-col justify-between min-h-[110px] col-span-2 lg:col-span-1">
-            <p className="text-2xl font-extrabold text-zinc-700 dark:text-zinc-350">{stats.verifiedNgos} / {stats.totalNgos}</p>
-            <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Verified NGOs</p>
-          </div>
-        </div>
+        <AdminMetrics stats={stats} />
 
         {/* NGO approvals list */}
-        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mb-6">Pending NGO FSSAI Verifications</h2>
+        <h2 className="text-xl font-extrabold text-foreground tracking-tight mb-6">Pending NGO FSSAI Verifications</h2>
         
         <PendingNgoList 
           pendingNgos={pendingNgos} 

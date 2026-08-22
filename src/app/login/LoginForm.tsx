@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '@/app/actions/auth';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'motion/react';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -11,6 +12,28 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const shouldReduceMotion = useReducedMotion();
+  const yOffset = shouldReduceMotion ? 0 : 12;
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: shouldReduceMotion ? 0 : 0.06,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: yOffset },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.35, ease: 'easeOut' as const },
+    },
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,116 +89,109 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
       {error && (
-        <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400">
+        <motion.div 
+          variants={itemVariants}
+          className="p-4 rounded-sm bg-danger-bg border border-danger-border text-danger text-xs font-semibold"
+        >
           {error}
-        </div>
+        </motion.div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <motion.div variants={itemVariants}>
+          <label className="label-premium">
             Email Address
           </label>
           <input
             type="email"
             required
-            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
+            className="input-premium"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="e.g. donor@foodops.org"
+            placeholder="donor@foodops.org"
           />
-        </div>
+        </motion.div>
 
-        <div>
-          <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+        <motion.div variants={itemVariants}>
+          <label className="label-premium">
             Password
           </label>
           <input
             type="password"
             required
-            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
+            className="input-premium"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
           />
-        </div>
+        </motion.div>
 
-        <div>
-          <button
+        <motion.div variants={itemVariants}>
+          <motion.button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-colors"
+            whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
+            whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
+            className="btn-primary w-full py-3 shadow-md shadow-primary/10 transition-shadow"
           >
             {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </form>
 
       {/* Demo shortcuts */}
-      <div className="relative my-8">
+      <motion.div variants={itemVariants} className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-zinc-200 dark:border-zinc-800"></div>
+          <div className="w-full border-t border-border"></div>
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white dark:bg-zinc-900 px-2 text-zinc-500 dark:text-zinc-400 font-semibold">
-            Demo Accounts (One-Click)
+          <span className="bg-surface px-2.5 text-muted-light font-bold tracking-widest">
+            Demo Credentials
           </span>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => handleDemoLogin('donor@foodops.org')}
-          className="px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors text-left"
-        >
-          🏨 Donor (Banquet Hall)
-        </button>
-        <button
-          type="button"
-          onClick={() => handleDemoLogin('ngo1@foodops.org')}
-          className="px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors text-left"
-        >
-          🌍 NGO A (Verified, 10km)
-        </button>
-        <button
-          type="button"
-          onClick={() => handleDemoLogin('ngo2@foodops.org')}
-          className="px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors text-left"
-        >
-          🌍 NGO B (Verified, 10km)
-        </button>
-        <button
-          type="button"
-          onClick={() => handleDemoLogin('ngo_pending@foodops.org')}
-          className="px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors text-left"
-        >
-          ⏳ NGO C (Pending Review)
-        </button>
-        <button
-          type="button"
-          onClick={() => handleDemoLogin('volunteer@foodops.org')}
-          className="px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors text-left"
-        >
-          🚴 Volunteer (Rider A)
-        </button>
-        <button
-          type="button"
-          onClick={() => handleDemoLogin('admin@foodops.org')}
-          className="px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors text-left"
-        >
-          🛡️ Admin Coordinator
-        </button>
-      </div>
+      <motion.div 
+        variants={itemVariants} 
+        className="flex flex-wrap gap-2 justify-center"
+      >
+        {[
+          { email: 'donor@foodops.org', label: '🏨 Donor' },
+          { email: 'ngo1@foodops.org', label: '🌍 NGO A' },
+          { email: 'ngo2@foodops.org', label: '🌍 NGO B' },
+          { email: 'ngo_pending@foodops.org', label: '⏳ NGO C' },
+          { email: 'volunteer@foodops.org', label: '🚴 Volunteer' },
+          { email: 'admin@foodops.org', label: '🛡️ Admin' },
+        ].map((demo) => (
+          <motion.button
+            key={demo.email}
+            type="button"
+            onClick={() => handleDemoLogin(demo.email)}
+            whileHover={shouldReduceMotion ? {} : { scale: 1.03, y: -1 }}
+            whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
+            className="btn-secondary rounded-full text-[11px] px-3.5 py-1.5"
+          >
+            {demo.label}
+          </motion.button>
+        ))}
+      </motion.div>
 
-      <div className="text-center text-sm text-zinc-600 dark:text-zinc-400 pt-4">
+      <motion.div 
+        variants={itemVariants}
+        className="text-center text-sm text-muted-text pt-4 border-t border-border"
+      >
         New to FoodOps?{' '}
-        <Link href="/register" className="font-semibold text-emerald-600 hover:underline">
+        <Link href="/register" className="font-semibold text-primary hover:underline">
           Create Account
         </Link>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

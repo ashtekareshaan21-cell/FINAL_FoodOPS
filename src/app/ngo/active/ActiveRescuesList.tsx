@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
 import { divertDonationToBiogas } from '@/app/actions/donations';
+import { motion, useReducedMotion } from 'motion/react';
 
 export interface ActiveRescueItem {
   id: string;
@@ -58,6 +59,28 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
   const [spoilReasonMap, setSpoilReasonMap] = useState<Record<string, string>>({});
   const [showSpoilConfirm, setShowSpoilConfirm] = useState<Record<string, boolean>>({});
 
+  const shouldReduceMotion = useReducedMotion();
+  const yOffset = shouldReduceMotion ? 0 : 12;
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: shouldReduceMotion ? 0 : 0.05,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: yOffset },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, ease: 'easeOut' as const },
+    },
+  };
+
   const handleDivert = async (donationId: string) => {
     const reason = spoilReasonMap[donationId] || 'Uncollected / Expired';
     setSpoilLoadingMap(prev => ({ ...prev, [donationId]: true }));
@@ -97,13 +120,19 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
   return (
     <div className="space-y-6">
       {activeRescues.length === 0 ? (
-        <div className="text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-12 shadow-sm">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <div className="text-center bg-surface border border-border rounded-lg p-16 shadow-sm">
+          <span className="text-3xl block mb-3 animate-pulse">🛰️</span>
+          <p className="text-sm text-muted-text font-medium">
             No active rescues at the moment. Claim a donation from the dashboard first.
           </p>
         </div>
       ) : (
-        <div className="grid gap-6">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid gap-6"
+        >
           {activeRescues.map((rescue) => {
             const error = errorMap[rescue.id];
             const loading = loadingMap[rescue.id];
@@ -111,50 +140,52 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
             const assignedVol = rescue.assignment?.volunteer;
 
             return (
-              <div
+              <motion.div
                 key={rescue.id}
-                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6"
+                variants={cardVariants}
+                whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
+                className="bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-md transition-all"
               >
                 {/* Details Section */}
                 <div className="flex-grow space-y-4">
                   <div>
                     <div className="flex items-center gap-3 flex-wrap mb-2">
-                      <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                      <h3 className="text-xl font-bold text-foreground">
                         {rescue.title}
                       </h3>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                      <span className="badge-premium bg-primary/5 text-primary border border-primary/10 tracking-widest text-[9px] uppercase font-extrabold px-2.5 py-1">
                         {rescue.status.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">{rescue.description}</p>
+                    <p className="text-xs text-muted-text max-w-xl font-medium">{rescue.description}</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-xs bg-zinc-50 dark:bg-zinc-950 p-4 rounded-lg border border-zinc-150 dark:border-zinc-850">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-surface-muted p-4 rounded-md border border-border font-medium text-muted-text">
                     <div>
-                      <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Donor</p>
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">{rescue.donor.organizationName}</p>
+                      <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Donor</p>
+                      <p className="font-semibold text-foreground mt-0.5">{rescue.donor.organizationName}</p>
                     </div>
                     <div>
-                      <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Pickup Location</p>
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">{rescue.pickupAddress}</p>
+                      <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Pickup Location</p>
+                      <p className="font-semibold text-foreground mt-0.5">{rescue.pickupAddress}</p>
                       <a
                         href={buildGoogleMapsSearchUrl(rescue.pickupLatitude, rescue.pickupLongitude)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline mt-1"
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline mt-1.5"
                       >
-                        🗺️ Open in Google Maps
+                        🗺️ Open in Google Maps &rarr;
                       </a>
                     </div>
                     <div>
-                      <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Quantity</p>
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {rescue.quantity} {rescue.quantityUnit} ({rescue.estimatedServings || 'N/A'} servings)
+                      <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Quantity</p>
+                      <p className="font-semibold text-foreground mt-0.5">
+                        {rescue.quantity} {rescue.quantityUnit} &bull; <span className="text-primary font-bold">{rescue.estimatedServings || 'N/A'} meals</span>
                       </p>
                     </div>
                     <div>
-                      <p className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Status Update</p>
-                      <p className="font-medium text-emerald-600 dark:text-emerald-400 font-mono">
+                      <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Status Update</p>
+                      <p className="font-semibold text-primary font-mono mt-0.5">
                         {STATUS_DESCRIPTION[rescue.status] || 'Processing...'}
                       </p>
                     </div>
@@ -162,20 +193,20 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                 </div>
 
                 {/* Assignment Controls */}
-                <div className="flex-shrink-0 md:w-80 flex flex-col justify-center border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 pt-6 md:pt-0 md:pl-6">
+                <div className="flex-shrink-0 md:w-80 flex flex-col justify-center border-t md:border-t-0 md:border-l border-border pt-6 md:pt-0 md:pl-6">
                   {error && (
-                    <div className="mb-3 p-2 rounded bg-red-50 border border-red-200 text-red-600 text-xs dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400">
+                    <div className="mb-3 p-3 rounded-sm bg-danger-bg border border-danger-border text-danger text-xs font-semibold">
                       {error}
                     </div>
                   )}
 
                   {!isAssigned ? (
                     <div className="space-y-4">
-                      <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Assign Volunteer Rider</p>
+                      <p className="text-xs font-bold text-foreground uppercase tracking-wide">Assign Volunteer Rider</p>
                       {volunteers.length > 0 ? (
                         <>
                           <select
-                            className="w-full px-3 py-2 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded-md focus:ring-emerald-500 focus:border-emerald-500 text-sm dark:text-zinc-100"
+                            className="input-premium py-2 px-3 text-xs"
                             value={selectedVolunteers[rescue.id] || ''}
                             onChange={(e) =>
                               setSelectedVolunteers(prev => ({ ...prev, [rescue.id]: e.target.value }))
@@ -192,29 +223,29 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                             type="button"
                             disabled={loading}
                             onClick={() => handleAssign(rescue.id)}
-                            className="w-full py-2 px-4 border border-transparent rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors"
+                            className="w-full btn-primary py-2.5 hover:scale-[1.01]"
                           >
                             {loading ? 'Assigning...' : 'Assign Rider'}
                           </button>
                         </>
                       ) : (
-                        <p className="text-xs text-red-500 italic bg-red-50 dark:bg-red-950/20 p-3 rounded">
+                        <p className="text-xs text-danger italic bg-danger-bg border border-danger-border p-3 rounded-sm font-semibold">
                           No active volunteers registered under your NGO. Volunteers must sign up under your NGO name to be selectable.
                         </p>
                       )}
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Assigned Volunteer</p>
-                      <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded border border-zinc-200 dark:border-zinc-800">
-                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{assignedVol?.name}</p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">{assignedVol?.phoneNumber}</p>
+                      <p className="text-[10px] font-bold text-muted uppercase tracking-wider">Assigned Volunteer</p>
+                      <div className="bg-surface-muted p-4 rounded-md border border-border">
+                        <p className="text-sm font-bold text-foreground">{assignedVol?.name}</p>
+                        <p className="text-xs text-muted-text mt-0.5 font-semibold font-mono">{assignedVol?.phoneNumber}</p>
                       </div>
                       
                       {rescue.status === 'VOLUNTEER_ASSIGNED' && (
                         <div className="pt-2">
                           <select
-                            className="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-300 dark:bg-zinc-950 dark:border-zinc-800 rounded text-xs dark:text-zinc-100 mb-2"
+                            className="input-premium py-2 px-3 text-xs mb-2"
                             value={selectedVolunteers[rescue.id] || ''}
                             onChange={(e) =>
                               setSelectedVolunteers(prev => ({ ...prev, [rescue.id]: e.target.value }))
@@ -231,7 +262,7 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                             type="button"
                             disabled={loading}
                             onClick={() => handleAssign(rescue.id)}
-                            className="w-full py-1.5 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 rounded text-xs transition-colors"
+                            className="w-full btn-secondary py-2 text-xs hover:scale-[1.01]"
                           >
                             Reassign Rider
                           </button>
@@ -241,14 +272,18 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                   )}
 
                   {/* Divert to Biogas Section */}
-                  <div className="mt-6 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-800">
+                  <div className="mt-6 pt-4 border-t border-dashed border-border">
                     {showSpoilConfirm[rescue.id] ? (
-                      <div className="space-y-3 bg-zinc-50 dark:bg-zinc-950/40 p-3 rounded-lg border border-zinc-200 dark:border-zinc-850">
-                        <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                          Why are you diverting this to recovery?
+                      <motion.div 
+                        initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="space-y-3 bg-surface-muted p-4 rounded-md border border-border overflow-hidden"
+                      >
+                        <p className="text-xs font-bold text-foreground uppercase tracking-wide">
+                          Divert Reason
                         </p>
                         <select
-                          className="w-full p-2 bg-white border border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 rounded text-xs dark:text-zinc-200"
+                          className="input-premium py-2 px-3 text-xs"
                           value={spoilReasonMap[rescue.id] || ''}
                           onChange={(e) => setSpoilReasonMap(prev => ({ ...prev, [rescue.id]: e.target.value }))}
                         >
@@ -263,34 +298,34 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                             type="button"
                             disabled={spoilLoadingMap[rescue.id]}
                             onClick={() => handleDivert(rescue.id)}
-                            className="flex-grow py-1.5 px-3 border border-transparent rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors disabled:opacity-50"
+                            className="flex-grow btn-primary py-2 text-xs hover:scale-[1.01] bg-warning hover:bg-warning/90"
                           >
                             {spoilLoadingMap[rescue.id] ? 'Diverting...' : 'Confirm Biogas Divert'}
                           </button>
                           <button
                             type="button"
                             onClick={() => setShowSpoilConfirm(prev => ({ ...prev, [rescue.id]: false }))}
-                            className="py-1.5 px-3 border border-zinc-300 dark:border-zinc-700 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs transition-colors"
+                            className="btn-secondary py-2 px-3 text-xs hover:scale-[1.01]"
                           >
                             Cancel
                           </button>
                         </div>
-                      </div>
+                      </motion.div>
                     ) : (
                       <button
                         type="button"
                         onClick={() => setShowSpoilConfirm(prev => ({ ...prev, [rescue.id]: true }))}
-                        className="w-full py-1.5 px-4 border border-amber-300 dark:border-amber-900/50 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-amber-700 dark:text-amber-400 rounded text-xs font-semibold transition-colors"
+                        className="w-full btn-secondary hover:scale-[1.01] border-warning/30 hover:border-warning text-warning hover:bg-warning-bg py-2 text-xs flex items-center justify-center gap-1.5"
                       >
                         🗑️ Mark Spoiled / Divert to Biogas
                       </button>
                     )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
     </div>
   );

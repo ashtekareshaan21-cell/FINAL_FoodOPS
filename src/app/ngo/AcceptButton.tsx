@@ -31,7 +31,7 @@ export default function AcceptButton({ donationId, acceptDonation }: AcceptButto
   return (
     <div className="mt-4">
       {error && (
-        <div className="mb-3 p-3 rounded bg-red-50 border border-red-200 text-red-600 text-xs dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400">
+        <div className="mb-3 p-3 rounded-sm bg-danger-bg border border-danger-border text-danger text-xs font-semibold">
           {error}
         </div>
       )}
@@ -39,7 +39,7 @@ export default function AcceptButton({ donationId, acceptDonation }: AcceptButto
         type="button"
         disabled={loading}
         onClick={handleAccept}
-        className="w-full flex items-center justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none disabled:opacity-50 transition-colors"
+        className="w-full btn-primary py-2.5 hover:scale-[1.01]"
       >
         {loading ? 'Claiming rescue...' : 'Claim Surplus Donation'}
       </button>
