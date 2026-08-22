@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import AcceptButton from './AcceptButton';
 import { getFoodCategoryImage } from '@/lib/ui';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
+import ClientDateTime from '@/components/ClientDateTime';
 
 interface DonationItem {
   id: string;
@@ -125,7 +126,7 @@ export default function NearbyDonationsList({ availableDonations, acceptDonation
                   <div className="pt-2 border-t border-border mt-2">
                     <span className="font-bold text-foreground">Must Collect Before:</span>{' '}
                     <span className="text-danger font-bold font-mono">
-                      {new Date(donation.pickupDeadlineAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(donation.pickupDeadlineAt).toLocaleDateString()})
+                      <ClientDateTime date={donation.pickupDeadlineAt} />
                     </span>
                   </div>
                 </div>

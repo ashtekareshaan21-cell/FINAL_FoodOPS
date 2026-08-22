@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
 import { generatePickupOtp } from '@/app/actions/donations';
+import ClientDateTime from '@/components/ClientDateTime';
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react';
 
 export interface VolunteerAssignmentItem {
@@ -238,7 +239,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                     <div>
                       <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Expiry Deadline</p>
                       <p className="font-semibold text-danger font-mono mt-0.5">
-                        {new Date(task.donation.pickupDeadlineAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(task.donation.pickupDeadlineAt).toLocaleDateString()})
+                        <ClientDateTime date={task.donation.pickupDeadlineAt} />
                       </p>
                     </div>
                   </div>

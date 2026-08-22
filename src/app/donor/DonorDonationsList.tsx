@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { getFoodCategoryImage, getAvatarGradient, getInitials } from '@/lib/ui';
 import ShowOtpButton from './ShowOtpButton';
+import ClientDateTime from '@/components/ClientDateTime';
 
 interface DonationItem {
   id: string;
@@ -211,7 +212,7 @@ export default function DonorDonationsList({ donations }: DonorDonationsListProp
                       <div>
                         <span className="block text-[9px] uppercase font-bold text-muted-light">Deadline</span>
                         <span className="font-semibold text-foreground font-mono">
-                          {new Date(donation.pickupDeadlineAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(donation.pickupDeadlineAt).toLocaleDateString()})
+                          <ClientDateTime date={donation.pickupDeadlineAt} />
                         </span>
                       </div>
                     </div>

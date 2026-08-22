@@ -6,6 +6,7 @@ import LocationPicker, { SelectedLocation } from '@/components/Maps/LocationPick
 import MapPreview from '@/components/Maps/MapPreview';
 import { updateNgoSettings } from '@/app/actions/donations';
 import { NgoAvailability } from '@prisma/client';
+import ClientDateTime from '@/components/ClientDateTime';
 
 interface NgoProfile {
   id: string;
@@ -46,7 +47,7 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
   const [baseLat, setBaseLat] = useState(ngo.baseLatitude);
   const [baseLng, setBaseLng] = useState(ngo.baseLongitude);
   const [serviceRadius, setServiceRadius] = useState(ngo.serviceRadiusKm);
-  const [availability, setAvailability] = useState(ngo.availability);
+  const [availability, setAvailability] = useState<NgoAvailability>(ngo.availability);
   const [acceptedFoodTypes, setAcceptedFoodTypes] = useState<string[]>(
     ngo.acceptedFoodTypes ? ngo.acceptedFoodTypes.split(',').map((t) => t.trim()) : []
   );
@@ -82,7 +83,7 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
       baseAddress,
       baseLatitude: baseLat,
       baseLongitude: baseLng,
-      serviceRadiusKm: serviceRadius,
+      serviceRadiusKm: Number(serviceRadius),
       availability,
       acceptedFoodTypes,
     });
@@ -100,11 +101,6 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
   const currentAcceptedLabels = FOOD_CATEGORIES.filter((c) =>
     acceptedFoodTypes.includes(c.id)
   ).map((c) => c.label);
-
-  const formatTimestamp = (dateVal: Date | string) => {
-    const d = new Date(dateVal);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (' + d.toLocaleDateString() + ')';
-  };
 
   return (
     <div className="bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col justify-between space-y-6">
@@ -153,7 +149,7 @@ export default function NgoSettings({ ngo }: NgoSettingsProps) {
                   : '🔴 Offline'}
               </span>
               <span className="text-[10px] text-muted-light font-mono">
-                Last updated: {formatTimestamp(ngo.availabilityUpdatedAt)}
+                Last updated: <ClientDateTime date={ngo.availabilityUpdatedAt} />
               </span>
             </div>
           </div>

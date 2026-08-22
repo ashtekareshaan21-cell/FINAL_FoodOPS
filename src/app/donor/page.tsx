@@ -6,8 +6,7 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getDonorDonations } from '@/app/actions/donations';
 import Navbar from '@/components/Navbar';
-import { getFoodCategoryImage, getAvatarGradient, getInitials } from '@/lib/ui';
-import ShowOtpButton from './ShowOtpButton';
+import DonorDonationsList from './DonorDonationsList';
 
 const STATUS_STYLING: Record<string, { bg: string; label: string; dot: string }> = {
   AVAILABLE: { 
@@ -210,134 +209,7 @@ export default async function DonorDashboard() {
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              {donations.map((donation) => {
-                const style = STATUS_STYLING[donation.status] || { bg: 'bg-surface border-border text-foreground', label: donation.status, dot: 'bg-muted' };
-                const foodImg = getFoodCategoryImage(donation.foodCategory);
-                const ngoGrad = donation.acceptedNgo ? getAvatarGradient(donation.acceptedNgo.organizationName) : '';
-                const ngoInit = donation.acceptedNgo ? getInitials(donation.acceptedNgo.organizationName) : '';
-
-                return (
-                  <div 
-                    key={donation.id} 
-                    className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-premium flex flex-col md:flex-row"
-                  >
-                    {/* Food image */}
-                    <div className="relative w-full md:w-56 h-48 md:h-auto flex-shrink-0 bg-surface-muted">
-                      <img 
-                        src={foodImg} 
-                        alt={donation.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent md:hidden" />
-                      <div className="absolute top-4 left-4">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md ${style.bg}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-                          {style.label}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Details section */}
-                    <div className="flex-grow p-6 flex flex-col justify-between space-y-6">
-                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                        <div className="space-y-2">
-                          <h3 className="text-xl font-bold text-foreground leading-tight">
-                            {donation.title}
-                          </h3>
-                          <p className="text-xs text-muted-text max-w-xl font-medium">
-                            {donation.description}
-                          </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 text-xs text-muted">
-                            <div className="flex items-center gap-1.5">
-                              <span>⚖️</span>
-                              <div>
-                                <span className="block text-[9px] uppercase font-bold text-muted-light">Weight</span>
-                                <span className="font-semibold text-foreground">{donation.quantity} {donation.quantityUnit}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span>🥗</span>
-                              <div>
-                                <span className="block text-[9px] uppercase font-bold text-muted-light">Type</span>
-                                <span className="font-semibold text-foreground capitalize">{donation.foodCategory}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 col-span-2">
-                              <span>⏱️</span>
-                              <div>
-                                <span className="block text-[9px] uppercase font-bold text-muted-light">Deadline</span>
-                                <span className="font-semibold text-foreground font-mono">
-                                  {new Date(donation.pickupDeadlineAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(donation.pickupDeadlineAt).toLocaleDateString()})
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* NGO panel */}
-                        <div className="flex-shrink-0 bg-surface-muted p-4 rounded-md border border-border min-w-[220px]">
-                          {donation.acceptedNgo ? (
-                            <div className="space-y-3">
-                              <span className="block text-[9px] uppercase font-bold text-muted tracking-wider">Assigned Partner NGO</span>
-                              <div className="flex items-center gap-2.5">
-                                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${ngoGrad} text-white font-bold text-xs flex items-center justify-center shadow-inner`}>
-                                  {ngoInit}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-xs font-bold text-foreground truncate flex items-center gap-1">
-                                    {donation.acceptedNgo.organizationName}
-                                    <span className="text-[10px] text-primary">✓</span>
-                                  </p>
-                                  <p className="text-[9px] text-muted-light font-mono">Verified NGO</p>
-                                </div>
-                              </div>
-                              {donation.assignment?.volunteer && (
-                                <div className="pt-2.5 border-t border-border">
-                                  <span className="block text-[9px] uppercase font-bold text-muted tracking-wider mb-1">Rider Assigned</span>
-                                  <div className="flex items-center justify-between text-[11px]">
-                                    <span className="font-semibold text-foreground">🚴 {donation.assignment.volunteer.name}</span>
-                                    <span className="text-muted-text font-mono">{donation.assignment.volunteer.phoneNumber}</span>
-                                  </div>
-                                </div>
-                              )}
-                              {donation.assignment && donation.status !== 'COMPLETED' && donation.status !== 'DELIVERED' && (
-                                <ShowOtpButton assignmentId={donation.assignment.id} />
-                              )}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center py-4 text-center">
-                              <span className="text-xl animate-pulse">🛰️</span>
-                              <p className="text-xs font-bold text-muted mt-2">Awaiting Match</p>
-                              <p className="text-[9px] text-muted-light mt-0.5">Alerts dispatched to nearby NGOs</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Progression stepper */}
-                      {['CANCELLED', 'EXPIRED'].includes(donation.status) ? (
-                        <div className="mt-4 p-4 bg-surface-muted border border-border rounded-md text-xs text-muted-text flex items-start gap-3">
-                          <span className="text-lg">⚠️</span>
-                          <div>
-                            <p className="font-bold text-foreground">
-                              Surplus Request Inactive ({donation.status === 'CANCELLED' ? 'Cancelled' : 'Expired / Spoiled'})
-                            </p>
-                            <p className="mt-0.5 text-muted-light">
-                              {donation.status === 'CANCELLED' 
-                                ? `This surplus listing was cancelled. Reason: "${donation.cancelReason || 'Not specified'}"` 
-                                : 'Listing exceeded deadline without collection and has been diverted to Biogas Energy Recovery.'}
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <DonationProgressStepper status={donation.status} />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <DonorDonationsList donations={donations} />
           )}
         </div>
       </main>
