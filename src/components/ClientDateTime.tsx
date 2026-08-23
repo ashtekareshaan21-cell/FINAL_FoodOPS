@@ -12,12 +12,14 @@ export default function ClientDateTime({ date }: ClientDateTimeProps) {
   useEffect(() => {
     if (!date) return;
     const d = new Date(date);
-    setFormatted(
-      d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + 
+    const formattedStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + 
       ' (' + 
       d.toLocaleDateString() + 
-      ')'
-    );
+      ')';
+    const timer = setTimeout(() => {
+      setFormatted(formattedStr);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [date]);
 
   return <>{formatted}</>;

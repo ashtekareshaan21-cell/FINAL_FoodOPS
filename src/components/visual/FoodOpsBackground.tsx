@@ -22,19 +22,22 @@ export default function FoodOpsBackground({ variant = 'dashboard' }: FoodOpsBack
   const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
-    setMounted(true);
-    if (shouldReduceMotion || variant === 'auth' || variant === 'admin') return;
+    const timer = setTimeout(() => {
+      setMounted(true);
+      if (shouldReduceMotion || variant === 'auth' || variant === 'admin') return;
 
-    // Generate static list of particles on client mount to avoid hydration mismatch
-    const newParticles = Array.from({ length: variant === 'hero' ? 25 : 12 }).map((_, i) => ({
-      id: i,
-      x: (i * 7 + 13) % 100, // deterministic pseudo-random distribution
-      y: (i * 9 + 23) % 100,
-      size: ((i * 3) % 4) + 1.5,
-      duration: 18 + (i % 5) * 4,
-      delay: -(i % 3) * 3,
-    }));
-    setParticles(newParticles);
+      // Generate static list of particles on client mount to avoid hydration mismatch
+      const newParticles = Array.from({ length: variant === 'hero' ? 25 : 12 }).map((_, i) => ({
+        id: i,
+        x: (i * 7 + 13) % 100, // deterministic pseudo-random distribution
+        y: (i * 9 + 23) % 100,
+        size: ((i * 3) % 4) + 1.5,
+        duration: 18 + (i % 5) * 4,
+        delay: -(i % 3) * 3,
+      }));
+      setParticles(newParticles);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [shouldReduceMotion, variant]);
 
   // Map variant to opacity levels for atmospheric radial glows
