@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
+import { useState, useEffect, useRef } from 'react';
+import { createScope, animate } from 'animejs';
+import { MOTION } from '@/animations/config';
+import { prefersReducedMotion } from '@/animations/accessibility';
 
 const PIPELINE_STAGES = [
   { label: '1. SURPLUS', icon: '🏨', desc: 'Listing declared' },
@@ -16,34 +18,47 @@ const PIPELINE_STAGES = [
 
 export default function LifecyclePipeline() {
   const [activeIdx, setActiveIdx] = useState(0);
-  const shouldReduceMotion = useReducedMotion();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (shouldReduceMotion) return;
+    setMounted(true);
+    if (prefersReducedMotion()) return;
     const interval = setInterval(() => {
       setActiveIdx((prev) => (prev + 1) % PIPELINE_STAGES.length);
     }, 2800);
     return () => clearInterval(interval);
-  }, [shouldReduceMotion]);
+  }, []);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.05,
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || prefersReducedMotion()) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const scope = createScope({ root: el }).add(() => {
+              const nodes = el.querySelectorAll('.pipeline-node');
+              animate(nodes, {
+                opacity: [0, 1],
+                scale: [0.95, 1],
+                translateY: [10, 0],
+                duration: MOTION.duration.normal,
+                delay: (_node?: any, i?: number) => (i || 0) * 60,
+                ease: MOTION.easing.smooth,
+              });
+            });
+            observer.unobserve(el);
+          }
+        });
       },
-    },
-  };
+      { threshold: 0.05, rootMargin: '0px 0px -50px 0px' }
+    );
 
-  const nodeVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: { duration: 0.4 },
-    },
-  };
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
@@ -54,26 +69,21 @@ export default function LifecyclePipeline() {
         </div>
         
         {/* Connected Steps */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
+        <div 
+          ref={containerRef}
           className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-center relative z-10"
         >
           {PIPELINE_STAGES.map((step, idx) => {
             const isActive = activeIdx === idx;
             
             return (
-              <motion.div 
+              <div 
                 key={idx} 
-                variants={nodeVariants}
-                animate={isActive && !shouldReduceMotion ? { scale: 1.03, y: -2 } : { scale: 1, y: 0 }}
-                className={`relative p-4 rounded-lg border transition-colors duration-500 group ${
+                className={`pipeline-node relative p-4 rounded-lg border transition-all duration-500 ease-out group ${
                   isActive 
-                    ? 'border-primary bg-primary/5 ring-2 ring-primary/5' 
-                    : 'bg-surface-muted/50 border-border/60 hover:border-primary/30'
-                }`}
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary/5 scale-[1.03] -translate-y-0.5' 
+                    : 'bg-surface-muted/50 border-border/60 hover:border-primary/30 scale-100 translate-y-0'
+                } ${mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'}`}
               >
                 <div className="text-2xl mb-2 group-hover:scale-110 transition-transform duration-300">
                   {step.icon}
@@ -89,16 +99,16 @@ export default function LifecyclePipeline() {
                 
                 {/* Connecting Arrows */}
                 {idx < 7 && (
-                  <div className={`hidden lg:block absolute top-1/2 -right-3 -translate-y-1/2 font-mono font-bold z-20 text-[11px] transition-colors duration-500 ${
+                  <div className={`hidden lg:block absolute top-1/2 -right-3 -translate-y-1/2 font-mono font-bold z-20 text-[11px] transition-all duration-500 ${
                     isActive ? 'text-primary scale-110' : 'text-border'
                   }`}>
                     &rarr;
                   </div>
                 )}
-              </motion.div>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

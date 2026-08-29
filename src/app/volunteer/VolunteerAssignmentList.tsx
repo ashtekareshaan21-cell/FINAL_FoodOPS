@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
 import { generatePickupOtp } from '@/app/actions/donations';
 import ClientDateTime from '@/components/ClientDateTime';
-import { motion, useReducedMotion, AnimatePresence } from 'motion/react';
+import { prefersReducedMotion } from '@/animations/accessibility';
+import { staggerCards } from '@/animations/cards';
+import { DeliveryRouteTracker } from '@/animations/delivery';
 
 export interface VolunteerAssignmentItem {
   id: string;
@@ -47,6 +49,16 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLETED: '✓ Completed',
 };
 
+// Map Volunteer status names to Delivery tracker status names
+const MAPPED_STATUS: Record<string, string> = {
+  ASSIGNED: 'VOLUNTEER_ASSIGNED',
+  TRAVELING: 'PICKUP_IN_PROGRESS',
+  ARRIVED: 'ARRIVED',
+  PICKED_UP: 'PICKED_UP',
+  DELIVERING: 'DELIVERY_IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+};
+
 export default function VolunteerAssignmentList({ assignments, updateAssignmentStatus }: VolunteerAssignmentListProps) {
   const router = useRouter();
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
@@ -56,27 +68,20 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
   const [otpMap, setOtpMap] = useState<Record<string, string>>({});
   const [otpSentMap, setOtpSentMap] = useState<Record<string, string | null>>({});
 
-  const shouldReduceMotion = useReducedMotion();
-  const yOffset = shouldReduceMotion ? 0 : 12;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.05,
-      },
-    },
-  };
+  useEffect(() => {
+    setMounted(true);
+    const el = containerRef.current;
+    if (!el || prefersReducedMotion()) return;
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: yOffset },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4, ease: 'easeOut' as const },
-    },
-  };
+    const cards = el.querySelectorAll('.volunteer-card');
+    const anim = staggerCards(cards);
+    return () => {
+      if (anim) anim.revert();
+    };
+  }, [assignments]);
 
   const handleRequestOtp = async (assignmentId: string) => {
     setLoadingMap(prev => ({ ...prev, [assignmentId]: true }));
@@ -151,10 +156,8 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
           </p>
         </div>
       ) : (
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+        <div 
+          ref={containerRef}
           className="grid gap-6"
         >
           {assignments.map((task) => {
@@ -168,11 +171,11 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
               : null;
 
             return (
-              <motion.div
+              <div
                 key={task.id}
-                variants={cardVariants}
-                whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
-                className="bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col lg:flex-row justify-between gap-6 hover:shadow-md transition-all"
+                className={`volunteer-card bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col lg:flex-row justify-between gap-6 hover:shadow-md hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 ${
+                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                }`}
               >
                 {/* Details Section */}
                 <div className="flex-grow space-y-4">
@@ -243,22 +246,20 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                       </p>
                     </div>
                   </div>
+
+                  {/* SVG Route Rider tracking animation */}
+                  <DeliveryRouteTracker status={MAPPED_STATUS[task.status] || 'ACCEPTED'} className="mt-4" />
                 </div>
 
                 {/* Operations Actions Panel */}
                 <div className="flex-shrink-0 lg:w-80 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-border pt-6 lg:pt-0 lg:pl-6">
-                  <AnimatePresence mode="wait">
-                    {error && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        className="mb-3 p-3 rounded-sm bg-danger-bg border border-danger-border text-danger text-xs font-semibold"
-                      >
-                        {error}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {error && (
+                    <div 
+                      className="mb-3 p-3 rounded-sm bg-danger-bg border border-danger-border text-danger text-xs font-semibold animate-fade-in"
+                    >
+                      {error}
+                    </div>
+                  )}
 
                   {/* Secure Handover OTP Form when rider has ARRIVED */}
                   {task.status === 'ARRIVED' ? (
@@ -270,24 +271,20 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                         </span>
                       </div>
 
-                      <AnimatePresence mode="wait">
-                        {otpSent && (
-                          <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="p-2.5 bg-success-bg border border-success-border rounded-sm text-success text-[11px] font-semibold leading-normal"
-                          >
-                            ✓ {otpSent}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      {otpSent && (
+                        <div 
+                          className="p-2.5 bg-success-bg border border-success-border rounded-sm text-success text-[11px] font-semibold leading-normal animate-fade-in"
+                        >
+                          ✓ {otpSent}
+                        </div>
+                      )}
 
                       <div className="space-y-3">
                         <button
                           type="button"
                           disabled={loading}
                           onClick={() => handleRequestOtp(task.id)}
-                          className="w-full btn-secondary text-xs py-2 flex items-center justify-center gap-1.5 font-bold hover:scale-[1.01]"
+                          className="w-full btn-secondary text-xs py-2 flex items-center justify-center gap-1.5 font-bold hover:scale-[1.01] transition-transform duration-150"
                         >
                           ✉️ Request OTP Code from Donor
                         </button>
@@ -307,44 +304,40 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                           />
                         </div>
 
-                        <motion.button
+                        <button
                           type="button"
                           disabled={loading || (otpMap[task.id] || '').length !== 6}
                           onClick={() => handleVerifyOtp(task.id)}
-                          whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
-                          whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
-                          className="w-full btn-primary py-2.5 text-xs font-bold shadow-md shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full btn-primary py-2.5 text-xs font-bold shadow-md shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] transition-all"
                         >
                           {loading ? 'Verifying...' : 'Verify Handover Code'}
-                        </motion.button>
+                        </button>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       <p className="text-xs font-bold text-foreground uppercase tracking-wide">Operational Transit Action</p>
                       {nextStatus ? (
-                        <motion.button
+                        <button
                           type="button"
                           disabled={loading}
                           onClick={() => handleStatusUpdate(task.id, nextStatus)}
-                          whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
-                          whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
-                          className="w-full btn-primary py-3 shadow-md shadow-primary/10"
+                          className="w-full btn-primary py-3 shadow-md shadow-primary/10 hover:scale-[1.01] active:scale-[0.99] transition-transform duration-150"
                         >
                           {loading ? 'Updating...' : `Set status to ${nextStatus.replace(/_/g, ' ')}`}
-                        </motion.button>
+                        </button>
                       ) : (
-                        <div className="bg-success-bg border border-success-border text-success text-xs font-bold p-4 rounded-md text-center">
+                        <div className="bg-success-bg border border-success-border text-success text-xs font-bold p-4 rounded-md text-center animate-fade-in">
                           🎉 Rescue task is fully completed!
                         </div>
                       )}
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
       )}
     </div>
   );

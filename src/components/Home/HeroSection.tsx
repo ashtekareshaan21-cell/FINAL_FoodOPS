@@ -1,87 +1,236 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'motion/react';
+import { createScope, animate } from 'animejs';
+import { MOTION } from '@/animations/config';
+import { prefersReducedMotion } from '@/animations/accessibility';
 
 export default function HeroSection() {
-  const shouldReduceMotion = useReducedMotion();
-  const yOffset = shouldReduceMotion ? 0 : 16;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.08,
-      },
-    },
-  };
+  useEffect(() => {
+    setMounted(true);
+    const root = rootRef.current;
+    if (!root || prefersReducedMotion()) return;
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: yOffset },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5, ease: 'easeOut' as const },
-    },
-  };
+    // Component-scoped Anime.js timeline entrance
+    const scope = createScope({ root }).add(() => {
+      const textItems = root.querySelectorAll('.hero-text-anim');
+      const nodes = root.querySelectorAll('.hero-node-anim');
+      const lines = root.querySelectorAll('.hero-line-anim');
+
+      // Animating the text and then drawing the connections of the central core
+      animate(textItems, {
+        opacity: [0, 1],
+        translateY: [25, 0],
+        duration: MOTION.duration.slow,
+        ease: MOTION.easing.smooth,
+        delay: (_el?: any, i?: number) => (i || 0) * 120,
+      });
+
+      animate(lines, {
+        strokeDashoffset: [300, 0],
+        opacity: [0, 1],
+        duration: MOTION.duration.slow,
+        ease: MOTION.easing.smooth,
+        delay: 500,
+      });
+
+      animate(nodes, {
+        scale: [0, 1],
+        opacity: [0, 1],
+        duration: MOTION.duration.medium,
+        ease: MOTION.easing.bounce,
+        delay: (_el?: any, i?: number) => 800 + (i || 0) * 100,
+      });
+    });
+
+    return () => {
+      scope.revert();
+    };
+  }, []);
 
   return (
-    <section className="relative overflow-hidden pt-24 pb-20 sm:pt-32 sm:pb-28">
+    <section ref={rootRef} className="relative overflow-hidden min-h-screen pt-24 pb-20 flex items-center bg-transparent">
+      {/* Decorative Radial Grid */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(16,185,129,0.08),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(16,185,129,0.06),rgba(0,0,0,0))] pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="text-center space-y-6 max-w-4xl mx-auto"
-        >
-          <motion.span 
-            variants={itemVariants}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/5 border border-primary/10"
-          >
-            🌿 Intelligent Circular Food Rescue Operations
-          </motion.span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
-          <motion.h1 
-            variants={itemVariants}
-            className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-foreground leading-[1.1] font-display"
-          >
-            Turn Surplus <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-emerald-600 to-teal-650 bg-clip-text text-transparent dark:from-emerald-400 dark:to-teal-400">
-              Into Impact.
+          {/* Cinematic Typography Treatment */}
+          <div className="lg:col-span-6 space-y-6 text-left">
+            <span 
+              className={`hero-text-anim inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/5 border border-primary/10 transition-opacity duration-150 ${
+                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              🌿 Intelligent Circular Food Rescue Operations
             </span>
-          </motion.h1>
-          
-          <motion.p 
-            variants={itemVariants}
-            className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-muted-text leading-relaxed font-medium"
-          >
-            FoodOps coordinates time-critical food rescue from surplus generation to redistribution and responsible recovery.
-          </motion.p>
-          
-          <motion.div 
-            variants={itemVariants}
-            className="pt-6 flex flex-col sm:flex-row justify-center items-center gap-3"
-          >
-            <motion.div whileHover={shouldReduceMotion ? {} : { scale: 1.01 }} whileTap={shouldReduceMotion ? {} : { scale: 0.99 }} className="w-full sm:w-auto">
-              <Link
-                href="/register"
-                className="btn-primary w-full sm:w-auto px-8 py-3.5 shadow-lg shadow-primary/10 block"
-              >
-                Get Started
-              </Link>
-            </motion.div>
-            <motion.div whileHover={shouldReduceMotion ? {} : { scale: 1.01 }} whileTap={shouldReduceMotion ? {} : { scale: 0.99 }} className="w-full sm:w-auto">
-              <a
-                href="#how-it-works"
-                className="btn-secondary w-full sm:w-auto px-8 py-3.5 block"
-              >
-                Explore How It Works
-              </a>
-            </motion.div>
-          </motion.div>
-        </motion.div>
+            
+            <h1 
+              className={`hero-text-anim text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-foreground leading-[1.0] font-display transition-opacity duration-150 ${
+                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              THE FOOD <br />
+              <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent dark:from-emerald-400 dark:via-emerald-300 dark:to-teal-400">
+                OPERATING
+              </span> <br />
+              SYSTEM.
+            </h1>
+            
+            <p 
+              className={`hero-text-anim max-w-lg text-sm sm:text-base md:text-lg text-muted-text leading-relaxed font-medium transition-opacity duration-150 ${
+                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              One intelligent system connecting every part of your food operation — list surplus, audit listings, match NGOs, coordinate delivery, and track real-time impact.
+            </p>
+            
+            <div 
+              className={`hero-text-anim pt-4 flex flex-col sm:flex-row gap-4 transition-opacity duration-150 ${
+                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              <div className="w-full sm:w-auto hover:scale-[1.01] active:scale-[0.99] transition-transform duration-200">
+                <Link
+                  href="/register"
+                  className="btn-primary w-full sm:w-auto px-8 py-4 shadow-lg shadow-primary/10 block text-center font-bold"
+                >
+                  GET STARTED
+                </Link>
+              </div>
+              <div className="w-full sm:w-auto hover:scale-[1.01] active:scale-[0.99] transition-transform duration-200">
+                <a
+                  href="#orders-narrative"
+                  className="btn-secondary w-full sm:w-auto px-8 py-4 block text-center font-bold"
+                >
+                  EXPLORE INTERACTIVE JOURNEY &darr;
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Central FoodOps Core SVG System Diagram */}
+          <div className="lg:col-span-6 flex justify-center items-center relative min-h-[350px]">
+            <svg 
+              viewBox="0 0 500 500" 
+              className="w-full max-w-[450px] aspect-square overflow-visible"
+            >
+              {/* Connector lines (glowing paths) */}
+              <g className="opacity-75">
+                {/* Orders to Core */}
+                <path 
+                  d="M 100,100 L 250,250" 
+                  stroke="var(--color-primary, #10b981)" 
+                  strokeWidth="2.5" 
+                  strokeDasharray="300"
+                  strokeDashoffset="300"
+                  className="hero-line-anim"
+                />
+                {/* Kitchen to Core */}
+                <path 
+                  d="M 400,100 L 250,250" 
+                  stroke="var(--color-primary, #10b981)" 
+                  strokeWidth="2.5" 
+                  strokeDasharray="300"
+                  strokeDashoffset="300"
+                  className="hero-line-anim"
+                />
+                {/* Inventory to Core */}
+                <path 
+                  d="M 100,400 L 250,250" 
+                  stroke="var(--color-primary, #10b981)" 
+                  strokeWidth="2.5" 
+                  strokeDasharray="300"
+                  strokeDashoffset="300"
+                  className="hero-line-anim"
+                />
+                {/* Delivery to Core */}
+                <path 
+                  d="M 400,400 L 250,250" 
+                  stroke="var(--color-primary, #10b981)" 
+                  strokeWidth="2.5" 
+                  strokeDasharray="300"
+                  strokeDashoffset="300"
+                  className="hero-line-anim"
+                />
+              </g>
+
+              {/* Central Core Circle Node */}
+              <g className="hero-node-anim" style={{ transformOrigin: '250px 250px' }}>
+                <circle 
+                  cx="250" 
+                  cy="250" 
+                  r="50" 
+                  className="fill-surface stroke-primary" 
+                  strokeWidth="3.5" 
+                />
+                <circle 
+                  cx="250" 
+                  cy="250" 
+                  r="62" 
+                  fill="none" 
+                  className="stroke-primary/20 animate-ping" 
+                  strokeWidth="1" 
+                />
+                <text 
+                  x="250" 
+                  y="245" 
+                  fontSize="12" 
+                  fontWeight="bold" 
+                  textAnchor="middle" 
+                  fill="currentColor"
+                >
+                  FOODOPS
+                </text>
+                <text 
+                  x="250" 
+                  y="262" 
+                  fontSize="10" 
+                  fontWeight="black" 
+                  className="fill-primary"
+                  textAnchor="middle"
+                >
+                  CORE
+                </text>
+              </g>
+
+              {/* Operational nodes */}
+              {/* ORDERS */}
+              <g className="hero-node-anim" style={{ transformOrigin: '100px 100px' }}>
+                <circle cx="100" cy="100" r="36" className="fill-surface stroke-border hover:stroke-primary" strokeWidth="2" />
+                <text x="100" y="96" fontSize="16" textAnchor="middle">📝</text>
+                <text x="100" y="120" fontSize="9" fontWeight="bold" fill="currentColor" textAnchor="middle">ORDERS</text>
+              </g>
+
+              {/* KITCHEN */}
+              <g className="hero-node-anim" style={{ transformOrigin: '400px 100px' }}>
+                <circle cx="400" cy="100" r="36" className="fill-surface stroke-border hover:stroke-primary" strokeWidth="2" />
+                <text x="400" y="96" fontSize="16" textAnchor="middle">🍳</text>
+                <text x="400" y="120" fontSize="9" fontWeight="bold" fill="currentColor" textAnchor="middle">KITCHEN</text>
+              </g>
+
+              {/* INVENTORY */}
+              <g className="hero-node-anim" style={{ transformOrigin: '100px 400px' }}>
+                <circle cx="100" cy="400" r="36" className="fill-surface stroke-border hover:stroke-primary" strokeWidth="2" />
+                <text x="100" y="396" fontSize="16" textAnchor="middle">📊</text>
+                <text x="100" y="420" fontSize="9" fontWeight="bold" fill="currentColor" textAnchor="middle">INVENTORY</text>
+              </g>
+
+              {/* DELIVERY */}
+              <g className="hero-node-anim" style={{ transformOrigin: '400px 400px' }}>
+                <circle cx="400" cy="400" r="36" className="fill-surface stroke-border hover:stroke-primary" strokeWidth="2" />
+                <text x="400" y="396" fontSize="16" textAnchor="middle">🚴</text>
+                <text x="400" y="420" fontSize="9" fontWeight="bold" fill="currentColor" textAnchor="middle">DELIVERY</text>
+              </g>
+            </svg>
+          </div>
+
+        </div>
       </div>
     </section>
   );

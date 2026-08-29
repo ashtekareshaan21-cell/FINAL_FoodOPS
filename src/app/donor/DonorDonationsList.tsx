@@ -1,9 +1,13 @@
 'use client';
 
-import { motion, useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { animate } from 'animejs';
 import { getFoodCategoryImage, getAvatarGradient, getInitials } from '@/lib/ui';
 import ShowOtpButton from './ShowOtpButton';
 import ClientDateTime from '@/components/ClientDateTime';
+import { MOTION } from '@/animations/config';
+import { prefersReducedMotion } from '@/animations/accessibility';
+import { staggerCards } from '@/animations/cards';
 
 interface DonationItem {
   id: string;
@@ -66,7 +70,29 @@ function DonationProgressStepper({ status }: { status: string }) {
     if (activeStep === -1) activeStep = 0;
   }
 
-  const shouldReduceMotion = useReducedMotion();
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+
+    const targetWidth = `${(activeStep / 6) * 100}%`;
+
+    if (prefersReducedMotion()) {
+      el.style.width = targetWidth;
+      return;
+    }
+
+    const anim = animate(el, {
+      width: targetWidth,
+      duration: MOTION.duration.medium,
+      ease: MOTION.easing.smooth,
+    });
+
+    return () => {
+      anim.revert();
+    };
+  }, [activeStep]);
 
   return (
     <div className="mt-6 pt-5 border-t border-border">
@@ -76,11 +102,10 @@ function DonationProgressStepper({ status }: { status: string }) {
       <div className="flex items-center justify-between w-full relative">
         {/* Track Line Background */}
         <div className="absolute left-0 right-0 top-5 -translate-y-1/2 h-[2px] bg-border rounded-full -z-10" />
-        <motion.div 
-          className="absolute left-0 top-5 -translate-y-1/2 h-[2px] bg-primary rounded-full -z-10" 
-          initial={{ width: 0 }}
-          animate={{ width: `${(activeStep / 6) * 100}%` }}
-          transition={{ duration: shouldReduceMotion ? 0 : 0.6, ease: 'easeOut' }}
+        <div 
+          ref={trackRef}
+          className="absolute left-0 top-5 -translate-y-1/2 h-[2px] bg-primary rounded-full -z-10"
+          style={{ width: '0%' }}
         />
         
         {STEPS.map((step, idx) => {
@@ -89,18 +114,17 @@ function DonationProgressStepper({ status }: { status: string }) {
           
           return (
             <div key={idx} className="flex flex-col items-center flex-1 relative">
-              <motion.div 
-                animate={isActive && !shouldReduceMotion ? { scale: 1.1 } : { scale: 1 }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors duration-500 ${
+              <div 
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-500 ${
                   isCompleted 
-                    ? 'bg-primary text-white shadow-sm' 
+                    ? 'bg-primary text-white shadow-sm scale-100' 
                     : isActive 
-                    ? 'bg-surface border-2 border-primary text-primary shadow-md ring-4 ring-primary/5' 
-                    : 'bg-surface border border-border text-muted-light'
+                    ? 'bg-surface border-2 border-primary text-primary shadow-md ring-4 ring-primary/5 scale-[1.08]' 
+                    : 'bg-surface border border-border text-muted-light scale-100'
                 }`}
               >
                 {isCompleted ? '✓' : step.icon}
-              </motion.div>
+              </div>
               <div className="mt-2 text-center">
                 <p className={`text-[10px] font-bold tracking-tight whitespace-nowrap hidden sm:block ${
                   isActive ? 'text-foreground font-black' : 'text-muted'
@@ -124,33 +148,25 @@ function DonationProgressStepper({ status }: { status: string }) {
 }
 
 export default function DonorDonationsList({ donations }: DonorDonationsListProps) {
-  const shouldReduceMotion = useReducedMotion();
-  const yOffset = shouldReduceMotion ? 0 : 12;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.05,
-      },
-    },
-  };
+  useEffect(() => {
+    setMounted(true);
+    const el = containerRef.current;
+    if (!el || prefersReducedMotion()) return;
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: yOffset },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4, ease: 'easeOut' as const },
-    },
-  };
+    const cards = el.querySelectorAll('.donation-card');
+    const anim = staggerCards(cards);
+    
+    return () => {
+      if (anim) anim.revert();
+    };
+  }, [donations]);
 
   return (
-    <motion.div 
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
+    <div 
+      ref={containerRef}
       className="space-y-6"
     >
       {donations.map((donation) => {
@@ -160,11 +176,11 @@ export default function DonorDonationsList({ donations }: DonorDonationsListProp
         const ngoInit = donation.acceptedNgo ? getInitials(donation.acceptedNgo.organizationName) : '';
 
         return (
-          <motion.div
+          <div
             key={donation.id}
-            variants={cardVariants}
-            whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
-            className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row"
+            className={`donation-card bg-surface border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 flex flex-col md:flex-row ${
+              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+            }`}
           >
             {/* Food image */}
             <div className="relative w-full md:w-56 h-48 md:h-auto flex-shrink-0 bg-surface-muted">
@@ -278,9 +294,9 @@ export default function DonorDonationsList({ donations }: DonorDonationsListProp
                 <DonationProgressStepper status={donation.status} />
               )}
             </div>
-          </motion.div>
+          </div>
         );
       })}
-    </motion.div>
+    </div>
   );
 }

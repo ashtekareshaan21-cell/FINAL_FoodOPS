@@ -1,6 +1,10 @@
 'use client';
 
-import { motion, useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { createScope, animate } from 'animejs';
+import { MOTION } from '@/animations/config';
+import { prefersReducedMotion } from '@/animations/accessibility';
+import { AnimatedNumber } from '@/animations/inventory';
 
 interface EsgMetricsProps {
   stats: {
@@ -14,27 +18,43 @@ interface EsgMetricsProps {
 }
 
 export default function EsgMetrics({ stats }: EsgMetricsProps) {
-  const shouldReduceMotion = useReducedMotion();
-  const yOffset = shouldReduceMotion ? 0 : 16;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [inView, setInView] = useState(false);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.08,
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || prefersReducedMotion()) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setInView(true);
+            const scope = createScope({ root: el }).add(() => {
+              const cards = el.querySelectorAll('.esg-card');
+              animate(cards, {
+                opacity: [0, 1],
+                translateY: [15, 0],
+                duration: MOTION.duration.medium,
+                delay: (_node?: any, i?: number) => (i || 0) * 80,
+                ease: MOTION.easing.smooth,
+              });
+            });
+            observer.unobserve(el);
+          }
+        });
       },
-    },
-  };
+      { threshold: 0.05, rootMargin: '0px 0px -50px 0px' }
+    );
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: yOffset },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.45, ease: 'easeOut' as const },
-    },
-  };
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <section className="bg-surface-muted border-y border-border py-24">
@@ -48,18 +68,15 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
           </h2>
         </div>
         
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-60px' }}
+        <div 
+          ref={containerRef}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
           {/* Weight Rescued */}
-          <motion.div 
-            variants={cardVariants}
-            whileHover={shouldReduceMotion ? {} : { scale: 1.01, y: -2 }}
-            className="p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 transition-all shadow-sm"
+          <div 
+            className={`esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm ${
+              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+            }`}
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Weight Rescued</span>
@@ -67,17 +84,21 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
             </div>
             <div>
               <p className="text-3xl font-black text-foreground tracking-tight">
-                {(stats.foodWeightKg || 0).toLocaleString()} kg
+                {inView || prefersReducedMotion() ? (
+                  <AnimatedNumber value={stats.foodWeightKg || 0} suffix=" kg" />
+                ) : (
+                  '0 kg'
+                )}
               </p>
               <p className="mt-1.5 text-xs text-muted-text leading-normal">Surplus weight collected and safely distributed.</p>
             </div>
-          </motion.div>
+          </div>
 
           {/* Completed Rescues */}
-          <motion.div 
-            variants={cardVariants}
-            whileHover={shouldReduceMotion ? {} : { scale: 1.01, y: -2 }}
-            className="p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 transition-all shadow-sm"
+          <div 
+            className={`esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm ${
+              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+            }`}
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Completed Rescues</span>
@@ -85,17 +106,21 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
             </div>
             <div>
               <p className="text-3xl font-black text-foreground tracking-tight">
-                {stats.completedRescues || 0}
+                {inView || prefersReducedMotion() ? (
+                  <AnimatedNumber value={stats.completedRescues || 0} />
+                ) : (
+                  '0'
+                )}
               </p>
               <p className="mt-1.5 text-xs text-muted-text leading-normal">Successful end-to-end driver transit deliveries.</p>
             </div>
-          </motion.div>
+          </div>
 
           {/* CO2 Abated */}
-          <motion.div 
-            variants={cardVariants}
-            whileHover={shouldReduceMotion ? {} : { scale: 1.01, y: -2 }}
-            className="p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 transition-all shadow-sm"
+          <div 
+            className={`esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm ${
+              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+            }`}
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-bold text-muted uppercase tracking-wider">CO₂e Abated</span>
@@ -103,17 +128,21 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
             </div>
             <div>
               <p className="text-3xl font-black text-foreground tracking-tight">
-                {Math.round(stats.co2SavedKg || 0).toLocaleString()} kg
+                {inView || prefersReducedMotion() ? (
+                  <AnimatedNumber value={Math.round(stats.co2SavedKg || 0)} suffix=" kg" />
+                ) : (
+                  '0 kg'
+                )}
               </p>
               <p className="mt-1.5 text-xs text-muted-text leading-normal">Methane emissions prevented from food decomposition.</p>
             </div>
-          </motion.div>
+          </div>
 
           {/* Water footprint conserved */}
-          <motion.div 
-            variants={cardVariants}
-            whileHover={shouldReduceMotion ? {} : { scale: 1.01, y: -2 }}
-            className="p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 transition-all shadow-sm"
+          <div 
+            className={`esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm ${
+              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+            }`}
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Water footprint</span>
@@ -121,12 +150,16 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
             </div>
             <div>
               <p className="text-3xl font-black text-foreground tracking-tight">
-                {Math.round(stats.waterSavedLiters || 0).toLocaleString()} L
+                {inView || prefersReducedMotion() ? (
+                  <AnimatedNumber value={Math.round(stats.waterSavedLiters || 0)} suffix=" L" />
+                ) : (
+                  '0 L'
+                )}
               </p>
               <p className="mt-1.5 text-xs text-muted-text leading-normal">Virtual agricultural water resources preserved.</p>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </section>
   );

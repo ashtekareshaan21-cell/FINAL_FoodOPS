@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
 import { divertDonationToBiogas } from '@/app/actions/donations';
-import { motion, useReducedMotion } from 'motion/react';
+import { prefersReducedMotion } from '@/animations/accessibility';
+import { staggerCards } from '@/animations/cards';
+import { DeliveryRouteTracker } from '@/animations/delivery';
 
 export interface ActiveRescueItem {
   id: string;
@@ -59,27 +61,20 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
   const [spoilReasonMap, setSpoilReasonMap] = useState<Record<string, string>>({});
   const [showSpoilConfirm, setShowSpoilConfirm] = useState<Record<string, boolean>>({});
 
-  const shouldReduceMotion = useReducedMotion();
-  const yOffset = shouldReduceMotion ? 0 : 12;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.05,
-      },
-    },
-  };
+  useEffect(() => {
+    setMounted(true);
+    const el = containerRef.current;
+    if (!el || prefersReducedMotion()) return;
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: yOffset },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4, ease: 'easeOut' as const },
-    },
-  };
+    const cards = el.querySelectorAll('.rescue-card');
+    const anim = staggerCards(cards);
+    return () => {
+      if (anim) anim.revert();
+    };
+  }, [activeRescues]);
 
   const handleDivert = async (donationId: string) => {
     const reason = spoilReasonMap[donationId] || 'Uncollected / Expired';
@@ -127,10 +122,8 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
           </p>
         </div>
       ) : (
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+        <div 
+          ref={containerRef}
           className="grid gap-6"
         >
           {activeRescues.map((rescue) => {
@@ -140,11 +133,11 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
             const assignedVol = rescue.assignment?.volunteer;
 
             return (
-              <motion.div
+              <div
                 key={rescue.id}
-                variants={cardVariants}
-                whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
-                className="bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-md transition-all"
+                className={`rescue-card bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-md hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 ${
+                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                }`}
               >
                 {/* Details Section */}
                 <div className="flex-grow space-y-4">
@@ -190,6 +183,9 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                       </p>
                     </div>
                   </div>
+
+                  {/* SVG Route Rider tracking animation */}
+                  <DeliveryRouteTracker status={rescue.status} className="mt-4" />
                 </div>
 
                 {/* Assignment Controls */}
@@ -274,10 +270,8 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                   {/* Divert to Biogas Section */}
                   <div className="mt-6 pt-4 border-t border-dashed border-border">
                     {showSpoilConfirm[rescue.id] ? (
-                      <motion.div 
-                        initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="space-y-3 bg-surface-muted p-4 rounded-md border border-border overflow-hidden"
+                      <div 
+                        className="space-y-3 bg-surface-muted p-4 rounded-md border border-border transition-all duration-300"
                       >
                         <p className="text-xs font-bold text-foreground uppercase tracking-wide">
                           Divert Reason
@@ -310,7 +304,7 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                             Cancel
                           </button>
                         </div>
-                      </motion.div>
+                      </div>
                     ) : (
                       <button
                         type="button"
@@ -322,10 +316,10 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                     )}
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
       )}
     </div>
   );

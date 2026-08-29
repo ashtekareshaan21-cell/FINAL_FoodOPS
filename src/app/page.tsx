@@ -4,7 +4,13 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { getAdminStats } from '@/app/actions/admin';
 import HeroSection from '@/components/Home/HeroSection';
-import LifecyclePipeline from '@/components/Home/LifecyclePipeline';
+import OrdersScene from '@/components/Home/OrdersScene';
+import KitchenScene from '@/components/Home/KitchenScene';
+import InventoryScene from '@/components/Home/InventoryScene';
+import IntelligenceScene from '@/components/Home/IntelligenceScene';
+import DeliveryScene from '@/components/Home/DeliveryScene';
+import AnalyticsScene from '@/components/Home/AnalyticsScene';
+import FinalScene from '@/components/Home/FinalScene';
 import EsgMetrics from '@/components/Home/EsgMetrics';
 import RoadmapSection from '@/components/Home/RoadmapSection';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
@@ -34,11 +40,29 @@ export default async function Home() {
         {/* Animated Hero Section */}
         <HeroSection />
 
-        {/* Operational Lifecycle Pipeline Diagram */}
-        <LifecyclePipeline />
+        {/* Scene 1: Orders */}
+        <OrdersScene />
+
+        {/* Scene 2: Kitchen */}
+        <KitchenScene />
+
+        {/* Scene 3: Inventory */}
+        <InventoryScene />
+
+        {/* Scene 4: Intelligence */}
+        <IntelligenceScene />
+
+        {/* Scene 5: Delivery */}
+        <DeliveryScene />
+
+        {/* Scene 6: Analytics & command-center */}
+        <AnalyticsScene />
 
         {/* Live ESG Balance Sheet (Impact Statistics) */}
         <EsgMetrics stats={stats} />
+
+        {/* Scene 7: Climax system diagram & CTA */}
+        <FinalScene />
 
         {/* Roadmap section: "FoodOps is evolving" */}
         <RoadmapSection />

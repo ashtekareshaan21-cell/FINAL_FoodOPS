@@ -1,29 +1,46 @@
 'use client';
 
-import { motion, useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { createScope, animate } from 'animejs';
+import { MOTION } from '@/animations/config';
+import { prefersReducedMotion } from '@/animations/accessibility';
 
 export default function RoadmapSection() {
-  const shouldReduceMotion = useReducedMotion();
-  const yOffset = shouldReduceMotion ? 0 : 16;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.08,
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || prefersReducedMotion()) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const scope = createScope({ root: el }).add(() => {
+              const cards = el.querySelectorAll('.roadmap-card');
+              animate(cards, {
+                opacity: [0, 1],
+                translateY: [15, 0],
+                duration: MOTION.duration.medium,
+                delay: (_node?: any, i?: number) => (i || 0) * 100,
+                ease: MOTION.easing.smooth,
+              });
+            });
+            observer.unobserve(el);
+          }
+        });
       },
-    },
-  };
+      { threshold: 0.05, rootMargin: '0px 0px -50px 0px' }
+    );
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: yOffset },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5, ease: 'easeOut' as const },
-    },
-  };
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
@@ -35,21 +52,18 @@ export default function RoadmapSection() {
         </p>
       </div>
 
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: '-60px' }}
+      <div 
+        ref={containerRef}
         className="grid grid-cols-1 md:grid-cols-3 gap-8 relative"
       >
         {/* Timeline Line */}
         <div className="hidden md:block absolute top-[44px] left-[15%] right-[15%] h-0.5 bg-border pointer-events-none z-0" />
 
         {/* LIVE */}
-        <motion.div 
-          variants={cardVariants}
-          whileHover={shouldReduceMotion ? {} : { scale: 1.01, y: -2 }}
-          className="bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm transition-shadow"
+        <div 
+          className={`roadmap-card bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 ${
+            mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+          }`}
         >
           <div className="flex justify-between items-center">
             <span className="badge-premium bg-success-bg text-success border border-success-border uppercase">
@@ -65,13 +79,13 @@ export default function RoadmapSection() {
             <li className="flex items-center gap-2">✓ AI Listing Audit</li>
             <li className="flex items-center gap-2">✓ ESG Carbon Footprints</li>
           </ul>
-        </motion.div>
+        </div>
 
         {/* IN PROGRESS */}
-        <motion.div 
-          variants={cardVariants}
-          whileHover={shouldReduceMotion ? {} : { scale: 1.01, y: -2 }}
-          className="bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm transition-shadow"
+        <div 
+          className={`roadmap-card bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 ${
+            mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+          }`}
         >
           <div className="flex justify-between items-center">
             <span className="badge-premium bg-warning-bg text-warning border border-warning-border uppercase">
@@ -87,13 +101,13 @@ export default function RoadmapSection() {
             <li className="text-muted-light flex items-center gap-2">— Composting Logistics</li>
             <li className="text-muted-light flex items-center gap-2">— Biogas Operations</li>
           </ul>
-        </motion.div>
+        </div>
 
         {/* COMING NEXT */}
-        <motion.div 
-          variants={cardVariants}
-          whileHover={shouldReduceMotion ? {} : { scale: 1.01, y: -2 }}
-          className="bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm transition-shadow"
+        <div 
+          className={`roadmap-card bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 ${
+            mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+          }`}
         >
           <div className="flex justify-between items-center">
             <span className="badge-premium bg-surface-muted text-muted border border-border uppercase">
@@ -109,8 +123,8 @@ export default function RoadmapSection() {
             <li className="text-muted-light flex items-center gap-2">○ Multi-country compliance</li>
             <li className="text-muted-light flex items-center gap-2">○ Micro-bounty routing</li>
           </ul>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </section>
   );
 }
