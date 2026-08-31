@@ -170,7 +170,7 @@ export default function FoodOpsBackground({ variant = 'dashboard' }: FoodOpsBack
         <div className="absolute inset-0 flex items-center justify-center">
           <svg 
             viewBox="0 0 1000 500" 
-            className="w-full max-w-7xl h-[60vh] opacity-80" 
+            className="w-full max-w-7xl h-[60vh] opacity-35" 
             preserveAspectRatio="xMidYMid meet"
           >
             {/* Background path line */}
@@ -238,31 +238,6 @@ export default function FoodOpsBackground({ variant = 'dashboard' }: FoodOpsBack
                   fill="#10b981" 
                   className="drop-shadow-[0_0_8px_rgba(16,185,129,0.7)]"
                 />
-
-                {/* Node Labels underneath path in layout (subtle) */}
-                <text
-                  x={node.x}
-                  y={node.y + 24}
-                  textAnchor="middle"
-                  fill="rgba(141, 156, 146, 0.7)"
-                  fontSize="8"
-                  fontWeight="bold"
-                  letterSpacing="0.05em"
-                  className="font-sans pointer-events-none select-none uppercase"
-                >
-                  {node.name}
-                </text>
-                
-                {/* Node Icon */}
-                <text
-                  x={node.x}
-                  y={node.y - 14}
-                  textAnchor="middle"
-                  fontSize="12"
-                  className="pointer-events-none select-none"
-                >
-                  {node.icon}
-                </text>
               </g>
             ))}
           </svg>
