@@ -62,12 +62,6 @@ export default function HeroSection() {
           
           {/* Operational Typography Treatment */}
           <div className="lg:col-span-6 space-y-6 text-left">
-            <span 
-              className="hero-text-anim inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest text-[#166534] bg-emerald-50 border border-emerald-200"
-            >
-              🌿 SIH 2026 Problem Statement ID: 26193 • Agriculture & FoodTech
-            </span>
-            
             <h1 
               className="hero-text-anim text-4xl sm:text-6xl font-bold tracking-tight text-[#0f2942] leading-[1.1] font-display"
             >

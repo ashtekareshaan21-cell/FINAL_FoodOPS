@@ -64,57 +64,56 @@ export default function InventoryScene() {
                 oBar.style.width = '64%';
 
                 // Deplete Tomatoes: 82kg -> 8kg
-                const tObj = { val: 82 };
                 animate(tBar, {
                   width: '8%',
-                  duration: 2500,
+                  duration: 2200,
                   ease: 'inOut(quad)',
-                  delay: 1000
+                  delay: 800
                 });
-                animate(tObj, {
-                  val: 8,
-                  duration: 2500,
-                  ease: 'inOut(quad)',
-                  delay: 1000,
-                  onRender: () => {
-                    tVal.innerText = `${Math.round(tObj.val)} KG`;
+
+                let tValNum = 82;
+                const tTimer = setInterval(() => {
+                  tValNum -= 2;
+                  if (tValNum <= 8) {
+                    tValNum = 8;
+                    clearInterval(tTimer);
                   }
-                });
+                  if (tVal) tVal.innerText = `${tValNum} KG`;
+                }, 50);
 
                 // Deplete Onions: 64kg -> 21kg
-                const oObj = { val: 64 };
                 animate(oBar, {
                   width: '21%',
-                  duration: 2500,
+                  duration: 2200,
                   ease: 'inOut(quad)',
-                  delay: 1000
-                });
-                animate(oObj, {
-                  val: 21,
-                  duration: 2500,
-                  ease: 'inOut(quad)',
-                  delay: 1000,
-                  onRender: () => {
-                    oVal.innerText = `${Math.round(oObj.val)} KG`;
-                  }
+                  delay: 800
                 });
 
-                // Trigger Alert when Tomatoes go low (around 2.5s later)
+                let oValNum = 64;
+                const oTimer = setInterval(() => {
+                  oValNum -= 1;
+                  if (oValNum <= 21) {
+                    oValNum = 21;
+                    clearInterval(oTimer);
+                  }
+                  if (oVal) oVal.innerText = `${oValNum} KG`;
+                }, 50);
+
+                // Trigger Alert when Tomatoes go low
                 animate(alertBox, {
                   opacity: [0, 1],
                   scale: [0.95, 1],
                   duration: MOTION.duration.normal,
                   ease: MOTION.easing.bounce,
-                  delay: 3200
+                  delay: 2800
                 });
 
-                // Trigger Auto Reorder Action banner (around 4s later)
+                // Trigger Auto Reorder Action banner
                 animate(actionBox, {
                   opacity: [0, 1],
                   translateY: [15, 0],
                   duration: MOTION.duration.medium,
-                  ease: 'spring(1, 80, 12, 0)',
-                  delay: 4200
+                  delay: 3600
                 });
               }
             });

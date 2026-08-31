@@ -27,32 +27,44 @@ export function AnimatedNumber({
     const el = elementRef.current;
     if (!el) return;
 
+    const safeVal = isNaN(value) ? 0 : value;
+
     if (prefersReducedMotion()) {
-      const displayVal = round ? Math.round(value) : value;
+      const displayVal = round ? Math.round(safeVal) : safeVal;
       el.innerText = `${prefix}${displayVal.toLocaleString()}${suffix}`;
-      prevValueRef.current = value;
+      prevValueRef.current = safeVal;
       return;
     }
 
-    const startVal = prevValueRef.current;
-    const obj = { val: startVal };
+    const startVal = isNaN(prevValueRef.current) ? 0 : prevValueRef.current;
+    const targetVal = safeVal;
+    const startTime = performance.now();
+    const duration = 1200;
 
-    const anim = animate(obj, {
-      val: value,
-      duration: MOTION.duration.slow,
-      ease: MOTION.easing.smooth,
-      onRender: () => {
-        if (el) {
-          const displayVal = round ? Math.round(obj.val) : obj.val;
-          el.innerText = `${prefix}${displayVal.toLocaleString()}${suffix}`;
-        }
+    let rafId: number;
+
+    const updateCounter = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const current = startVal + (targetVal - startVal) * easeProgress;
+      const displayVal = round ? Math.round(current) : current;
+
+      if (el) {
+        el.innerText = `${prefix}${displayVal.toLocaleString()}${suffix}`;
       }
-    });
 
-    prevValueRef.current = value;
+      if (progress < 1) {
+        rafId = requestAnimationFrame(updateCounter);
+      }
+    };
+
+    rafId = requestAnimationFrame(updateCounter);
+    prevValueRef.current = targetVal;
 
     return () => {
-      anim.revert();
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [value, prefix, suffix, round]);
 
