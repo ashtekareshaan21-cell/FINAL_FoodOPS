@@ -6,14 +6,10 @@ import { MOTION } from '@/animations/config';
 import { prefersReducedMotion } from '@/animations/accessibility';
 
 const PIPELINE_STAGES = [
-  { label: '1. SURPLUS', icon: '🏨', desc: 'Listing declared' },
-  { label: '2. AI AUDIT', icon: '🤖', desc: 'Gemini visual scan' },
-  { label: '3. NGO MATCH', icon: '📍', desc: 'Radius checks' },
-  { label: '4. CLAIM', icon: '🔒', desc: 'Atomic db lock' },
-  { label: '5. VOLUNTEER PICKUP', icon: '🚴', desc: 'Rider dispatched' },
-  { label: '6. SECURE HANDOVER', icon: '🔑', desc: 'OTP verification' },
-  { label: '7. DELIVERY', icon: '🍽️', desc: 'Redistribution' },
-  { label: '8. IMPACT', icon: '♻️', desc: 'Carbon registration' },
+  { label: '01. LIST', icon: '📝', title: 'Donor Lists Surplus', desc: 'Commercial kitchen declares food with AI visual screening.' },
+  { label: '02. MATCH', icon: '📍', title: 'Receiver Matched', desc: 'Deterministic radius, category, capacity & urgency scoring.' },
+  { label: '03. RESCUE', icon: '🚴', title: 'Pickup & Handover', desc: 'Volunteer rider dispatched with secure 6-digit OTP check.' },
+  { label: '04. RECOVER', icon: '♻️', title: 'Organic Recovery', desc: 'Missed SLA listings routed to composting or biogas recovery.' },
 ];
 
 export default function LifecyclePipeline() {
@@ -26,7 +22,7 @@ export default function LifecyclePipeline() {
     if (prefersReducedMotion()) return;
     const interval = setInterval(() => {
       setActiveIdx((prev) => (prev + 1) % PIPELINE_STAGES.length);
-    }, 2800);
+    }, 3200);
     return () => clearInterval(interval);
   }, []);
 
@@ -42,10 +38,10 @@ export default function LifecyclePipeline() {
               const nodes = el.querySelectorAll('.pipeline-node');
               animate(nodes, {
                 opacity: [0, 1],
-                scale: [0.95, 1],
-                translateY: [10, 0],
+                scale: [0.98, 1],
+                translateY: [8, 0],
                 duration: MOTION.duration.normal,
-                delay: (_node?: any, i?: number) => (i || 0) * 60,
+                delay: (_node?: any, i?: number) => (i || 0) * 80,
                 ease: MOTION.easing.smooth,
               });
             });
@@ -61,17 +57,17 @@ export default function LifecyclePipeline() {
   }, []);
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+    <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
       <div className="bg-white border border-slate-200 rounded-xl p-6 md:p-8 shadow-xs relative overflow-hidden">
         <div className="text-center mb-8">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Platform Core Workflow</span>
-          <h3 className="text-xl font-bold text-[#0f2942] mt-1">Operational Lifecycle Pipeline</h3>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Operational Protocol</span>
+          <h3 className="text-xl font-bold text-[#0f2942] mt-1">4-Step Food Rescue & Recovery Process</h3>
         </div>
         
-        {/* Connected Steps */}
+        {/* Connected 4 Steps */}
         <div 
           ref={containerRef}
-          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 text-center relative z-10"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center relative z-10"
         >
           {PIPELINE_STAGES.map((step, idx) => {
             const isActive = activeIdx === idx;
@@ -79,27 +75,32 @@ export default function LifecyclePipeline() {
             return (
               <div 
                 key={idx} 
-                className={`pipeline-node relative p-3.5 rounded-lg border transition-all duration-300 ease-out group ${
+                className={`pipeline-node relative p-5 rounded-lg border transition-all duration-300 ease-out text-left flex flex-col justify-between ${
                   isActive 
-                    ? 'border-[#0f2942] bg-slate-50 ring-2 ring-slate-200 scale-[1.02]' 
-                    : 'bg-slate-50/60 border-slate-200 hover:border-slate-300 scale-100'
+                    ? 'border-[#0f2942] bg-slate-50 ring-2 ring-slate-200' 
+                    : 'bg-slate-50/50 border-slate-200 hover:border-slate-300'
                 } ${mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'}`}
               >
-                <div className="text-xl mb-1.5 group-hover:scale-105 transition-transform duration-200">
-                  {step.icon}
-                </div>
-                <div className={`text-[10px] font-bold tracking-tight transition-colors duration-300 ${
-                  isActive ? 'text-[#0f2942]' : 'text-slate-700'
-                }`}>
-                  {step.label}
-                </div>
-                <div className="text-[9px] text-slate-500 mt-0.5 leading-tight">
-                  {step.desc}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl">{step.icon}</span>
+                    <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded tracking-wider ${
+                      isActive ? 'bg-[#0f2942] text-white' : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {step.label}
+                    </span>
+                  </div>
+                  <h4 className="text-base font-bold text-[#0f2942] mb-1">
+                    {step.title}
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    {step.desc}
+                  </p>
                 </div>
                 
-                {/* Connecting Arrows */}
-                {idx < 7 && (
-                  <div className={`hidden lg:block absolute top-1/2 -right-2.5 -translate-y-1/2 font-mono font-bold z-20 text-[10px] transition-all duration-300 ${
+                {/* Connecting Arrow */}
+                {idx < 3 && (
+                  <div className={`hidden lg:block absolute top-1/2 -right-3 -translate-y-1/2 font-mono font-bold z-20 text-sm transition-all duration-300 ${
                     isActive ? 'text-[#0f2942]' : 'text-slate-300'
                   }`}>
                     &rarr;

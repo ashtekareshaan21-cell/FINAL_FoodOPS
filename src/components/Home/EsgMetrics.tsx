@@ -160,6 +160,16 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
             </div>
           </div>
         </div>
+
+        {/* Estimation Methodology Disclosure */}
+        <div className="mt-8 p-4 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 text-xs font-medium">
+          <p className="font-bold text-slate-800 text-[11px] uppercase tracking-wider mb-1">
+            * Environmental Impact Calculation Methodology Disclosure
+          </p>
+          <p className="leading-relaxed">
+            CO₂e abatement estimates are calculated using standard IPCC / WRI food waste GHG coefficients (2.5 kg CO₂e avoided per kg of surplus food rescued; 1.9 kg CO₂e avoided per kg diverted to biogas/composting organic recovery). Water footprint savings are estimated at 250 liters of agricultural water per kg of food saved.
+          </p>
+        </div>
       </div>
     </section>
   );
