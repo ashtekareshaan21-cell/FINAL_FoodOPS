@@ -144,7 +144,7 @@ export default function InventoryScene() {
             </span>
             <h2 
               className={`scene-text text-4xl sm:text-6xl font-black text-foreground leading-[1.1] font-display transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               KNOW WHAT&apos;S <br />
@@ -153,7 +153,7 @@ export default function InventoryScene() {
             </h2>
             <p 
               className={`scene-text text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               FoodOps monitors inventory levels continuously. If consumption thresholds drop, the platform flags warning states and initiates supply actions.
@@ -167,7 +167,7 @@ export default function InventoryScene() {
               {/* Item: Tomatoes */}
               <div 
                 className={`inventory-item space-y-1.5 transition-opacity duration-200 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
               >
                 <div className="flex justify-between items-baseline text-xs">
@@ -186,7 +186,7 @@ export default function InventoryScene() {
               {/* Item: Onions */}
               <div 
                 className={`inventory-item space-y-1.5 transition-opacity duration-200 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
               >
                 <div className="flex justify-between items-baseline text-xs">
@@ -205,7 +205,7 @@ export default function InventoryScene() {
               {/* Item: Bread */}
               <div 
                 className={`inventory-item space-y-1.5 transition-opacity duration-200 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
               >
                 <div className="flex justify-between items-baseline text-xs">
@@ -236,7 +236,7 @@ export default function InventoryScene() {
               <div 
                 ref={actionRef}
                 className={`p-3 bg-success-bg border border-success-border rounded-md text-success text-xs font-semibold flex items-center gap-2 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
                 style={{ opacity: 0 }}
               >

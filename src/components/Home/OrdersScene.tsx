@@ -127,7 +127,7 @@ export default function OrdersScene() {
             </span>
             <h2 
               className={`scene-text text-4xl sm:text-6xl font-black text-foreground leading-[1.1] font-display transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               EVERYTHING <br />
@@ -136,7 +136,7 @@ export default function OrdersScene() {
             </h2>
             <p 
               className={`scene-text text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               Surplus listing declarations from banquets, events, or corporate dining halls feed instantly into the FoodOps operational queue.
@@ -145,7 +145,7 @@ export default function OrdersScene() {
             {/* Real-time Order Count display */}
             <div 
               className={`scene-text p-6 bg-surface border border-border rounded-lg shadow-sm w-fit transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               <div className="flex items-baseline gap-2">
@@ -185,7 +185,7 @@ export default function OrdersScene() {
             {/* Top Left */}
             <div 
               className={`order-card absolute top-4 left-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               <div className="flex justify-between items-center mb-1">
@@ -199,7 +199,7 @@ export default function OrdersScene() {
             {/* Top Right */}
             <div 
               className={`order-card absolute top-4 right-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               <div className="flex justify-between items-center mb-1">
@@ -213,7 +213,7 @@ export default function OrdersScene() {
             {/* Bottom Left */}
             <div 
               className={`order-card absolute bottom-4 left-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               <div className="flex justify-between items-center mb-1">
@@ -227,7 +227,7 @@ export default function OrdersScene() {
             {/* Bottom Right */}
             <div 
               className={`order-card absolute bottom-4 right-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               <div className="flex justify-between items-center mb-1">

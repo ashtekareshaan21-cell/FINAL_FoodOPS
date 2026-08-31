@@ -63,17 +63,13 @@ export default function HeroSection() {
           {/* Operational Typography Treatment */}
           <div className="lg:col-span-6 space-y-6 text-left">
             <span 
-              className={`hero-text-anim inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest text-[#166534] bg-emerald-50 border border-emerald-200 transition-opacity duration-150 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-              }`}
+              className="hero-text-anim inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest text-[#166534] bg-emerald-50 border border-emerald-200"
             >
               🌿 SIH 2026 Problem Statement ID: 26193 • Agriculture & FoodTech
             </span>
             
             <h1 
-              className={`hero-text-anim text-4xl sm:text-6xl font-bold tracking-tight text-[#0f2942] leading-[1.1] font-display transition-opacity duration-150 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-              }`}
+              className="hero-text-anim text-4xl sm:text-6xl font-bold tracking-tight text-[#0f2942] leading-[1.1] font-display"
             >
               FoodOPS <br />
               <span className="text-slate-700 font-semibold text-3xl sm:text-4xl block mt-1">
@@ -82,17 +78,13 @@ export default function HeroSection() {
             </h1>
             
             <p 
-              className={`hero-text-anim max-w-lg text-base sm:text-lg text-slate-600 leading-relaxed font-normal transition-opacity duration-150 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-              }`}
+              className="hero-text-anim max-w-lg text-base sm:text-lg text-slate-600 leading-relaxed font-normal"
             >
               Connect surplus food with verified receivers before the rescue window closes — and route missed rescues toward responsible organic recovery.
             </p>
             
             <div 
-              className={`hero-text-anim pt-2 flex flex-col sm:flex-row gap-3 transition-opacity duration-150 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-              }`}
+              className="hero-text-anim pt-2 flex flex-col sm:flex-row gap-3"
             >
               <div>
                 <Link

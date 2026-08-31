@@ -101,7 +101,7 @@ export default function KitchenScene() {
             </span>
             <h2 
               className={`scene-text text-4xl sm:text-6xl font-black text-foreground leading-[1.1] font-display transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               FROM ORDER <br />
@@ -110,7 +110,7 @@ export default function KitchenScene() {
             </h2>
             <p 
               className={`scene-text text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               Once claimed by an NGO, orders enter a real-time status flow. Kitchen staff and NGO centers align instantly on status shifts, eliminating idle time.
@@ -118,7 +118,7 @@ export default function KitchenScene() {
 
             {/* Micro Annotation Label */}
             <div className={`scene-text flex items-center gap-3 border-l-2 border-primary pl-4 py-1 transition-opacity duration-200 ${
-              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+              'opacity-100'
             }`}>
               <span className="text-xl">👩‍🍳</span>
               <div>
@@ -135,7 +135,7 @@ export default function KitchenScene() {
               {/* NEW COLUMN */}
               <div 
                 className={`kitchen-col flex-1 bg-surface-muted/50 p-4 rounded-lg border border-border min-h-[220px] transition-opacity duration-200 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
               >
                 <h4 className="text-[10px] font-black uppercase text-muted tracking-widest mb-3 flex items-center gap-1.5">
@@ -161,7 +161,7 @@ export default function KitchenScene() {
               {/* PREPARING COLUMN */}
               <div 
                 className={`kitchen-col flex-1 bg-surface-muted/50 p-4 rounded-lg border border-border min-h-[220px] transition-opacity duration-200 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
               >
                 <h4 className="text-[10px] font-black uppercase text-muted tracking-widest mb-3 flex items-center gap-1.5">
@@ -187,7 +187,7 @@ export default function KitchenScene() {
               {/* READY COLUMN */}
               <div 
                 className={`kitchen-col flex-1 bg-surface-muted/50 p-4 rounded-lg border border-border min-h-[220px] transition-opacity duration-200 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
               >
                 <h4 className="text-[10px] font-black uppercase text-muted tracking-widest mb-3 flex items-center gap-1.5">

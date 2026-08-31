@@ -84,7 +84,7 @@ export default function FinalScene() {
               </span>
               <h2 
                 className={`final-text-anim text-4xl sm:text-6xl font-black text-foreground leading-[1.0] font-display transition-opacity duration-200 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
               >
                 ONE SYSTEM. <br />
@@ -93,7 +93,7 @@ export default function FinalScene() {
               </h2>
               <p 
                 className={`final-text-anim max-w-lg text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
               >
                 FoodOps orchestrates the entire operational journey. Join verified donor establishments, NGO redistribution systems, and volunteer couriers to secure surplus food and automate zero-waste cycles.
@@ -103,7 +103,7 @@ export default function FinalScene() {
             {/* CTAs */}
             <div 
               className={`final-text-anim flex flex-col sm:flex-row gap-4 pt-4 transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               <div className="w-full sm:w-auto hover:scale-[1.01] active:scale-[0.99] transition-transform duration-200">

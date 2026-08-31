@@ -157,7 +157,7 @@ export default function DeliveryScene() {
             </span>
             <h2 
               className={`scene-text text-4xl sm:text-6xl font-black text-foreground leading-[1.1] font-display transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               REDUCE TRANSIT. <br />
@@ -166,7 +166,7 @@ export default function DeliveryScene() {
             </h2>
             <p 
               className={`scene-text text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               FoodOps matches local couriers to optimize delivery routes. Real-time SVG path tracking demonstrates secure, high-speed cargo transit.
@@ -177,7 +177,7 @@ export default function DeliveryScene() {
           <div className="lg:col-span-7 flex justify-center items-center p-4">
             <div 
               className={`tracker-card w-full max-w-lg bg-surface border border-border rounded-lg p-6 shadow-md z-10 transition-all duration-300 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               {/* Header and ETA Display */}

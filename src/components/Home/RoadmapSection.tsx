@@ -61,9 +61,7 @@ export default function RoadmapSection() {
 
         {/* LIVE */}
         <div 
-          className={`roadmap-card bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 ${
-            mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-          }`}
+          className="roadmap-card bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 opacity-100"
         >
           <div className="flex justify-between items-center">
             <span className="badge-premium bg-success-bg text-success border border-success-border uppercase">
@@ -83,9 +81,7 @@ export default function RoadmapSection() {
 
         {/* IN PROGRESS */}
         <div 
-          className={`roadmap-card bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 ${
-            mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-          }`}
+          className="roadmap-card bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 opacity-100"
         >
           <div className="flex justify-between items-center">
             <span className="badge-premium bg-warning-bg text-warning border border-warning-border uppercase">
@@ -105,9 +101,7 @@ export default function RoadmapSection() {
 
         {/* COMING NEXT */}
         <div 
-          className={`roadmap-card bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 ${
-            mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-          }`}
+          className="roadmap-card bg-surface p-6 rounded-lg border border-border space-y-4 relative z-10 shadow-sm hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 opacity-100"
         >
           <div className="flex justify-between items-center">
             <span className="badge-premium bg-surface-muted text-muted border border-border uppercase">

@@ -150,7 +150,7 @@ export default function IntelligenceScene() {
             </span>
             <h2 
               className={`scene-text text-4xl sm:text-6xl font-black text-foreground leading-[1.1] font-display transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               DON&apos;T JUST <br />
@@ -159,7 +159,7 @@ export default function IntelligenceScene() {
             </h2>
             <p 
               className={`scene-text text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               FoodOps unites previously fragmented operations. Order counts, inventory stocks, preparation flows, and courier routes converge to yield actionable intelligence.
@@ -219,7 +219,7 @@ export default function IntelligenceScene() {
             <div 
               ref={dataPanelRef}
               className={`w-full max-w-sm bg-surface border border-border p-5 rounded-lg shadow-md z-30 transition-all duration-300 mt-4 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
               style={{ opacity: 0 }}
             >

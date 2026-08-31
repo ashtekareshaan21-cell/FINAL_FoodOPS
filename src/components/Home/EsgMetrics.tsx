@@ -74,9 +74,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
         >
           {/* Weight Rescued */}
           <div 
-            className={`esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm ${
-              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-            }`}
+            className="esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm opacity-100"
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Weight Rescued</span>
@@ -87,7 +85,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
                 {inView || prefersReducedMotion() ? (
                   <AnimatedNumber value={stats.foodWeightKg || 0} suffix=" kg" />
                 ) : (
-                  '0 kg'
+                  `${stats.foodWeightKg || 0} kg`
                 )}
               </p>
               <p className="mt-1.5 text-xs text-muted-text leading-normal">Surplus weight collected and safely distributed.</p>
@@ -96,9 +94,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
 
           {/* Completed Rescues */}
           <div 
-            className={`esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm ${
-              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-            }`}
+            className="esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm opacity-100"
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Completed Rescues</span>
@@ -109,7 +105,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
                 {inView || prefersReducedMotion() ? (
                   <AnimatedNumber value={stats.completedRescues || 0} />
                 ) : (
-                  '0'
+                  `${stats.completedRescues || 0}`
                 )}
               </p>
               <p className="mt-1.5 text-xs text-muted-text leading-normal">Successful end-to-end driver transit deliveries.</p>
@@ -118,9 +114,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
 
           {/* CO2 Abated */}
           <div 
-            className={`esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm ${
-              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-            }`}
+            className="esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm opacity-100"
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-bold text-muted uppercase tracking-wider">CO₂e Abated</span>
@@ -131,7 +125,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
                 {inView || prefersReducedMotion() ? (
                   <AnimatedNumber value={Math.round(stats.co2SavedKg || 0)} suffix=" kg" />
                 ) : (
-                  '0 kg'
+                  `${Math.round(stats.co2SavedKg || 0)} kg`
                 )}
               </p>
               <p className="mt-1.5 text-xs text-muted-text leading-normal">Methane emissions prevented from food decomposition.</p>
@@ -140,9 +134,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
 
           {/* Water footprint conserved */}
           <div 
-            className={`esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm ${
-              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-            }`}
+            className="esg-card p-6 bg-surface rounded-lg border border-border flex flex-col justify-between hover:border-primary/20 hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 shadow-sm opacity-100"
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Water footprint</span>

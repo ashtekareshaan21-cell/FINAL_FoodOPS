@@ -79,7 +79,7 @@ export default function LifecyclePipeline() {
                   isActive 
                     ? 'border-[#0f2942] bg-slate-50 ring-2 ring-slate-200' 
                     : 'bg-slate-50/50 border-slate-200 hover:border-slate-300'
-                } ${mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'}`}
+                } bg-slate-50/50 border-slate-200 hover:border-slate-300`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">

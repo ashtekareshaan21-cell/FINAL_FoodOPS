@@ -116,7 +116,7 @@ export default function AnalyticsScene() {
             </span>
             <h2 
               className={`scene-text text-4xl sm:text-6xl font-black text-foreground leading-[1.1] font-display transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               COMMAND & <br />
@@ -125,7 +125,7 @@ export default function AnalyticsScene() {
             </h2>
             <p 
               className={`scene-text text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               Command center analytics aggregates operational data. Live reports trace waste reductions, transit efficiency, and co2 savings in real-time.
@@ -138,7 +138,7 @@ export default function AnalyticsScene() {
             {/* Total Operations managed big stat */}
             <div 
               className={`analytics-grid-item p-6 bg-surface border border-border rounded-lg shadow-sm text-center transition-all duration-300 ${
-                mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                'opacity-100'
               }`}
             >
               <span ref={totalOpsRef} className="text-5xl sm:text-6xl font-black text-foreground font-mono tracking-tight">24,821</span>
@@ -151,7 +151,7 @@ export default function AnalyticsScene() {
               {/* Staggered Metric Cards */}
               <div className="space-y-4">
                 {/* Orders Card */}
-                <div className={`analytics-grid-item p-4 bg-surface border border-border rounded-lg shadow-sm flex justify-between items-center transition-all duration-300 ${mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'}`}>
+                <div className={`analytics-grid-item p-4 bg-surface border border-border rounded-lg shadow-sm flex justify-between items-center transition-all duration-300 ${'opacity-100'}`}>
                   <div>
                     <span className="text-[9px] font-bold text-muted uppercase tracking-wider block">Total Orders</span>
                     <span ref={orderCountRef} className="text-lg font-bold text-foreground font-mono">24,821</span>
@@ -160,7 +160,7 @@ export default function AnalyticsScene() {
                 </div>
 
                 {/* Waste reduction card */}
-                <div className={`analytics-grid-item p-4 bg-surface border border-border rounded-lg shadow-sm flex justify-between items-center transition-all duration-300 ${mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'}`}>
+                <div className={`analytics-grid-item p-4 bg-surface border border-border rounded-lg shadow-sm flex justify-between items-center transition-all duration-300 ${'opacity-100'}`}>
                   <div>
                     <span className="text-[9px] font-bold text-muted uppercase tracking-wider block">Waste Reduction</span>
                     <span className="text-lg font-bold text-success font-mono">-18%</span>
@@ -169,7 +169,7 @@ export default function AnalyticsScene() {
                 </div>
 
                 {/* Delivery efficiency card */}
-                <div className={`analytics-grid-item p-4 bg-surface border border-border rounded-lg shadow-sm flex justify-between items-center transition-all duration-300 ${mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'}`}>
+                <div className={`analytics-grid-item p-4 bg-surface border border-border rounded-lg shadow-sm flex justify-between items-center transition-all duration-300 ${'opacity-100'}`}>
                   <div>
                     <span className="text-[9px] font-bold text-muted uppercase tracking-wider block">Delivery Times</span>
                     <span className="text-lg font-bold text-success font-mono">-23%</span>
@@ -181,7 +181,7 @@ export default function AnalyticsScene() {
               {/* SVG bar chart */}
               <div 
                 className={`analytics-grid-item bg-surface border border-border p-5 rounded-lg shadow-sm flex flex-col justify-between min-h-[220px] transition-all duration-300 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
+                  'opacity-100'
                 }`}
               >
                 <div className="flex justify-between items-center text-[10px] font-black uppercase text-muted tracking-widest mb-4">
