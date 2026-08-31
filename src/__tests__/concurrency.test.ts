@@ -10,6 +10,7 @@ import {
   acceptDonation, 
   updateAssignmentStatus, 
   generatePickupOtp, 
+  generateDeliveryOtp,
   escalateDonation, 
   resolveOrganicDonation, 
   getDonationMatchDiagnostics 
@@ -576,6 +577,67 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
       where: { action: 'ORGANIC_RECOVERY', entityId: donation.id },
     });
     expect(auditRes).not.toBeNull();
+  });
+
+  // Test Delivery OTP Handover Verification
+  it('enforces secure delivery OTP handover with rate limiting and transitions status', async () => {
+    const volunteerUser = await prisma.user.findFirst({ where: { role: 'VOLUNTEER' } });
+    const ngoUser = await prisma.user.findFirst({ where: { role: 'NGO' } });
+    const assignment = await prisma.volunteerAssignment.findFirst({
+      where: {
+        volunteer: { userId: volunteerUser!.id },
+      },
+      include: {
+        donation: true,
+      },
+    });
+
+    // Make sure donation status is PICKED_UP or DELIVERY_IN_PROGRESS to generate delivery OTP
+    await prisma.donation.update({
+      where: { id: assignment!.donationId },
+      data: { status: 'DELIVERY_IN_PROGRESS' },
+    });
+
+    // 2. Generate Delivery OTP as NGO
+    vi.mocked(getSession).mockResolvedValue({
+      userId: ngoUser!.id,
+      role: 'NGO',
+      email: ngoUser!.email,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    } as any);
+
+    const resNgoGen = (await generateDeliveryOtp(assignment!.id)) as any;
+    expect(resNgoGen.success).toBe(true);
+    expect(resNgoGen.otp).toBeDefined();
+    expect(resNgoGen.otp.length).toBe(6);
+    const plaintextOtp = resNgoGen.otp;
+
+    // 3. Incorrect Delivery OTP -> increments attempts
+    vi.mocked(getSession).mockResolvedValue({
+      userId: volunteerUser!.id,
+      role: 'VOLUNTEER',
+      email: 'volunteer@foodops.org',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    } as any);
+
+    const resVerifyFail = await updateAssignmentStatus(assignment!.id, 'CONFIRM_DELIVERY', '000000');
+    expect(resVerifyFail.success).toBe(false);
+    expect(resVerifyFail.error).toBe('Invalid OTP.');
+
+    const attempt1 = await prisma.volunteerAssignment.findUnique({ where: { id: assignment!.id } });
+    expect(attempt1!.pickupOtpAttempts).toBe(1);
+
+    // 4. Correct Delivery OTP -> transitions status to completed and clears fields
+    const resVerify = await updateAssignmentStatus(assignment!.id, 'CONFIRM_DELIVERY', plaintextOtp);
+    expect(resVerify.success).toBe(true);
+
+    const assignmentFinal = await prisma.volunteerAssignment.findUnique({ where: { id: assignment!.id } });
+    expect(assignmentFinal!.status).toBe('COMPLETED');
+    expect(assignmentFinal!.pickupOtpHash).toBeNull();
+    expect(assignmentFinal!.pickupOtpAttempts).toBe(0);
+
+    const donationFinal = await prisma.donation.findUnique({ where: { id: assignment!.donationId } });
+    expect(donationFinal!.status).toBe('COMPLETED');
   });
 
   afterAll(async () => {

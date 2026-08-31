@@ -38,7 +38,7 @@ export default function LifecyclePipeline() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const scope = createScope({ root: el }).add(() => {
+            createScope({ root: el }).add(() => {
               const nodes = el.querySelectorAll('.pipeline-node');
               animate(nodes, {
                 opacity: [0, 1],

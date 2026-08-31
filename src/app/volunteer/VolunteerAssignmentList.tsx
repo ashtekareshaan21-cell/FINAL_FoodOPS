@@ -16,6 +16,7 @@ export interface VolunteerAssignmentItem {
     id: string;
     title: string;
     description: string;
+    status: string;
     foodCategory: string;
     vegNonVegMixed: string;
     quantity: string;
@@ -58,6 +59,15 @@ const MAPPED_STATUS: Record<string, string> = {
   DELIVERING: 'DELIVERY_IN_PROGRESS',
   COMPLETED: 'COMPLETED',
 };
+
+function getUIStatus(assignmentStatus: string, donationStatus: string): string {
+  if (assignmentStatus === 'COMPLETED') return 'COMPLETED';
+  if (donationStatus === 'DELIVERY_IN_PROGRESS') return 'DELIVERING';
+  if (donationStatus === 'PICKED_UP') return 'PICKED_UP';
+  if (assignmentStatus === 'ARRIVED') return 'ARRIVED';
+  if (assignmentStatus === 'STARTED') return 'TRAVELING';
+  return 'ASSIGNED';
+}
 
 export default function VolunteerAssignmentList({ assignments, updateAssignmentStatus }: VolunteerAssignmentListProps) {
   const router = useRouter();
@@ -104,7 +114,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
     }
   };
 
-  const handleVerifyOtp = async (assignmentId: string) => {
+  const handleVerifyOtp = async (assignmentId: string, actionType: 'CONFIRM_PICKUP' | 'CONFIRM_DELIVERY') => {
     const code = otpMap[assignmentId];
     if (!code || code.length !== 6) {
       setErrorMap(prev => ({ ...prev, [assignmentId]: 'Please enter a 6-digit verification code.' }));
@@ -115,8 +125,9 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
     setErrorMap(prev => ({ ...prev, [assignmentId]: null }));
 
     try {
-      const res = await updateAssignmentStatus(assignmentId, 'PICKED_UP', code);
+      const res = await updateAssignmentStatus(assignmentId, actionType, code);
       if (res.success) {
+        setOtpMap(prev => ({ ...prev, [assignmentId]: '' }));
         router.refresh();
       } else {
         setErrorMap(prev => ({ ...prev, [assignmentId]: res.error || 'Invalid OTP code.' }));
@@ -132,8 +143,13 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
     setLoadingMap(prev => ({ ...prev, [assignmentId]: true }));
     setErrorMap(prev => ({ ...prev, [assignmentId]: null }));
 
+    let mappedAction = nextStatus;
+    if (nextStatus === 'TRAVELING') mappedAction = 'START_PICKUP';
+    else if (nextStatus === 'ARRIVED') mappedAction = 'ARRIVE_AT_DONOR';
+    else if (nextStatus === 'DELIVERING') mappedAction = 'START_DELIVERY';
+
     try {
-      const res = await updateAssignmentStatus(assignmentId, nextStatus);
+      const res = await updateAssignmentStatus(assignmentId, mappedAction);
       if (res.success) {
         router.refresh();
       } else {
@@ -165,7 +181,8 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
             const loading = loadingMap[task.id];
             const otpSent = otpSentMap[task.id];
             
-            const currentIdx = STATUS_FLOW.indexOf(task.status);
+            const uiStatus = getUIStatus(task.status, task.donation.status);
+            const currentIdx = STATUS_FLOW.indexOf(uiStatus);
             const nextStatus = currentIdx !== -1 && currentIdx < STATUS_FLOW.length - 1 
               ? STATUS_FLOW[currentIdx + 1] 
               : null;
@@ -185,7 +202,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                         {task.donation.title}
                       </h3>
                       <span className="badge-premium bg-primary/5 text-primary border border-primary/10 tracking-widest text-[9px] uppercase font-extrabold px-2.5 py-1">
-                        {STATUS_LABELS[task.status] || task.status}
+                        {STATUS_LABELS[uiStatus] || uiStatus}
                       </span>
                     </div>
                     <p className="text-xs text-muted-text max-w-xl font-medium leading-relaxed">
@@ -197,11 +214,11 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                   <div className="pt-2">
                     <div className="flex justify-between text-[9px] font-bold text-muted-light mb-1.5 uppercase tracking-wider">
                       <span>Assignment Progress</span>
-                      <span className="text-primary font-extrabold">{task.status.replace(/_/g, ' ')}</span>
+                      <span className="text-primary font-extrabold">{uiStatus.replace(/_/g, ' ')}</span>
                     </div>
                     <div className="grid grid-cols-6 gap-1 w-full">
                       {STATUS_FLOW.map((s, idx) => {
-                        const done = STATUS_FLOW.indexOf(task.status) >= idx;
+                        const done = STATUS_FLOW.indexOf(uiStatus) >= idx;
                         return (
                           <div 
                             key={s} 
@@ -248,7 +265,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                   </div>
 
                   {/* SVG Route Rider tracking animation */}
-                  <DeliveryRouteTracker status={MAPPED_STATUS[task.status] || 'ACCEPTED'} className="mt-4" />
+                  <DeliveryRouteTracker status={MAPPED_STATUS[uiStatus] || 'ACCEPTED'} className="mt-4" />
                 </div>
 
                 {/* Operations Actions Panel */}
@@ -262,7 +279,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                   )}
 
                   {/* Secure Handover OTP Form when rider has ARRIVED */}
-                  {task.status === 'ARRIVED' ? (
+                  {uiStatus === 'ARRIVED' ? (
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <p className="text-xs font-bold text-foreground uppercase tracking-wide">Secure Pickup Handover</p>
@@ -307,10 +324,49 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                         <button
                           type="button"
                           disabled={loading || (otpMap[task.id] || '').length !== 6}
-                          onClick={() => handleVerifyOtp(task.id)}
+                          onClick={() => handleVerifyOtp(task.id, 'CONFIRM_PICKUP')}
                           className="w-full btn-primary py-2.5 text-xs font-bold shadow-md shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] transition-all"
                         >
                           {loading ? 'Verifying...' : 'Verify Handover Code'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : uiStatus === 'DELIVERING' ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs font-bold text-foreground uppercase tracking-wide">Secure Delivery Handover</p>
+                        <span className="badge-premium bg-primary/5 text-primary border border-primary/10 tracking-widest text-[9px] uppercase font-extrabold px-2">
+                          OTP CHECK
+                        </span>
+                      </div>
+
+                      <p className="text-[10px] text-muted-text font-medium leading-relaxed bg-surface-muted p-2.5 rounded-sm border border-border">
+                        Ask NGO coordinator to generate a Delivery Handover OTP from their dashboard and enter it below.
+                      </p>
+
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            maxLength={6}
+                            disabled={loading}
+                            className="input-premium py-2.5 px-3 text-center text-sm font-mono tracking-widest font-bold uppercase placeholder:tracking-normal placeholder:font-sans"
+                            placeholder="Enter 6-Digit OTP"
+                            value={otpMap[task.id] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '');
+                              setOtpMap(prev => ({ ...prev, [task.id]: val }));
+                            }}
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={loading || (otpMap[task.id] || '').length !== 6}
+                          onClick={() => handleVerifyOtp(task.id, 'CONFIRM_DELIVERY')}
+                          className="w-full btn-primary py-2.5 text-xs font-bold shadow-md shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] transition-all"
+                        >
+                          {loading ? 'Verifying...' : 'Verify Delivery Handover'}
                         </button>
                       </div>
                     </div>

@@ -21,7 +21,7 @@ export default function RoadmapSection() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const scope = createScope({ root: el }).add(() => {
+            createScope({ root: el }).add(() => {
               const cards = el.querySelectorAll('.roadmap-card');
               animate(cards, {
                 opacity: [0, 1],

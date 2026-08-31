@@ -35,7 +35,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setInView(true);
-            const scope = createScope({ root: el }).add(() => {
+            createScope({ root: el }).add(() => {
               const cards = el.querySelectorAll('.esg-card');
               animate(cards, {
                 opacity: [0, 1],

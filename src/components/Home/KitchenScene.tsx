@@ -23,7 +23,7 @@ export default function KitchenScene() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const scope = createScope({ root: el }).add(() => {
+            createScope({ root: el }).add(() => {
               const text = el.querySelectorAll('.scene-text');
               const cols = el.querySelectorAll('.kitchen-col');
               const c1 = cardRef1.current;

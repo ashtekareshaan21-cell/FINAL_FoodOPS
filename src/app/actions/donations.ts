@@ -191,6 +191,24 @@ export async function updateAssignmentStatus(assignmentId: string, action: strin
   }
 }
 
+export async function generateDeliveryOtp(assignmentId: string) {
+  const session = await getSession();
+  if (!session || (session.role !== 'NGO' && session.role !== 'ADMIN')) {
+    return { success: false, error: 'Unauthorized.' };
+  }
+
+  try {
+    const res = await donationService.generateDeliveryOtp(session.userId, assignmentId);
+    revalidatePath('/ngo');
+    revalidatePath('/volunteer');
+    return res;
+  } catch (error) {
+    console.error('Generate delivery OTP error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to generate delivery OTP.';
+    return { success: false, error: message };
+  }
+}
+
 export async function divertDonationToBiogas(donationId: string, reason: string) {
   const session = await getSession();
   if (!session || (session.role !== 'NGO' && session.role !== 'ADMIN')) {

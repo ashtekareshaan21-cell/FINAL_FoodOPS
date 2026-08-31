@@ -29,7 +29,7 @@ export default function IntelligenceScene() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const scope = createScope({ root: el }).add(() => {
+            createScope({ root: el }).add(() => {
               const textItems = el.querySelectorAll('.scene-text');
               const nodes = el.querySelectorAll('.intel-node');
               const lines = el.querySelectorAll('.intel-line');

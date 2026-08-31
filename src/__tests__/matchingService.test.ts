@@ -190,3 +190,76 @@ describe('MatchingService End-to-End matching & diagnostics', () => {
     expect(matchRes.checks.distancePassed).toBe(false);
   });
 });
+
+describe('MatchingService Smart Score Ranking Calculations', () => {
+  const ngo = {
+    status: 'VERIFIED',
+    availability: 'AVAILABLE',
+    acceptedFoodTypes: 'COOKED_VEG,BAKERY',
+    baseLatitude: 12.9716,
+    baseLongitude: 77.5946,
+    serviceRadiusKm: 10
+  };
+
+  it('calculates higher score for closer donations', () => {
+    const closeDonation = {
+      id: 'd_close',
+      title: 'Close Food',
+      status: 'AVAILABLE',
+      foodCategory: 'mixed',
+      vegNonVegMixed: 'VEG',
+      pickupDeadlineAt: new Date(Date.now() + 6 * 3600 * 1000),
+      pickupLatitude: 12.9720,
+      pickupLongitude: 77.5950
+    };
+
+    const farDonation = {
+      id: 'd_far',
+      title: 'Far Food',
+      status: 'AVAILABLE',
+      foodCategory: 'mixed',
+      vegNonVegMixed: 'VEG',
+      pickupDeadlineAt: new Date(Date.now() + 6 * 3600 * 1000),
+      pickupLatitude: 12.9100, // ~8 km away
+      pickupLongitude: 77.5946
+    };
+
+    const matchClose = matchDonationToNgo(closeDonation, ngo);
+    const matchFar = matchDonationToNgo(farDonation, ngo);
+
+    expect(matchClose.result).toBe(true);
+    expect(matchFar.result).toBe(true);
+    expect(matchClose.score).toBeGreaterThan(matchFar.score);
+  });
+
+  it('calculates higher score for urgent donations approaching deadline', () => {
+    const urgentDonation = {
+      id: 'd_urg',
+      title: 'Urgent Food',
+      status: 'AVAILABLE',
+      foodCategory: 'mixed',
+      vegNonVegMixed: 'VEG',
+      pickupDeadlineAt: new Date(Date.now() + 45 * 60 * 1000), // 45 mins
+      pickupLatitude: 12.9720,
+      pickupLongitude: 77.5950
+    };
+
+    const relaxedDonation = {
+      id: 'd_rel',
+      title: 'Relaxed Food',
+      status: 'AVAILABLE',
+      foodCategory: 'mixed',
+      vegNonVegMixed: 'VEG',
+      pickupDeadlineAt: new Date(Date.now() + 24 * 3600 * 1000), // 24 hours
+      pickupLatitude: 12.9720,
+      pickupLongitude: 77.5950
+    };
+
+    const matchUrgent = matchDonationToNgo(urgentDonation, ngo);
+    const matchRelaxed = matchDonationToNgo(relaxedDonation, ngo);
+
+    expect(matchUrgent.result).toBe(true);
+    expect(matchRelaxed.result).toBe(true);
+    expect(matchUrgent.score).toBeGreaterThan(matchRelaxed.score);
+  });
+});

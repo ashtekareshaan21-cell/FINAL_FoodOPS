@@ -28,7 +28,7 @@ export default function InventoryScene() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const scope = createScope({ root: el }).add(() => {
+            createScope({ root: el }).add(() => {
               const textItems = el.querySelectorAll('.scene-text');
               const items = el.querySelectorAll('.inventory-item');
               

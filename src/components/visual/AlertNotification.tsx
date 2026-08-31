@@ -13,6 +13,11 @@ export default function AlertNotification({ title, message, onClose }: AlertNoti
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
 
+  const handleClose = () => {
+    setVisible(false);
+    if (onClose) onClose();
+  };
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -25,12 +30,7 @@ export default function AlertNotification({ title, message, onClose }: AlertNoti
     }, 6000);
 
     return () => clearTimeout(timer);
-  }, []);
-
-  const handleClose = () => {
-    setVisible(false);
-    if (onClose) onClose();
-  };
+  }, [onClose]);
 
   if (!visible) return null;
 

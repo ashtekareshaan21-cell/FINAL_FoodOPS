@@ -22,7 +22,7 @@ export default function FinalScene() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const scope = createScope({ root: el }).add(() => {
+            createScope({ root: el }).add(() => {
               const textItems = el.querySelectorAll('.final-text-anim');
               const nodes = el.querySelectorAll('.final-node');
               const lines = el.querySelectorAll('.final-line');

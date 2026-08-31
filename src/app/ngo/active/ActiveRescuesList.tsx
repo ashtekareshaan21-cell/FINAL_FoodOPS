@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
-import { divertDonationToBiogas } from '@/app/actions/donations';
+import { divertDonationToBiogas, generateDeliveryOtp } from '@/app/actions/donations';
 import { prefersReducedMotion } from '@/animations/accessibility';
 import { staggerCards } from '@/animations/cards';
 import { DeliveryRouteTracker } from '@/animations/delivery';
@@ -14,6 +14,7 @@ export interface ActiveRescueItem {
   description: string;
   status: string;
   assignment?: {
+    id: string;
     volunteer?: {
       name: string;
       phoneNumber: string;
@@ -60,6 +61,26 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
   const [spoilLoadingMap, setSpoilLoadingMap] = useState<Record<string, boolean>>({});
   const [spoilReasonMap, setSpoilReasonMap] = useState<Record<string, string>>({});
   const [showSpoilConfirm, setShowSpoilConfirm] = useState<Record<string, boolean>>({});
+
+  const [deliveryOtpMap, setDeliveryOtpMap] = useState<Record<string, string>>({});
+  const [otpLoadingMap, setOtpLoadingMap] = useState<Record<string, boolean>>({});
+
+  const handleGenOtp = async (assignmentId: string, rescueId: string) => {
+    setOtpLoadingMap(prev => ({ ...prev, [rescueId]: true }));
+    setErrorMap(prev => ({ ...prev, [rescueId]: null }));
+    try {
+      const res = await generateDeliveryOtp(assignmentId);
+      if (res.success && 'otp' in res) {
+        setDeliveryOtpMap(prev => ({ ...prev, [rescueId]: res.otp || '' }));
+      } else {
+        setErrorMap(prev => ({ ...prev, [rescueId]: ('error' in res && res.error) || 'Failed to generate delivery OTP.' }));
+      }
+    } catch (err) {
+      setErrorMap(prev => ({ ...prev, [rescueId]: 'Failed to generate OTP.' }));
+    } finally {
+      setOtpLoadingMap(prev => ({ ...prev, [rescueId]: false }));
+    }
+  };
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -262,6 +283,29 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
                           >
                             Reassign Rider
                           </button>
+                        </div>
+                      )}
+
+                      {(rescue.status === 'PICKED_UP' || rescue.status === 'DELIVERY_IN_PROGRESS') && rescue.assignment?.id && (
+                        <div className="pt-4 border-t border-border mt-3 space-y-3">
+                          <p className="text-[10px] font-bold text-muted uppercase tracking-wider">Secure Handover Code</p>
+                          {deliveryOtpMap[rescue.id] ? (
+                            <div className="bg-success-bg border border-success-border text-success font-mono font-bold text-center text-lg p-3 rounded-md animate-fade-in tracking-wider">
+                              Delivery OTP: {deliveryOtpMap[rescue.id]}
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={otpLoadingMap[rescue.id]}
+                              onClick={() => handleGenOtp(rescue.assignment!.id, rescue.id)}
+                              className="w-full btn-primary py-2.5 text-xs hover:scale-[1.01]"
+                            >
+                              {otpLoadingMap[rescue.id] ? 'Generating...' : '🔑 Generate Handover OTP'}
+                            </button>
+                          )}
+                          <p className="text-[10px] text-muted-text italic">
+                            Share this 6-digit code with the volunteer rider once they arrive at your base to complete delivery.
+                          </p>
                         </div>
                       )}
                     </div>

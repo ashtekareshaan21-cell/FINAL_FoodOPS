@@ -25,6 +25,7 @@ export interface MatchResult {
   };
   reasons: string[];
   result: boolean;
+  score: number;
 }
 
 /**
@@ -225,6 +226,8 @@ export function matchDonationToNgo(
     pickupDeadlineAt: Date;
     pickupLatitude: number;
     pickupLongitude: number;
+    estimatedServings?: number | null;
+    createdAt?: Date;
   },
   ngo: {
     status: string;
@@ -295,13 +298,44 @@ export function matchDonationToNgo(
     distancePassed &&
     categoryPassed;
 
+  // Compute matching score out of 100 if eligible, else 0
+  let score = 0;
+  if (result) {
+    // 1. Proximity score (Max 25 points)
+    const distanceScore = ngo.serviceRadiusKm > 0 
+      ? Math.max(0, 25 * (1 - distanceKm / ngo.serviceRadiusKm)) 
+      : 25;
+
+    // 2. Compatibility score (Max 25 points)
+    const compatibilityScore = categoryPassed ? 25 : 0;
+
+    // 3. Availability score (Max 20 points)
+    const availabilityScore = ngo.availability === 'AVAILABLE' ? 20 : 0;
+
+    // 4. Capacity score (Max 15 points) - default limit 200 servings
+    const defaultCapacity = 200;
+    const servings = donation.estimatedServings || 30;
+    const capacityScore = servings <= defaultCapacity 
+      ? 15 
+      : Math.max(0, 15 * (1 - (servings - defaultCapacity) / defaultCapacity));
+
+    // 5. Urgency score (Max 15 points) - higher score for closer deadlines (under 12 hours)
+    const timeLeftMs = new Date(donation.pickupDeadlineAt).getTime() - Date.now();
+    const timeLeftHours = Math.max(0, timeLeftMs / (1000 * 60 * 60));
+    const urgencyScore = timeLeftHours <= 1 
+      ? 15 
+      : Math.max(0, 15 * (1 - (timeLeftHours - 1) / 11));
+
+    score = Math.round(distanceScore + compatibilityScore + availabilityScore + capacityScore + urgencyScore);
+  }
+
   if (!result) {
     console.log(
       `[MatchingService] Match REJECTED - Donation: "${donation.title}" (${donation.id}), NGO: "${ngo.status === 'VERIFIED' ? 'Verified NGO' : 'Unverified'}" (status: ${ngo.status}, availability: ${ngo.availability}). Distance: ${distanceKm.toFixed(2)} km (radius limit: ${ngo.serviceRadiusKm} km). Category: "${donation.foodCategory}" (${donation.vegNonVegMixed}). Reasons: [${reasons.join('; ')}]`
     );
   } else {
     console.log(
-      `[MatchingService] Match SUCCESS - Donation: "${donation.title}" (${donation.id}), NGO: (status: ${ngo.status}, availability: ${ngo.availability}). Distance: ${distanceKm.toFixed(2)} km.`
+      `[MatchingService] Match SUCCESS - Donation: "${donation.title}" (${donation.id}), NGO: (status: ${ngo.status}, availability: ${ngo.availability}). Distance: ${distanceKm.toFixed(2)} km. Score: ${score}`
     );
   }
 
@@ -319,6 +353,7 @@ export function matchDonationToNgo(
     },
     reasons,
     result,
+    score,
   };
 }
 
@@ -371,10 +406,10 @@ export const matchingService = {
     return availableDonations
       .map((donation) => {
         const matchRes = matchDonationToNgo(donation, ngo);
-        return { ...donation, distance: matchRes.distanceKm, matched: matchRes.result };
+        return { ...donation, distance: matchRes.distanceKm, matched: matchRes.result, score: matchRes.score };
       })
       .filter((d) => d.matched)
-      .sort((a, b) => a.distance - b.distance);
+      .sort((a, b) => b.score - a.score);
   },
 
   /**

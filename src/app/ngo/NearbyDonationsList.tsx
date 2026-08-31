@@ -22,6 +22,7 @@ interface DonationItem {
   pickupLongitude: number;
   pickupDeadlineAt: Date | string;
   distance: number;
+  score: number;
   donor: {
     organizationName: string;
   };
@@ -92,6 +93,11 @@ export default function NearbyDonationsList({ availableDonations, acceptDonation
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute top-4 left-4">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-sm bg-primary/95 backdrop-blur-md text-[9px] font-bold text-white uppercase tracking-widest border border-primary/20 font-mono shadow-sm">
+                      🔥 Score: {donation.score}%
+                    </span>
+                  </div>
                   <div className="absolute top-4 right-4">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-sm bg-black/60 backdrop-blur-md text-[9px] font-bold text-white uppercase tracking-widest border border-white/10 font-mono">
                       📍 {donation.distance.toFixed(1)} km away

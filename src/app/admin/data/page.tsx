@@ -178,8 +178,8 @@ export default async function AdminDataPage() {
                     </td>
                     <td className="py-3 pr-4 font-mono">{dn.pickupLatitude.toFixed(6)}, {dn.pickupLongitude.toFixed(6)}</td>
                     <td className="py-3">
-                      {(dn.status !== 'COMPLETED' && dn.status !== 'CANCELLED' && dn.status !== 'EXPIRED') ? (
-                        <ForceExpireButton donationId={dn.id} />
+                      {(dn.status !== 'COMPLETED' && dn.status !== 'CANCELLED' && dn.status !== 'ORGANIC_RECOVERY') ? (
+                        <ForceExpireButton donationId={dn.id} status={dn.status} />
                       ) : (
                         <span className="text-[10px] text-muted-light italic font-mono">No action</span>
                       )}

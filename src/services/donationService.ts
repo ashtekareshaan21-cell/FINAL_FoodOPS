@@ -22,6 +22,136 @@ const IMPACT_FACTORS: Record<string, { co2: number; water: number }> = {
 };
 
 export const donationService = {
+  async runLazyExpiryCheck() {
+    const expiredDonations = await prisma.donation.findMany({
+      where: {
+        status: {
+          in: ['AVAILABLE', 'ACCEPTED', 'VOLUNTEER_ASSIGNED', 'PICKUP_IN_PROGRESS'],
+        },
+        pickupDeadlineAt: {
+          lte: new Date(),
+        },
+      },
+    });
+
+    for (const donation of expiredDonations) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          const fresh = await tx.donation.findUnique({ where: { id: donation.id } });
+          if (!fresh || !['AVAILABLE', 'ACCEPTED', 'VOLUNTEER_ASSIGNED', 'PICKUP_IN_PROGRESS'].includes(fresh.status)) {
+            return;
+          }
+
+          const parsedWeight = parseFloat(fresh.quantity.replace(/[^\d.]/g, ''));
+          const weightKg = isNaN(parsedWeight) || parsedWeight <= 0 ? 10.0 : parsedWeight;
+
+          await tx.donation.update({
+            where: { id: fresh.id },
+            data: {
+              status: 'EXPIRED',
+              cancelledAt: new Date(),
+              cancelledBy: 'SYSTEM_LAZY_ENGINE',
+              cancelReason: 'SLA Expiration - Recovery Required',
+            },
+          });
+
+          await tx.donationStatusHistory.create({
+            data: {
+              donationId: fresh.id,
+              previousStatus: fresh.status,
+              newStatus: 'EXPIRED',
+              changedBy: 'SYSTEM_LAZY_ENGINE',
+              reason: 'SLA Expiration - Recovery Required',
+            },
+          });
+
+          await auditService.log(tx, {
+            userId: 'SYSTEM_LAZY_ENGINE',
+            role: 'ADMIN',
+            action: 'DONATION_EXPIRED',
+            entityType: 'Donation',
+            entityId: fresh.id,
+            previousValues: { status: fresh.status },
+            newValues: { status: 'EXPIRED', cancelReason: 'SLA Expiration - Recovery Required' },
+          });
+
+          const co2EquivalentKg = weightKg * 1.8;
+
+          await tx.impactRecord.create({
+            data: {
+              donationId: fresh.id,
+              foodWeightKg: weightKg,
+              estimatedServings: 0,
+              co2EquivalentKg,
+              waterSavedLiters: 0,
+              calculationMethod: 'BIOGAS_RECOVERY_2026',
+              factorsUsed: `biogas_recovery: co2=1.8, water=0, yield=0.25kwh/kg`,
+            },
+          });
+        });
+      } catch (err) {
+        console.error(`Lazy expiry check failed for donation ${donation.id}:`, err);
+      }
+    }
+  },
+
+  async generateDeliveryOtp(userId: string, assignmentId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found');
+
+    const assignment = await prisma.volunteerAssignment.findUnique({
+      where: { id: assignmentId },
+      include: {
+        volunteer: true,
+        ngo: {
+          include: {
+            user: true,
+          },
+        },
+        donation: true,
+      },
+    });
+
+    if (!assignment) throw new Error('Assignment not found');
+
+    let isAuthorized = false;
+    if (user.role === 'ADMIN') {
+      isAuthorized = true;
+    } else if (user.role === 'NGO') {
+      isAuthorized = assignment.ngo.userId === userId;
+    }
+
+    if (!isAuthorized) {
+      throw new Error('Unauthorized to generate delivery OTP for this assignment.');
+    }
+
+    if (assignment.donation.status !== 'PICKED_UP' && assignment.donation.status !== 'DELIVERY_IN_PROGRESS') {
+      throw new Error('Donation must be picked up before delivery can be verified.');
+    }
+
+    const otpVal = crypto.randomInt(100000, 999999).toString();
+    const hash = crypto.createHash('sha256').update(otpVal).digest('hex');
+
+    await prisma.volunteerAssignment.update({
+      where: { id: assignmentId },
+      data: {
+        pickupOtpHash: hash,
+        pickupOtpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        pickupOtpAttempts: 0,
+      },
+    });
+
+    const ngoEmail = assignment.ngo.user.email;
+    const donationTitle = assignment.donation.title;
+    await emailService.sendPickupOtpEmail(ngoEmail, donationTitle, otpVal);
+
+    return {
+      success: true,
+      otp: otpVal,
+      message: 'Delivery Verification OTP generated successfully and sent to NGO email.',
+    };
+  },
+
   async createDonation(userId: string, input: CreateDonationInput & { auditId?: string | null }) {
     const donor = await donorRepository.findByUserId(userId);
     if (!donor) throw new Error('Donor profile not found.');
@@ -175,6 +305,7 @@ export const donationService = {
   },
 
   async getDonorDonations(userId: string) {
+    await this.runLazyExpiryCheck();
     const donor = await donorRepository.findByUserId(userId);
     if (!donor) throw new Error('Donor profile not found');
 
@@ -289,6 +420,7 @@ export const donationService = {
   },
 
   async getNgoAcceptedDonations(userId: string) {
+    await this.runLazyExpiryCheck();
     const ngo = await ngoRepository.findByUserId(userId);
     if (!ngo) throw new Error('NGO profile not found');
 
@@ -425,6 +557,7 @@ export const donationService = {
   },
 
   async getVolunteerAssignments(userId: string) {
+    await this.runLazyExpiryCheck();
     const volunteer = await volunteerRepository.findByUserId(userId);
     if (!volunteer) throw new Error('Volunteer profile not found');
 
@@ -475,6 +608,39 @@ export const donationService = {
       }
       if (new Date() > new Date(assignmentCheck.pickupOtpExpiresAt)) {
         throw new Error('OTP has expired.');
+      }
+      if (assignmentCheck.pickupOtpAttempts >= 3) {
+        throw new Error('Maximum verification attempts exceeded. Please generate a new OTP.');
+      }
+
+      const inputHash = crypto.createHash('sha256').update(otp).digest('hex');
+      const buf1 = Buffer.from(assignmentCheck.pickupOtpHash, 'hex');
+      const buf2 = Buffer.from(inputHash, 'hex');
+
+      if (buf1.length !== buf2.length || !crypto.timingSafeEqual(buf1, buf2)) {
+        await prisma.volunteerAssignment.update({
+          where: { id: assignmentId },
+          data: { pickupOtpAttempts: { increment: 1 } },
+        });
+        throw new Error('Invalid OTP.');
+      }
+    }
+
+    if (action === 'CONFIRM_DELIVERY') {
+      // 1. Authorization check: assigned volunteer or ADMIN only
+      if (user.role !== 'ADMIN' && assignmentCheck.volunteer.userId !== userId) {
+        throw new Error('UNAUTHORIZED_OWNER');
+      }
+
+      // 2. Verification checks
+      if (!otp) {
+        throw new Error('OTP is required for confirming delivery.');
+      }
+      if (!assignmentCheck.pickupOtpHash || !assignmentCheck.pickupOtpExpiresAt) {
+        throw new Error('No active delivery verification OTP found. Please ask NGO to generate one.');
+      }
+      if (new Date() > new Date(assignmentCheck.pickupOtpExpiresAt)) {
+        throw new Error('Delivery OTP has expired.');
       }
       if (assignmentCheck.pickupOtpAttempts >= 3) {
         throw new Error('Maximum verification attempts exceeded. Please generate a new OTP.');
@@ -566,6 +732,9 @@ export const donationService = {
         nextAssignmentStatus = 'COMPLETED';
         nextDonationStatus = 'COMPLETED';
         updates.deliveryConfirmedAt = new Date();
+        updates.pickupOtpHash = null;
+        updates.pickupOtpExpiresAt = null;
+        updates.pickupOtpAttempts = 0;
         isCompleted = true;
         auditAction = 'DONATION_COMPLETED';
 

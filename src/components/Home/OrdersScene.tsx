@@ -29,7 +29,7 @@ export default function OrdersScene() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const scope = createScope({ root: el }).add(() => {
+            createScope({ root: el }).add(() => {
               const text = el.querySelectorAll('.scene-text');
               const cards = el.querySelectorAll('.order-card');
               const lines = el.querySelectorAll('.order-line');

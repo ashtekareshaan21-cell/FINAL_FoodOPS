@@ -33,7 +33,7 @@ export default function DeliveryScene() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const scope = createScope({ root: el }).add(() => {
+            createScope({ root: el }).add(() => {
               const textItems = el.querySelectorAll('.scene-text');
               const trackerCard = el.querySelector('.tracker-card');
               
