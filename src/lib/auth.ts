@@ -103,3 +103,7 @@ export async function deleteSession() {
   const cookieStore = await cookies();
   cookieStore.delete('session');
 }
+
+export function isAdminPortalEnabled(): boolean {
+  return process.env.ADMIN_PORTAL_ENABLED === 'true';
+}

@@ -109,9 +109,25 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
     expect(ngoCount2).toBe(ngoCount1);
   });
 
-  // Test A: Admin Authorization
-  it('rejects non-admin actions and permits admin actions', async () => {
-    // Mock non-admin session
+  // Test A: Admin Authorization & Feature Lock
+  it('rejects non-admin actions and respects ADMIN_PORTAL_ENABLED feature lock', async () => {
+    // 1. When ADMIN_PORTAL_ENABLED is false (default), all admin actions reject
+    process.env.ADMIN_PORTAL_ENABLED = 'false';
+    vi.mocked(getSession).mockResolvedValue({
+      userId: 'admin_user_id',
+      role: 'ADMIN',
+      email: 'admin@foodops.org',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    } as any);
+
+    await expect(getAllDonors()).rejects.toThrow('Admin portal is disabled.');
+
+    // 2. When ADMIN_PORTAL_ENABLED is true, permits authorized admin session
+    process.env.ADMIN_PORTAL_ENABLED = 'true';
+    const donors = await getAllDonors();
+    expect(Array.isArray(donors)).toBe(true);
+
+    // 3. Rejects non-admin role even when feature lock is true
     vi.mocked(getSession).mockResolvedValue({
       userId: 'donor_user_id',
       role: 'DONOR',
@@ -120,17 +136,6 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
     } as any);
 
     await expect(getAllDonors()).rejects.toThrow('Unauthorized');
-
-    // Mock admin session
-    vi.mocked(getSession).mockResolvedValue({
-      userId: 'admin_user_id',
-      role: 'ADMIN',
-      email: 'admin@foodops.org',
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    } as any);
-
-    const donors = await getAllDonors();
-    expect(Array.isArray(donors)).toBe(true);
   });
 
   // Test C: State Machine

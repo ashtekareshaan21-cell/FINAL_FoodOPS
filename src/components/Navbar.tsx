@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getSession } from '@/lib/auth';
+import { getSession, isAdminPortalEnabled } from '@/lib/auth';
 import { logout } from '@/app/actions/auth';
 import { getAvatarGradient, getInitials } from '@/lib/ui';
 
@@ -7,6 +7,7 @@ export default async function Navbar() {
   const session = await getSession();
   const userGrad = session ? getAvatarGradient(session.email) : '';
   const userInit = session ? getInitials(session.email) : '';
+  const adminEnabled = isAdminPortalEnabled();
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 border-b border-slate-200 backdrop-blur-md shadow-xs transition-colors duration-200">
@@ -74,7 +75,7 @@ export default async function Navbar() {
                     Assigned Pickups
                   </Link>
                 )}
-                {session.role === 'ADMIN' && (
+                {session.role === 'ADMIN' && adminEnabled && (
                   <>
                     <Link
                       href="/admin"

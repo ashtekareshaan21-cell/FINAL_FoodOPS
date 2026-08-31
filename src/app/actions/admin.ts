@@ -1,16 +1,18 @@
 'use server';
 
-import { getSession } from '@/lib/auth';
+import { getSession, isAdminPortalEnabled } from '@/lib/auth';
 import { adminService } from '@/services/adminService';
 import { revalidatePath } from 'next/cache';
 
 export async function getPendingNgos() {
+  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getPendingNgos();
 }
 
 export async function verifyNgo(ngoId: string) {
+  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') {
     return { success: false, error: 'Unauthorized' };
@@ -28,6 +30,7 @@ export async function verifyNgo(ngoId: string) {
 }
 
 export async function rejectNgo(ngoId: string, reason: string) {
+  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') {
     return { success: false, error: 'Unauthorized' };
@@ -45,6 +48,7 @@ export async function rejectNgo(ngoId: string, reason: string) {
 }
 
 export async function getAdminStats() {
+  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
   try {
     return await adminService.getAdminStats();
   } catch (error) {
@@ -67,30 +71,35 @@ export async function getAdminStats() {
 }
 
 export async function getAllDonors() {
+  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getAllDonors();
 }
 
 export async function getAllNgos() {
+  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getAllNgos();
 }
 
 export async function getAllVolunteers() {
+  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getAllVolunteers();
 }
 
 export async function getAllDonations() {
+  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
   return adminService.getAllDonations();
 }
 
 export async function forceExpireDonation(donationId: string) {
+  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') {
     return { success: false, error: 'Unauthorized. Only Admins can force-expire donations.' };
@@ -108,4 +117,3 @@ export async function forceExpireDonation(donationId: string) {
     return { success: false, error: message };
   }
 }
-
