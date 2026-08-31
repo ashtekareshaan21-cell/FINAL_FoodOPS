@@ -2,51 +2,51 @@
 @import "tailwindcss";
 
 :root {
-  /* Carbon Dark Climate-Tech Color Tokens as Default */
-  --background: #060a07;     /* Deep carbon/dark green rich black */
-  --foreground: #f4f4f2;     /* Off-white text */
+  /* Restrained Professional Operational Color System */
+  --background: #f8faf9;     /* Light warm neutral off-white */
+  --foreground: #0f172a;     /* Deep slate text for maximum readability */
   
-  --surface: #0e120f;        /* Dark forest surface */
-  --surface-muted: #131a15;  /* Muted dark background block */
+  --surface: #ffffff;        /* Pure white clean cards */
+  --surface-muted: #f1f5f9;  /* Light slate muted container background */
   
-  --border: #1a251e;         /* Clean dark forest border */
-  --border-hover: #26382c;
+  --border: #e2e8f0;         /* Clean light border */
+  --border-hover: #cbd5e1;
   
-  --primary: #10b981;        /* Vibrant Emerald for tech contrast */
-  --primary-hover: #059669;
-  --primary-foreground: #020503;
+  --primary: #0f2942;        /* Deep Operational Navy Blue */
+  --primary-hover: #1e3a8a;
+  --primary-foreground: #ffffff;
   
-  --success: #10b981;
-  --success-bg: #022c1d;
-  --success-border: #064e3b;
+  --success: #166534;        /* Muted Sustainable Forest Green */
+  --success-bg: #f0fdf4;
+  --success-border: #bbf7d0;
   
-  --warning: #f59e0b;
-  --warning-bg: #451a03;
-  --warning-border: #78350f;
+  --warning: #b45309;        /* Restrained Amber for deadlines */
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
   
-  --danger: #ef4444;
-  --danger-bg: #450a0a;
-  --danger-border: #7f1d1d;
+  --danger: #b91c1c;         /* Restrained Red for missed SLAs */
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
   
-  --info: #0ea5e9;
-  --info-bg: #0c4a6e;
-  --info-border: #0369a1;
+  --info: #1d4ed8;           /* Restrained Operational Blue */
+  --info-bg: #eff6ff;
+  --info-border: #bfdbfe;
   
-  --muted: #8d9c92;          /* Muted green-gray for secondary text */
-  --muted-light: #5f6e64;    /* Lighter green-gray */
+  --muted: #475569;          /* Slate secondary text */
+  --muted-light: #64748b;    /* Lighter slate text */
   
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Elevation */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 18px 28px -4px rgba(0, 0, 0, 0.5), 0 8px 16px -2px rgba(0, 0, 0, 0.35);
+  /* Restrained Operational Elevation */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
 
-  /* Radii */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
+  /* Clean Radii */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-full: 9999px;
 }
 
@@ -97,7 +97,7 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -120,23 +120,23 @@ body {
 
 /* Smooth Interactive Transitions */
 .transition-premium {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Premium Typography Styles */
+/* Operational Typography Styles */
 .font-display {
-  letter-spacing: -0.035em;
-  font-weight: 800;
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 
-/* Custom Component Layout Tokens */
+/* Card Tokens */
 .card-premium {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   padding: 1.5rem;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-premium:hover {
@@ -147,20 +147,20 @@ body {
 /* Form Design Tokens */
 .input-premium {
   width: 100%;
-  padding: 0.75rem 1rem;
-  background-color: var(--surface);
+  padding: 0.625rem 0.875rem;
+  background-color: #ffffff;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--foreground);
   font-size: 0.875rem;
   line-height: 1.25rem;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease-in-out;
   outline: none;
 }
 
 .input-premium:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(15, 61, 42, 0.08);
+  box-shadow: 0 0 0 3px rgba(15, 41, 66, 0.08);
 }
 
 .input-premium::placeholder {
@@ -173,22 +173,22 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--muted);
+  color: var(--muted-text);
   margin-bottom: 0.375rem;
 }
 
-/* Premium Button Tokens */
+/* Restrained Button Tokens */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.5rem;
+  padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 600;
   border-radius: var(--radius-sm);
   background-color: var(--primary);
   color: var(--primary-foreground);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease-in-out;
   border: 1px solid transparent;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
@@ -212,14 +212,14 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.5rem;
+  padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 600;
   border-radius: var(--radius-sm);
-  background-color: var(--surface);
+  background-color: #ffffff;
   color: var(--foreground);
   border: 1px solid var(--border);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease-in-out;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
 }
@@ -239,7 +239,7 @@ body {
   cursor: not-allowed;
 }
 
-/* Badge Layout Customizations */
+/* Badge Tokens */
 .badge-premium {
   display: inline-flex;
   align-items: center;
@@ -252,21 +252,10 @@ body {
 
 /* Micro-animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes progressPulse {
-  0% { transform: scaleX(0); transform-origin: left; }
-  50% { transform: scaleX(1); transform-origin: left; }
-  50.1% { transform: scaleX(1); transform-origin: right; }
-  100% { transform: scaleX(0); transform-origin: right; }
-}
-
-.animate-progress-pulse {
-  animation: progressPulse 2.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  animation: fadeIn 0.25s ease-out forwards;
 }

@@ -9,18 +9,18 @@ export default async function Navbar() {
   const userInit = session ? getInitials(session.email) : '';
 
   return (
-    <nav className="sticky top-0 z-50 bg-surface/90 border-b border-border backdrop-blur-md shadow-sm transition-colors duration-300">
+    <nav className="sticky top-0 z-50 bg-white/95 border-b border-slate-200 backdrop-blur-md shadow-xs transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center gap-2">
-                <span className="text-xl font-black text-primary tracking-tight font-display">
-                  FoodOps
+                <span className="text-xl font-bold text-[#0f2942] tracking-tight font-display">
+                  FoodOPS
                 </span>
-                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-primary/5 text-primary border border-primary/10 tracking-widest uppercase">
-                  mvp
+                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 tracking-widest uppercase">
+                  OPERATIONAL PLATFORM
                 </span>
               </Link>
             </div>
@@ -32,15 +32,15 @@ export default async function Navbar() {
                   <>
                     <Link
                       href="/donor"
-                      className="border-b-2 border-primary text-foreground inline-flex items-center px-1 pt-1 text-sm font-semibold h-16 transition-all"
+                      className="border-b-2 border-[#0f2942] text-[#0f2942] inline-flex items-center px-1 pt-1 text-sm font-semibold h-16 transition-all"
                     >
                       Dashboard
                     </Link>
                     <Link
                       href="/donor/create"
-                      className="border-b-2 border-transparent text-muted-text hover:text-foreground inline-flex items-center px-1 pt-1 text-sm font-medium h-16 transition-all"
+                      className="border-b-2 border-transparent text-slate-600 hover:text-[#0f2942] inline-flex items-center px-1 pt-1 text-sm font-medium h-16 transition-all"
                     >
-                      New Donation
+                      New Surplus Listing
                     </Link>
                   </>
                 )}
@@ -48,45 +48,45 @@ export default async function Navbar() {
                   <>
                     <Link
                       href="/ngo"
-                      className="border-b-2 border-primary text-foreground inline-flex items-center px-1 pt-1 text-sm font-semibold h-16 transition-all"
+                      className="border-b-2 border-[#0f2942] text-[#0f2942] inline-flex items-center px-1 pt-1 text-sm font-semibold h-16 transition-all"
                     >
-                      Accept Donations
+                      Accept Surplus
                     </Link>
                     <Link
                       href="/ngo/active"
-                      className="border-b-2 border-transparent text-muted-text hover:text-foreground inline-flex items-center px-1 pt-1 text-sm font-medium h-16 transition-all"
+                      className="border-b-2 border-transparent text-slate-600 hover:text-[#0f2942] inline-flex items-center px-1 pt-1 text-sm font-medium h-16 transition-all"
                     >
                       Active Rescues
                     </Link>
                     <Link
                       href="/ngo/history"
-                      className="border-b-2 border-transparent text-muted-text hover:text-foreground inline-flex items-center px-1 pt-1 text-sm font-medium h-16 transition-all"
+                      className="border-b-2 border-transparent text-slate-600 hover:text-[#0f2942] inline-flex items-center px-1 pt-1 text-sm font-medium h-16 transition-all"
                     >
-                      History
+                      Rescue History
                     </Link>
                   </>
                 )}
                 {session.role === 'VOLUNTEER' && (
                   <Link
-                      href="/volunteer"
-                      className="border-b-2 border-primary text-foreground inline-flex items-center px-1 pt-1 text-sm font-semibold h-16 transition-all"
+                    href="/volunteer"
+                    className="border-b-2 border-[#0f2942] text-[#0f2942] inline-flex items-center px-1 pt-1 text-sm font-semibold h-16 transition-all"
                   >
-                    My Pickups
+                    Assigned Pickups
                   </Link>
                 )}
                 {session.role === 'ADMIN' && (
                   <>
                     <Link
                       href="/admin"
-                      className="border-b-2 border-primary text-foreground inline-flex items-center px-1 pt-1 text-sm font-semibold h-16 transition-all"
+                      className="border-b-2 border-[#0f2942] text-[#0f2942] inline-flex items-center px-1 pt-1 text-sm font-semibold h-16 transition-all"
                     >
-                      Verifications
+                      Overview & Verifications
                     </Link>
                     <Link
                       href="/admin/data"
-                      className="border-b-2 border-transparent text-muted-text hover:text-foreground inline-flex items-center px-1 pt-1 text-sm font-medium h-16 transition-all"
+                      className="border-b-2 border-transparent text-slate-600 hover:text-[#0f2942] inline-flex items-center px-1 pt-1 text-sm font-medium h-16 transition-all"
                     >
-                      Browse Data
+                      Data Browser & Recovery
                     </Link>
                   </>
                 )}
@@ -98,21 +98,23 @@ export default async function Navbar() {
             {session ? (
               <div className="flex items-center gap-3">
                 <div className="text-right hidden md:block">
-                  <p className="text-[9px] text-muted-light uppercase font-bold tracking-wider leading-none">Logged In</p>
-                  <p className="text-xs font-semibold text-foreground mt-1">
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 tracking-wider uppercase">
+                    {session.role}
+                  </span>
+                  <p className="text-xs font-semibold text-slate-800 mt-0.5">
                     {session.email}
                   </p>
                 </div>
                 
                 {/* Circular Profile Avatar Badge */}
-                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${userGrad} text-white font-bold text-xs flex items-center justify-center shadow-inner`}>
+                <div className={`w-8 h-8 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-xs`}>
                   {userInit}
                 </div>
 
                 <form action={logout}>
                   <button
                     type="submit"
-                    className="btn-secondary px-3.5 py-1.5 text-xs font-bold"
+                    className="btn-secondary px-3 py-1.5 text-xs font-semibold"
                   >
                     Logout
                   </button>
@@ -122,13 +124,13 @@ export default async function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="btn-secondary px-4 py-2 text-sm font-semibold shadow-none border-transparent hover:bg-surface-muted"
+                  className="btn-secondary px-4 py-2 text-sm font-semibold shadow-none border-transparent hover:bg-slate-100"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/register"
-                  className="btn-primary px-4.5 py-2 text-sm font-semibold shadow-md shadow-primary/10"
+                  className="btn-primary px-4.5 py-2 text-sm font-semibold shadow-xs"
                 >
                   Register
                 </Link>

@@ -60,55 +60,54 @@ export default function HeroSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
-          {/* Cinematic Typography Treatment */}
+          {/* Operational Typography Treatment */}
           <div className="lg:col-span-6 space-y-6 text-left">
             <span 
-              className={`hero-text-anim inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/5 border border-primary/10 transition-opacity duration-150 ${
+              className={`hero-text-anim inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest text-[#166534] bg-emerald-50 border border-emerald-200 transition-opacity duration-150 ${
                 mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
               }`}
             >
-              🌿 Intelligent Circular Food Rescue Operations
+              🌿 SIH 2026 Problem Statement ID: 26193 • Agriculture & FoodTech
             </span>
             
             <h1 
-              className={`hero-text-anim text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-foreground leading-[1.0] font-display transition-opacity duration-150 ${
+              className={`hero-text-anim text-4xl sm:text-6xl font-bold tracking-tight text-[#0f2942] leading-[1.1] font-display transition-opacity duration-150 ${
                 mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
               }`}
             >
-              THE FOOD <br />
-              <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent dark:from-emerald-400 dark:via-emerald-300 dark:to-teal-400">
-                OPERATING
-              </span> <br />
-              SYSTEM.
+              FoodOPS <br />
+              <span className="text-slate-700 font-semibold text-3xl sm:text-4xl block mt-1">
+                Intelligent Surplus-Food Rescue & Recovery
+              </span>
             </h1>
             
             <p 
-              className={`hero-text-anim max-w-lg text-sm sm:text-base md:text-lg text-muted-text leading-relaxed font-medium transition-opacity duration-150 ${
+              className={`hero-text-anim max-w-lg text-base sm:text-lg text-slate-600 leading-relaxed font-normal transition-opacity duration-150 ${
                 mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
               }`}
             >
-              One intelligent system connecting every part of your food operation — list surplus, audit listings, match NGOs, coordinate delivery, and track real-time impact.
+              Connect surplus food with verified receivers before the rescue window closes — and route missed rescues toward responsible organic recovery.
             </p>
             
             <div 
-              className={`hero-text-anim pt-4 flex flex-col sm:flex-row gap-4 transition-opacity duration-150 ${
+              className={`hero-text-anim pt-2 flex flex-col sm:flex-row gap-3 transition-opacity duration-150 ${
                 mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
               }`}
             >
-              <div className="w-full sm:w-auto hover:scale-[1.01] active:scale-[0.99] transition-transform duration-200">
+              <div>
                 <Link
                   href="/register"
-                  className="btn-primary w-full sm:w-auto px-8 py-4 shadow-lg shadow-primary/10 block text-center font-bold"
+                  className="btn-primary w-full sm:w-auto px-7 py-3 text.sm font-semibold shadow-xs block text-center"
                 >
-                  GET STARTED
+                  Explore Platform
                 </Link>
               </div>
-              <div className="w-full sm:w-auto hover:scale-[1.01] active:scale-[0.99] transition-transform duration-200">
+              <div>
                 <a
-                  href="#orders-narrative"
-                  className="btn-secondary w-full sm:w-auto px-8 py-4 block text-center font-bold"
+                  href="#how-it-works"
+                  className="btn-secondary w-full sm:w-auto px-7 py-3 text-sm font-semibold shadow-xs block text-center"
                 >
-                  EXPLORE INTERACTIVE JOURNEY &darr;
+                  How FoodOPS Works &darr;
                 </a>
               </div>
             </div>

@@ -89,25 +89,23 @@ export default function FoodOpsBackground({ variant = 'dashboard' }: FoodOpsBack
 
   return (
     <div className="fixed inset-0 w-full h-full overflow-hidden pointer-events-none -z-50 select-none">
-      {/* LAYER 1: Base dark background with very subtle green gradient */}
+      {/* LAYER 1: Base warm neutral background */}
       <div 
-        className="absolute inset-0"
-        style={{
-          background: 'radial-gradient(circle at 50% 100%, #08150c 0%, #020503 100%)'
-        }}
+        className="absolute inset-0 bg-[#f8faf9]"
       />
 
-      {/* LAYER 2: Subtle green radial atmosphere (glow) */}
-      <div 
-        className="absolute inset-0 transition-opacity duration-1000 blur-3xl"
-        style={{ 
-          opacity: radialOpacity,
-          background: 'radial-gradient(circle at 50% 25%, #10b981 0%, transparent 60%)',
-          mixBlendMode: 'screen' 
-        }} 
-      />
-
-      {/* LAYER 3: Map/Topographic texture & leaf outlines */}
+      {/* LAYER 2: Technical Grid Texture */}
+      <svg className="absolute inset-0 w-full h-full opacity-60" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(15, 23, 42, 0.03)" strokeWidth="1" />
+          </pattern>
+          <pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="0.75" fill="rgba(15, 23, 42, 0.04)" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#dot-grid)" />
+      </svg>
       <svg className="absolute inset-0 w-full h-full opacity-60" xmlns="http://www.w3.org/2000/svg">
         {/* Technical grids */}
         <defs>
@@ -317,18 +315,11 @@ export default function FoodOpsBackground({ variant = 'dashboard' }: FoodOpsBack
         </div>
       )}
 
-      {/* LAYER 8: Vignette & Readability Gradient Overlay */}
+      {/* LAYER 8: Soft Readability Gradient Overlay */}
       <div 
-        className="absolute inset-0 transition-all duration-700"
+        className="absolute inset-0 transition-all duration-700 pointer-events-none"
         style={{
-          background: `linear-gradient(to bottom, ${
-            variant === 'hero'
-              ? 'transparent, rgba(3, 7, 4, 0.4) 60%, #030704 100%'
-              : variant === 'auth'
-              ? 'rgba(3, 7, 4, 0.8), rgba(3, 7, 4, 0.9) 60%, #030704 100%'
-              : 'rgba(3, 7, 4, 0.9), rgba(3, 7, 4, 0.95) 70%, #030704 100%'
-          })`,
-          boxShadow: 'inset 0 0 100px rgba(0, 0, 0, 0.8)'
+          background: 'linear-gradient(to bottom, rgba(248, 250, 249, 0.2), rgba(248, 250, 249, 0.8) 100%)'
         }}
       />
     </div>

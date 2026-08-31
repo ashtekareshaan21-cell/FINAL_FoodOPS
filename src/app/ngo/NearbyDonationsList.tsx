@@ -115,22 +115,33 @@ export default function NearbyDonationsList({ availableDonations, acceptDonation
                     </p>
                   </div>
 
-                  <div className="space-y-2.5 text-xs text-muted-text bg-surface-muted p-3.5 rounded-md border border-border font-medium">
+                  {/* Explainable Match Factors */}
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-md text-[11px] text-emerald-900 space-y-1">
+                    <p className="font-bold text-[10px] uppercase tracking-wider text-emerald-800">Match Explainability Reason</p>
+                    <div className="grid grid-cols-2 gap-1 text-[10px] font-semibold">
+                      <span>✓ Nearby ({donation.distance.toFixed(1)} km)</span>
+                      <span>✓ Accepts Category</span>
+                      <span>✓ Capacity Available</span>
+                      <span>✓ Active Rescue Window</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-200 font-medium">
                     <div>
-                      <span className="font-bold text-foreground">Donor:</span>{' '}
+                      <span className="font-bold text-slate-800">Donor:</span>{' '}
                       <span>{donation.donor.organizationName}</span>
                     </div>
                     <div>
-                      <span className="font-bold text-foreground">Pickup Address:</span>{' '}
+                      <span className="font-bold text-slate-800">Pickup Address:</span>{' '}
                       <span className="break-words">{donation.pickupAddress}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border mt-2 text-[11px]">
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 mt-2 text-[11px]">
                       <div>
-                        <span className="font-bold text-foreground">Qty:</span>{' '}
+                        <span className="font-bold text-slate-800">Qty:</span>{' '}
                         <span>{donation.quantity} {donation.quantityUnit}</span>
                       </div>
                       <div>
-                        <span className="font-bold text-foreground">Dietary:</span>{' '}
+                        <span className="font-bold text-slate-800">Dietary:</span>{' '}
                         <span className="capitalize">{donation.vegNonVegMixed.toLowerCase()}</span>
                       </div>
                     </div>

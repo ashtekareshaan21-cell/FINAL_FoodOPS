@@ -60,8 +60,8 @@ function AuditLoadingSequence() {
           className="bg-primary h-1 rounded-full w-1/3"
         />
       </div>
-      <p className="text-[10px] text-muted-text font-medium leading-relaxed">
-        We are scanning the visual parameters. This visual audit does not detect food-borne pathogens, toxic residues, or verify microbial safety.
+      <p className="text-[11px] text-slate-600 font-semibold leading-relaxed">
+        <strong>AI-Assisted Screening (Visual Parameters Only):</strong> This automated scan analyzes packaging and estimated volume. It does not detect pathogens or certify food safety. Human verification remains required.
       </p>
     </div>
   );

@@ -62,16 +62,16 @@ export default function LifecyclePipeline() {
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-      <div className="bg-surface/50 backdrop-blur-md border border-border rounded-lg p-8 md:p-10 shadow-sm relative overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 md:p-8 shadow-xs relative overflow-hidden">
         <div className="text-center mb-8">
-          <span className="text-[10px] font-bold text-muted-light uppercase tracking-widest">Platform Core Architecture</span>
-          <h3 className="text-lg font-bold text-foreground mt-1">End-To-End Operational Routing</h3>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Platform Core Workflow</span>
+          <h3 className="text-xl font-bold text-[#0f2942] mt-1">Operational Lifecycle Pipeline</h3>
         </div>
         
         {/* Connected Steps */}
         <div 
           ref={containerRef}
-          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-center relative z-10"
+          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 text-center relative z-10"
         >
           {PIPELINE_STAGES.map((step, idx) => {
             const isActive = activeIdx === idx;
@@ -79,28 +79,28 @@ export default function LifecyclePipeline() {
             return (
               <div 
                 key={idx} 
-                className={`pipeline-node relative p-4 rounded-lg border transition-all duration-500 ease-out group ${
+                className={`pipeline-node relative p-3.5 rounded-lg border transition-all duration-300 ease-out group ${
                   isActive 
-                    ? 'border-primary bg-primary/5 ring-2 ring-primary/5 scale-[1.03] -translate-y-0.5' 
-                    : 'bg-surface-muted/50 border-border/60 hover:border-primary/30 scale-100 translate-y-0'
+                    ? 'border-[#0f2942] bg-slate-50 ring-2 ring-slate-200 scale-[1.02]' 
+                    : 'bg-slate-50/60 border-slate-200 hover:border-slate-300 scale-100'
                 } ${mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'}`}
               >
-                <div className="text-2xl mb-2 group-hover:scale-110 transition-transform duration-300">
+                <div className="text-xl mb-1.5 group-hover:scale-105 transition-transform duration-200">
                   {step.icon}
                 </div>
-                <div className={`text-[10px] font-bold tracking-tight transition-colors duration-500 ${
-                  isActive ? 'text-primary' : 'text-foreground'
+                <div className={`text-[10px] font-bold tracking-tight transition-colors duration-300 ${
+                  isActive ? 'text-[#0f2942]' : 'text-slate-700'
                 }`}>
                   {step.label}
                 </div>
-                <div className="text-[9px] text-muted-text mt-1 leading-normal">
+                <div className="text-[9px] text-slate-500 mt-0.5 leading-tight">
                   {step.desc}
                 </div>
                 
                 {/* Connecting Arrows */}
                 {idx < 7 && (
-                  <div className={`hidden lg:block absolute top-1/2 -right-3 -translate-y-1/2 font-mono font-bold z-20 text-[11px] transition-all duration-500 ${
-                    isActive ? 'text-primary scale-110' : 'text-border'
+                  <div className={`hidden lg:block absolute top-1/2 -right-2.5 -translate-y-1/2 font-mono font-bold z-20 text-[10px] transition-all duration-300 ${
+                    isActive ? 'text-[#0f2942]' : 'text-slate-300'
                   }`}>
                     &rarr;
                   </div>

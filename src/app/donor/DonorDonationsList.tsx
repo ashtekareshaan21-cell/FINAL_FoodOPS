@@ -37,16 +37,18 @@ interface DonorDonationsListProps {
 }
 
 const STATUS_STYLING: Record<string, { bg: string; label: string; dot: string }> = {
-  AVAILABLE: { bg: 'bg-info-bg border-info-border text-info', dot: 'bg-info', label: 'Available' },
-  ACCEPTED: { bg: 'bg-warning-bg border-warning-border text-warning', dot: 'bg-warning', label: 'NGO Claimed' },
-  VOLUNTEER_ASSIGNED: { bg: 'bg-warning-bg border-warning-border text-warning', dot: 'bg-warning', label: 'Rider Booked' },
-  PICKUP_IN_PROGRESS: { bg: 'bg-warning-bg border-warning-border text-warning', dot: 'bg-warning animate-pulse', label: 'Rider En Route' },
-  PICKED_UP: { bg: 'bg-warning-bg border-warning-border text-warning', dot: 'bg-warning', label: 'Collected' },
-  DELIVERY_IN_PROGRESS: { bg: 'bg-warning-bg border-warning-border text-warning', dot: 'bg-warning animate-pulse', label: 'Delivery Transit' },
-  DELIVERED: { bg: 'bg-success-bg border-success-border text-success', dot: 'bg-success', label: 'Delivered' },
-  COMPLETED: { bg: 'bg-success-bg border-success-border text-success', dot: 'bg-success', label: 'Rescued' },
-  CANCELLED: { bg: 'bg-danger-bg border-danger-border text-danger', dot: 'bg-danger', label: 'Cancelled' },
-  EXPIRED: { bg: 'bg-danger-bg border-danger-border text-danger', dot: 'bg-danger', label: 'Biogas Diverted' },
+  AVAILABLE: { bg: 'bg-blue-50 border-blue-200 text-blue-800', dot: 'bg-blue-600', label: 'Available' },
+  ACCEPTED: { bg: 'bg-amber-50 border-amber-200 text-amber-900', dot: 'bg-amber-600', label: 'NGO Claimed' },
+  VOLUNTEER_ASSIGNED: { bg: 'bg-amber-50 border-amber-200 text-amber-900', dot: 'bg-amber-600', label: 'Rider Booked' },
+  PICKUP_IN_PROGRESS: { bg: 'bg-amber-50 border-amber-200 text-amber-900', dot: 'bg-amber-600 animate-pulse', label: 'Rider En Route' },
+  PICKED_UP: { bg: 'bg-amber-50 border-amber-200 text-amber-900', dot: 'bg-amber-600', label: 'Collected' },
+  DELIVERY_IN_PROGRESS: { bg: 'bg-amber-50 border-amber-200 text-amber-900', dot: 'bg-amber-600 animate-pulse', label: 'Delivery Transit' },
+  DELIVERED: { bg: 'bg-emerald-50 border-emerald-200 text-emerald-800', dot: 'bg-emerald-600', label: 'Delivered' },
+  COMPLETED: { bg: 'bg-emerald-50 border-emerald-200 text-emerald-800', dot: 'bg-emerald-600', label: 'Rescued' },
+  CANCELLED: { bg: 'bg-rose-50 border-rose-200 text-rose-800', dot: 'bg-rose-600', label: 'Cancelled' },
+  EXPIRED: { bg: 'bg-amber-50 border-amber-200 text-amber-900', dot: 'bg-amber-600', label: 'SLA Expired — Biogas Recovery' },
+  RECOVERY_ESCALATED: { bg: 'bg-sky-50 border-sky-200 text-sky-900', dot: 'bg-sky-600', label: 'Recovery Escalated' },
+  ORGANIC_RECOVERY: { bg: 'bg-emerald-50 border-emerald-200 text-emerald-900', dot: 'bg-emerald-600', label: 'Organic Recovery Completed' },
 };
 
 const STEP_ORDER = ['AVAILABLE', 'ACCEPTED', 'VOLUNTEER_ASSIGNED', 'PICKUP_IN_PROGRESS', 'PICKED_UP', 'DELIVERY_IN_PROGRESS', 'COMPLETED'];
