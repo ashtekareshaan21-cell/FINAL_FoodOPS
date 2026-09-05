@@ -9,6 +9,7 @@ import { matchingDiagnosticsService } from '@/services/matchingDiagnosticsServic
 import { prisma } from '@/lib/db';
 import { donorRepository } from '@/repositories/donorRepository';
 import { aiListingAuditService } from '@/services/aiListingAuditService';
+import { adminService } from '@/services/adminService';
 
 export interface CreateDonationInput {
   title: string;
@@ -334,5 +335,27 @@ export async function generatePickupOtp(assignmentId: string) {
     console.error('Generate OTP error:', error);
     const message = error instanceof Error ? error.message : 'Failed to generate OTP.';
     return { success: false, error: message };
+  }
+}
+
+export async function getPublicImpactStats() {
+  try {
+    return await adminService.getAdminStats();
+  } catch (error) {
+    console.error('Failed to load public impact stats:', error);
+    return {
+      totalDonors: 0,
+      totalNgos: 0,
+      verifiedNgos: 0,
+      pendingNgos: 0,
+      totalVolunteers: 0,
+      totalDonations: 0,
+      completedRescues: 0,
+      co2SavedKg: 0,
+      waterSavedLiters: 0,
+      foodWeightKg: 0,
+      divertedWeightKg: 0,
+      biogasGeneratedKwh: 0,
+    };
   }
 }

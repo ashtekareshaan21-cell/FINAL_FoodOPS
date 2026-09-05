@@ -65,12 +65,14 @@ async function main() {
   // 2. Create/Upsert Donor
   const donorUser = await prisma.user.upsert({
     where: { email: 'donor@foodops.org' },
-    update: { role: 'DONOR' },
+    update: { role: 'DONOR', verificationStatus: 'VERIFIED', accountStatus: 'ACTIVE' },
     create: {
       email: 'donor@foodops.org',
       phoneNumber: '+91 9876543210',
       passwordHash: demoPasswordHash,
       role: 'DONOR',
+      accountStatus: 'ACTIVE',
+      verificationStatus: 'VERIFIED',
       isPhoneVerified: true,
       isEmailVerified: true,
     },
@@ -82,8 +84,10 @@ async function main() {
       organizationType: 'CATERER',
       contactPerson: 'Rahul Sharma',
       address: '45, Residency Road, Bengaluru',
+      city: 'Bengaluru',
       latitude: 12.9716,
       longitude: 77.5946,
+      verificationStatus: 'VERIFIED',
     },
     create: {
       userId: donorUser.id,
@@ -91,20 +95,24 @@ async function main() {
       organizationType: 'CATERER',
       contactPerson: 'Rahul Sharma',
       address: '45, Residency Road, Bengaluru',
+      city: 'Bengaluru',
       latitude: 12.9716,
       longitude: 77.5946,
+      verificationStatus: 'VERIFIED',
     },
   });
 
   // 3. Create/Upsert NGO 1 (Verified, 1.5 km away)
   const ngo1User = await prisma.user.upsert({
     where: { email: 'ngo1@foodops.org' },
-    update: { role: 'NGO' },
+    update: { role: 'NGO', verificationStatus: 'VERIFIED', accountStatus: 'ACTIVE' },
     create: {
       email: 'ngo1@foodops.org',
       phoneNumber: '+91 9876543221',
       passwordHash: demoPasswordHash,
       role: 'NGO',
+      accountStatus: 'ACTIVE',
+      verificationStatus: 'VERIFIED',
       isPhoneVerified: true,
       isEmailVerified: true,
     },
@@ -116,6 +124,7 @@ async function main() {
       registrationNumber: 'FSSAI-29623000000001',
       status: 'VERIFIED',
       baseAddress: '10, MG Road, Bengaluru',
+      city: 'Bengaluru',
       baseLatitude: 12.9616,
       baseLongitude: 77.5846,
       serviceRadiusKm: 10,
@@ -130,6 +139,7 @@ async function main() {
       registrationNumber: 'FSSAI-29623000000001',
       status: 'VERIFIED',
       baseAddress: '10, MG Road, Bengaluru',
+      city: 'Bengaluru',
       baseLatitude: 12.9616,
       baseLongitude: 77.5846,
       serviceRadiusKm: 10,
@@ -143,12 +153,14 @@ async function main() {
   // 4. Create/Upsert NGO 2 (Verified, 1.8 km away)
   const ngo2User = await prisma.user.upsert({
     where: { email: 'ngo2@foodops.org' },
-    update: { role: 'NGO' },
+    update: { role: 'NGO', verificationStatus: 'VERIFIED', accountStatus: 'ACTIVE' },
     create: {
       email: 'ngo2@foodops.org',
       phoneNumber: '+91 9876543222',
       passwordHash: demoPasswordHash,
       role: 'NGO',
+      accountStatus: 'ACTIVE',
+      verificationStatus: 'VERIFIED',
       isPhoneVerified: true,
       isEmailVerified: true,
     },
@@ -160,6 +172,7 @@ async function main() {
       registrationNumber: 'FSSAI-29623000000002',
       status: 'VERIFIED',
       baseAddress: '20, Brigade Road, Bengaluru',
+      city: 'Bengaluru',
       baseLatitude: 12.9816,
       baseLongitude: 77.6046,
       serviceRadiusKm: 10,
@@ -174,6 +187,7 @@ async function main() {
       registrationNumber: 'FSSAI-29623000000002',
       status: 'VERIFIED',
       baseAddress: '20, Brigade Road, Bengaluru',
+      city: 'Bengaluru',
       baseLatitude: 12.9816,
       baseLongitude: 77.6046,
       serviceRadiusKm: 10,
@@ -187,12 +201,14 @@ async function main() {
   // 5. Create/Upsert NGO 3 (Pending Verification, 3 km away)
   const ngo3User = await prisma.user.upsert({
     where: { email: 'ngo3@foodops.org' },
-    update: { role: 'NGO' },
+    update: { role: 'NGO', verificationStatus: 'PENDING_VERIFICATION', accountStatus: 'ACTIVE' },
     create: {
       email: 'ngo3@foodops.org',
       phoneNumber: '+91 9876543223',
       passwordHash: demoPasswordHash,
       role: 'NGO',
+      accountStatus: 'ACTIVE',
+      verificationStatus: 'PENDING_VERIFICATION',
       isPhoneVerified: true,
       isEmailVerified: true,
     },
@@ -204,6 +220,7 @@ async function main() {
       registrationNumber: 'FSSAI-29623000000003',
       status: 'PENDING_VERIFICATION',
       baseAddress: '30, Indiranagar, Bengaluru',
+      city: 'Bengaluru',
       baseLatitude: 12.9916,
       baseLongitude: 77.6146,
       serviceRadiusKm: 10,
@@ -218,6 +235,7 @@ async function main() {
       registrationNumber: 'FSSAI-29623000000003',
       status: 'PENDING_VERIFICATION',
       baseAddress: '30, Indiranagar, Bengaluru',
+      city: 'Bengaluru',
       baseLatitude: 12.9916,
       baseLongitude: 77.6146,
       serviceRadiusKm: 10,
@@ -231,12 +249,14 @@ async function main() {
   // 6. Create/Upsert Volunteer associated with NGO 1
   const volunteerUser = await prisma.user.upsert({
     where: { email: 'volunteer@foodops.org' },
-    update: { role: 'VOLUNTEER' },
+    update: { role: 'VOLUNTEER', verificationStatus: 'VERIFIED', accountStatus: 'ACTIVE' },
     create: {
       email: 'volunteer@foodops.org',
       phoneNumber: '+91 9876543231',
       passwordHash: demoPasswordHash,
       role: 'VOLUNTEER',
+      accountStatus: 'ACTIVE',
+      verificationStatus: 'VERIFIED',
       isPhoneVerified: true,
       isEmailVerified: true,
     },
@@ -248,6 +268,7 @@ async function main() {
       name: 'Rider A',
       phoneNumber: '+91 9876543231',
       status: 'ACTIVE',
+      verificationStatus: 'VERIFIED',
     },
     create: {
       userId: volunteerUser.id,
@@ -255,6 +276,7 @@ async function main() {
       name: 'Rider A',
       phoneNumber: '+91 9876543231',
       status: 'ACTIVE',
+      verificationStatus: 'VERIFIED',
     },
   });
 

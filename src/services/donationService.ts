@@ -155,6 +155,9 @@ export const donationService = {
   async createDonation(userId: string, input: CreateDonationInput & { auditId?: string | null }) {
     const donor = await donorRepository.findByUserId(userId);
     if (!donor) throw new Error('Donor profile not found.');
+    if (donor.verificationStatus !== 'VERIFIED') {
+      throw new Error('Account pending verification. You must be a verified donor to publish listings.');
+    }
 
     const {
       title,
@@ -500,6 +503,9 @@ export const donationService = {
       if (!volunteer) throw new Error('Volunteer not found');
       if (volunteer.ngoId !== ngo.id) {
         throw new Error('Volunteer does not belong to this NGO');
+      }
+      if (volunteer.verificationStatus !== 'VERIFIED') {
+        throw new Error('Volunteer account is not verified for pickup operations.');
       }
 
       validateStateTransition(donation.status, 'VOLUNTEER_ASSIGNED', 'ASSIGN_VOLUNTEER', {

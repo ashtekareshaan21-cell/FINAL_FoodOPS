@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node prisma/prepare.js && prisma generate && next dev",
     "build": "node prisma/prepare.js && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "node prisma/prepare-test.js && vitest run",
-    "db:seed": "node prisma/seed.js",
+    "db:seed": "node prisma/prepare.js && prisma generate && node prisma/seed.js",
     "db:reset-dev": "node prisma/reset-dev.js"
   },
   "dependencies": {

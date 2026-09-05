@@ -11,6 +11,8 @@ interface JWTPayload {
   userId: string;
   role: string;
   email: string;
+  verificationStatus?: string;
+  accountStatus?: string;
   exp: number;
 }
 

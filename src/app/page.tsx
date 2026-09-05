@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { getAdminStats } from '@/app/actions/admin';
+import { getPublicImpactStats } from '@/app/actions/donations';
 import HeroSection from '@/components/Home/HeroSection';
 import OrdersScene from '@/components/Home/OrdersScene';
 import KitchenScene from '@/components/Home/KitchenScene';
@@ -26,9 +26,9 @@ export default async function Home() {
   };
 
   try {
-    stats = await getAdminStats();
+    stats = await getPublicImpactStats();
   } catch (error) {
-    console.error('Failed to load homepage admin stats:', error);
+    console.error('Failed to load homepage impact stats:', error);
   }
 
   return (

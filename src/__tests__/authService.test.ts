@@ -21,6 +21,9 @@ vi.mock('../services/auditService', () => ({
 vi.mock('../lib/db', () => ({
   prisma: {
     $transaction: vi.fn((cb) => cb(prisma)),
+    verificationRequest: {
+      create: vi.fn().mockResolvedValue({}),
+    },
   },
 }));
 
@@ -39,6 +42,8 @@ describe('authService', () => {
         phoneNumber: '1234567890',
         passwordHash: 'hashed_password',
         role: 'DONOR',
+        accountStatus: 'ACTIVE',
+        verificationStatus: 'PENDING_VERIFICATION',
         isPhoneVerified: true,
         isEmailVerified: true,
         lastLoginAt: null,

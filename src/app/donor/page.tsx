@@ -8,7 +8,7 @@ import { getDonorDonations } from '@/app/actions/donations';
 import Navbar from '@/components/Navbar';
 import DonorDonationsList from './DonorDonationsList';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
-
+import VerificationBanner from '@/components/VerificationBanner';
 
 export default async function DonorDashboard() {
   const session = await getSession();
@@ -32,6 +32,12 @@ export default async function DonorDashboard() {
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <VerificationBanner
+          status={donor.verificationStatus}
+          role="DONOR"
+          rejectionReason={donor.rejectionReason}
+        />
+
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-10 pb-6 border-b border-border gap-4">
           <div>

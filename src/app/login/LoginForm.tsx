@@ -84,7 +84,7 @@ export default function LoginForm() {
       }
       router.refresh();
     } else {
-      setError(`Demo account not seeded yet. Run the database seed script first.`);
+      setError(res.error || 'Authentication failed. Please try again.');
     }
   };
 
@@ -166,7 +166,7 @@ export default function LoginForm() {
           { email: 'donor@foodops.org', label: '🏨 Donor' },
           { email: 'ngo1@foodops.org', label: '🌍 NGO A' },
           { email: 'ngo2@foodops.org', label: '🌍 NGO B' },
-          { email: 'ngo_pending@foodops.org', label: '⏳ NGO C' },
+          { email: 'ngo3@foodops.org', label: '⏳ NGO C' },
           { email: 'volunteer@foodops.org', label: '🚴 Volunteer' },
           { email: 'admin@foodops.org', label: '🛡️ Admin' },
         ].map((demo) => (

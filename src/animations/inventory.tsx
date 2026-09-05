@@ -49,7 +49,8 @@ export function AnimatedNumber({
       // Ease out cubic
       const easeProgress = 1 - Math.pow(1 - progress, 3);
       const current = startVal + (targetVal - startVal) * easeProgress;
-      const displayVal = round ? Math.round(current) : current;
+      const safeCurrent = isNaN(current) ? 0 : current;
+      const displayVal = round ? Math.round(safeCurrent) : safeCurrent;
 
       if (el) {
         el.innerText = `${prefix}${displayVal.toLocaleString()}${suffix}`;

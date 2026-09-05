@@ -32,9 +32,25 @@ enum DonationStatus {
   ORGANIC_RECOVERY
 }
 
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum VerificationStatus {
+  PENDING_VERIFICATION
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
 enum NGOStatus {
   PENDING_VERIFICATION
+  UNDER_REVIEW
   VERIFIED
+  REJECTED
   SUSPENDED
   INACTIVE
 }
@@ -62,28 +78,62 @@ enum AssignmentStatus {
 // ============ USERS & AUTHENTICATION ============
 
 model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  phoneNumber       String   @unique
+  id                String             @id @default(cuid())
+  email             String             @unique
+  phoneNumber       String             @unique
   passwordHash      String?
-  role              UserRole @default(DONOR)
-  isPhoneVerified   Boolean  @default(false)
-  isEmailVerified   Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  role              UserRole           @default(DONOR)
+  accountStatus     AccountStatus      @default(ACTIVE)
+  verificationStatus VerificationStatus @default(PENDING_VERIFICATION)
+  isPhoneVerified   Boolean            @default(false)
+  isEmailVerified   Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   lastLoginAt       DateTime?
 
   // Relationships
-  donor            DonorProfile?
-  ngo              NGOProfile?
-  volunteer        Volunteer?
-  admin            AdminProfile?
-  notifications    Notification[]
-  otpAttempts      OTPAttempt[]
+  donor                DonorProfile?
+  ngo                  NGOProfile?
+  volunteer            Volunteer?
+  admin                AdminProfile?
+  notifications        Notification[]
+  otpAttempts          OTPAttempt[]
+  verificationRequests VerificationRequest[]
 
   @@index([email])
   @@index([phoneNumber])
   @@index([role])
+  @@index([verificationStatus])
+}
+
+model VerificationRequest {
+  id               String               @id @default(cuid())
+  userId           String
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verificationType UserRole
+  status           VerificationStatus   @default(PENDING_VERIFICATION)
+  submittedAt      DateTime             @default(now())
+  reviewedAt       DateTime?
+  reviewerId       String?
+  rejectionReason  String?
+  notes            String?
+  documents        VerificationDocument[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model VerificationDocument {
+  id                    String              @id @default(cuid())
+  verificationRequestId String
+  verificationRequest  VerificationRequest @relation(fields: [verificationRequestId], references: [id], onDelete: Cascade)
+  documentType          String
+  storagePath           String
+  verificationStatus    VerificationStatus  @default(PENDING_VERIFICATION)
+  uploadedAt            DateTime            @default(now())
+  reviewedAt            DateTime?
+
+  @@index([verificationRequestId])
 }
 
 model OTPAttempt {
@@ -93,10 +143,10 @@ model OTPAttempt {
   otp               String
   purpose           String
   expiresAt         DateTime
-  isUsed            Boolean @default(false)
+  isUsed            Boolean  @default(false)
   usedAt            DateTime?
-  attemptCount      Int @default(0)
-  lastAttemptAt    DateTime?
+  attemptCount      Int      @default(0)
+  lastAttemptAt     DateTime?
   createdAt         DateTime @default(now())
 
   @@index([userId])
@@ -108,54 +158,61 @@ model AdminProfile {
   userId            String   @unique
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name              String
-  adminLevel        Int @default(1)
+  adminLevel        Int      @default(1)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
 
 model DonorProfile {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organizationName  String
-  organizationType  String
-  contactPerson     String
-  address           String
-  latitude          Float
-  longitude         Float
-  donations         Donation[]
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                      String             @id @default(cuid())
+  userId                  String             @unique
+  user                    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationName        String
+  organizationType        String
+  contactPerson           String
+  address                 String
+  city                    String?
+  latitude                Float
+  longitude               Float
+  verificationStatus      VerificationStatus @default(PENDING_VERIFICATION)
+  rejectionReason         String?
+  verificationSubmittedAt DateTime?
+  verificationApprovedAt  DateTime?
+  donations               Donation[]
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
 
   @@index([userId])
+  @@index([verificationStatus])
 }
 
 model NGOProfile {
-  id                     String   @id @default(cuid())
-  userId                 String   @unique
-  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organizationName       String   @unique
-  registrationNumber     String   @unique
-  status                 NGOStatus @default(PENDING_VERIFICATION)
-  baseAddress            String
-  baseLatitude           Float
-  baseLongitude          Float
-  serviceRadiusKm        Int @default(10)
-  availability           NgoAvailability @default(AVAILABLE)
-  availabilityUpdatedAt  DateTime @default(now())
-  acceptedFoodTypes      String @default("")
-  contactPerson          String
-  contactPhone           String
+  id                      String              @id @default(cuid())
+  userId                  String              @unique
+  user                    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationName        String              @unique
+  registrationNumber      String              @unique
+  status                  NGOStatus           @default(PENDING_VERIFICATION)
+  baseAddress             String
+  city                    String?
+  baseLatitude            Float
+  baseLongitude           Float
+  serviceRadiusKm         Int                 @default(10)
+  availability            NgoAvailability     @default(AVAILABLE)
+  availabilityUpdatedAt   DateTime            @default(now())
+  acceptedFoodTypes       String              @default("")
+  contactPerson           String
+  contactPhone            String
   verificationDocumentUrl String?
   verificationSubmittedAt DateTime?
-  verificationApprovedAt DateTime?
-  verificationRejectedAt DateTime?
-  rejectionReason        String?
-  volunteers             Volunteer[]
-  acceptedDonations      Donation[] @relation("AcceptedBy")
-  assignments            VolunteerAssignment[]
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  verificationApprovedAt  DateTime?
+  verificationRejectedAt  DateTime?
+  rejectionReason         String?
+  volunteers              Volunteer[]
+  acceptedDonations       Donation[]          @relation("AcceptedBy")
+  assignments             VolunteerAssignment[]
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
 
   @@index([status])
   @@index([baseLatitude, baseLongitude])
@@ -163,20 +220,27 @@ model NGOProfile {
 }
 
 model Volunteer {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ngoId             String
-  ngo               NGOProfile @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  name              String
-  status            VolunteerStatus @default(ACTIVE)
-  phoneNumber       String
-  assignments       VolunteerAssignment[]
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ngoId              String
+  ngo                NGOProfile         @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  name               String
+  status             VolunteerStatus    @default(ACTIVE)
+  verificationStatus VerificationStatus @default(PENDING_VERIFICATION)
+  phoneNumber        String
+  city               String?
+  operatingArea      String?
+  vehicleInfo        String?
+  emergencyContact   String?
+  rejectionReason    String?
+  assignments        VolunteerAssignment[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   @@index([ngoId])
   @@index([status])
+  @@index([verificationStatus])
 }
 
 model Donation {

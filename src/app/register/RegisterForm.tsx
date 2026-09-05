@@ -29,6 +29,7 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
   const [donorOrgType, setDonorOrgType] = useState('RESTAURANT');
   const [donorContactPerson, setDonorContactPerson] = useState('');
   const [donorAddress, setDonorAddress] = useState('');
+  const [donorCity, setDonorCity] = useState('');
   const [donorLat, setDonorLat] = useState<number | null>(null);
   const [donorLng, setDonorLng] = useState<number | null>(null);
 
@@ -36,6 +37,7 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
   const [ngoOrgName, setNgoOrgName] = useState('');
   const [ngoRegNum, setNgoRegNum] = useState('');
   const [ngoAddress, setNgoAddress] = useState('');
+  const [ngoCity, setNgoCity] = useState('');
   const [ngoLat, setNgoLat] = useState<number | null>(null);
   const [ngoLng, setNgoLng] = useState<number | null>(null);
   const [ngoRadius, setNgoRadius] = useState('10');
@@ -47,6 +49,10 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
   // Volunteer fields
   const [volName, setVolName] = useState('');
   const [volNgoId, setVolNgoId] = useState(ngos[0]?.id || '');
+  const [volCity, setVolCity] = useState('');
+  const [volOperatingArea, setVolOperatingArea] = useState('');
+  const [volVehicleInfo, setVolVehicleInfo] = useState('BIKE');
+  const [volEmergencyContact, setVolEmergencyContact] = useState('');
 
   // Location Picker modal state
   const [showLocationPicker, setShowLocationPicker] = useState(false);
@@ -153,6 +159,7 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
           organizationType: donorOrgType,
           contactPerson: donorContactPerson,
           address: donorAddress,
+          city: donorCity,
           latitude: String(donorLat),
           longitude: String(donorLng),
         });
@@ -162,6 +169,7 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
           organizationName: ngoOrgName,
           registrationNumber: ngoRegNum,
           baseAddress: ngoAddress,
+          city: ngoCity,
           baseLatitude: String(ngoLat),
           baseLongitude: String(ngoLng),
           serviceRadiusKm: ngoRadius,
@@ -175,6 +183,10 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
           ...baseData,
           name: volName,
           ngoId: volNgoId,
+          city: volCity,
+          operatingArea: volOperatingArea,
+          vehicleInfo: volVehicleInfo,
+          emergencyContact: volEmergencyContact,
         });
       }
 

@@ -7,6 +7,7 @@ import { getVolunteerAssignments, updateAssignmentStatus } from '@/app/actions/d
 import VolunteerAssignmentList from './VolunteerAssignmentList';
 import Navbar from '@/components/Navbar';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
+import VerificationBanner from '@/components/VerificationBanner';
 
 export default async function VolunteerDashboard() {
   const session = await getSession();
@@ -30,6 +31,12 @@ export default async function VolunteerDashboard() {
       <Navbar />
 
       <main className="flex-grow max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <VerificationBanner
+          status={volunteer.verificationStatus}
+          role="VOLUNTEER"
+          rejectionReason={volunteer.rejectionReason}
+        />
+
         <div className="mb-8 pb-5 border-b border-zinc-200 dark:border-zinc-800">
           <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">
             My Rescue Shipments

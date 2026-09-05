@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import NgoSettings from './NgoSettings';
 import NearbyDonationsList from './NearbyDonationsList';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
+import VerificationBanner from '@/components/VerificationBanner';
 
 export default async function NgoDashboard() {
   const session = await getSession();
@@ -35,6 +36,12 @@ export default async function NgoDashboard() {
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <VerificationBanner
+          status={ngo.status as any}
+          role="NGO"
+          rejectionReason={ngo.rejectionReason}
+        />
+
         {/* Header */}
         <div className="mb-10 pb-6 border-b border-border">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

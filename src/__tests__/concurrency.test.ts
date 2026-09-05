@@ -48,13 +48,15 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
     console.log('Initializing isolated test database...');
     // Sync provider in schema.prisma with test database protocol
     execSync('node prisma/prepare.js', {
-      env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+      env: { ...process.env, DATABASE_URL: TEST_DB_URL, PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes' },
       stdio: 'ignore',
+      shell: 'cmd.exe',
     });
     // Generate test database tables
     execSync('npx prisma db push --accept-data-loss', {
-      env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+      env: { ...process.env, DATABASE_URL: TEST_DB_URL, PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes' },
       stdio: 'ignore',
+      shell: 'cmd.exe',
     });
 
     // Programmatically clear all tables to ensure clean slate

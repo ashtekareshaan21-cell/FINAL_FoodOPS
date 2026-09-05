@@ -31,7 +31,7 @@ describe('donationService', () => {
 
   describe('createDonation', () => {
     it('creates a donation and registers notifications successfully', async () => {
-      const mockDonor = { id: 'donor_1', userId: 'user_donor' };
+      const mockDonor = { id: 'donor_1', userId: 'user_donor', verificationStatus: 'VERIFIED' };
       vi.mocked(donorRepository.findByUserId).mockResolvedValue(mockDonor as any);
       
       const mockCreatedDonation = {
