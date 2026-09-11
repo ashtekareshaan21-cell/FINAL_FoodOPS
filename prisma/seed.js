@@ -38,15 +38,16 @@ async function main() {
   }
 
   const demoPasswordHash = hashPassword('password');
+  const adminPasswordHash = hashPassword('admin@123');
 
   // 1. Create/Upsert Admin
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@foodops.org' },
-    update: { role: 'ADMIN' },
+    where: { email: 'ADMIN_FOODOPS' },
+    update: { role: 'ADMIN', passwordHash: adminPasswordHash },
     create: {
-      email: 'admin@foodops.org',
+      email: 'ADMIN_FOODOPS',
       phoneNumber: '+91 9999999999',
-      passwordHash: demoPasswordHash,
+      passwordHash: adminPasswordHash,
       role: 'ADMIN',
       isPhoneVerified: true,
       isEmailVerified: true,
@@ -59,6 +60,20 @@ async function main() {
       userId: adminUser.id,
       name: 'Admin Coordinator',
       adminLevel: 2,
+    },
+  });
+
+  // Support legacy admin email as well
+  await prisma.user.upsert({
+    where: { email: 'admin@foodops.org' },
+    update: { role: 'ADMIN', passwordHash: adminPasswordHash },
+    create: {
+      email: 'admin@foodops.org',
+      phoneNumber: '+91 9999999998',
+      passwordHash: adminPasswordHash,
+      role: 'ADMIN',
+      isPhoneVerified: true,
+      isEmailVerified: true,
     },
   });
 

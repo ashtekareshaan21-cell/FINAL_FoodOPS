@@ -107,15 +107,15 @@ export default function LoginForm() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <motion.div variants={itemVariants}>
           <label className="label-premium">
-            Email Address
+            Username / Email Address
           </label>
           <input
-            type="email"
+            type="text"
             required
             className="input-premium"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="donor@foodops.org"
+            placeholder="ADMIN_FOODOPS or email"
           />
         </motion.div>
 
@@ -168,7 +168,6 @@ export default function LoginForm() {
           { email: 'ngo2@foodops.org', label: '🌍 NGO B' },
           { email: 'ngo3@foodops.org', label: '⏳ NGO C' },
           { email: 'volunteer@foodops.org', label: '🚴 Volunteer' },
-          { email: 'admin@foodops.org', label: '🛡️ Admin' },
         ].map((demo) => (
           <motion.button
             key={demo.email}
