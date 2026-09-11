@@ -37,11 +37,11 @@ export default async function VolunteerDashboard() {
           rejectionReason={volunteer.rejectionReason}
         />
 
-        <div className="mb-8 pb-5 border-b border-zinc-200 dark:border-zinc-800">
-          <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">
+        <div className="mb-8 pb-5 border-b border-border">
+          <h1 className="text-3xl font-extrabold text-foreground tracking-tight font-display">
             My Rescue Shipments
           </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-muted-text">
             Track and update states of your assigned surplus food collections.
           </p>
         </div>

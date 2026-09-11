@@ -32,11 +32,11 @@ export default async function ActiveRescuesPage() {
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 pb-5 border-b border-zinc-200 dark:border-zinc-800">
-          <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">
+        <div className="mb-8 pb-5 border-b border-border">
+          <h1 className="text-3xl font-extrabold text-foreground tracking-tight font-display">
             Active Rescues & Assignments
           </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-muted-text">
             Assign volunteers to claimed donations and monitor pickup progress.
           </p>
         </div>
