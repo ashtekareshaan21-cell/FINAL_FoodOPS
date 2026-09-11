@@ -87,6 +87,29 @@ describe('donationService', () => {
       expect(donationRepository.createManyNotifications).toHaveBeenCalled();
       expect(result.id).toBe('donation_1');
     });
+
+    it('rejects donation creation if donor account is pending verification', async () => {
+      const unverifiedDonor = { id: 'donor_unverified', userId: 'user_unverified', verificationStatus: 'PENDING_VERIFICATION' };
+      vi.mocked(donorRepository.findByUserId).mockResolvedValue(unverifiedDonor as any);
+
+      const input = {
+        title: 'Pending Food',
+        description: 'Test food',
+        foodCategory: 'mixed',
+        vegNonVegMixed: 'VEG',
+        quantity: '10',
+        quantityUnit: 'kg',
+        pickupAvailableAt: new Date(),
+        pickupDeadlineAt: new Date(Date.now() + 3600000),
+        pickupAddress: '123 Main St',
+        pickupLatitude: 18.5,
+        pickupLongitude: 73.8,
+      };
+
+      await expect(donationService.createDonation('user_unverified', input)).rejects.toThrow(
+        'Account pending verification. You must be a verified donor to publish listings.'
+      );
+    });
   });
 
   describe('acceptDonation', () => {

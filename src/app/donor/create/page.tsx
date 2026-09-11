@@ -20,6 +20,7 @@ export default async function CreateDonationPage() {
       address: true,
       latitude: true,
       longitude: true,
+      verificationStatus: true,
     },
   });
 
@@ -39,7 +40,10 @@ export default async function CreateDonationPage() {
             </p>
           </div>
 
-          <CreateDonationForm defaultLocation={donor} />
+          <CreateDonationForm 
+            defaultLocation={donor ? { address: donor.address, latitude: donor.latitude, longitude: donor.longitude } : null}
+            donorVerificationStatus={donor?.verificationStatus}
+          />
         </div>
       </main>
     </div>

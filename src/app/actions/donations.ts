@@ -31,7 +31,17 @@ export interface CreateDonationInput {
 
 function validateDateTimeTimezone(name: string, val: string | Date | null | undefined) {
   if (!val) return;
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) {
+      throw new Error(`Incoming datetime parameter "${name}" is an invalid date.`);
+    }
+    return;
+  }
   if (typeof val === 'string') {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) {
+      throw new Error(`Incoming datetime parameter "${name}" is an invalid date string: "${val}".`);
+    }
     // Check if it ends with 'Z' or has a timezone offset like +05:30 or -08:00
     const hasTz = /Z$|[+-]\d{2}:?\d{2}$/.test(val);
     if (!hasTz) {

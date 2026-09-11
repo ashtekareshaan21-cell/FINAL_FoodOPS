@@ -44,7 +44,14 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
   const [ngoContactPerson, setNgoContactPerson] = useState('');
   const [ngoContactPhone, setNgoContactPhone] = useState('');
   const [ngoAvailability, setNgoAvailability] = useState<'AVAILABLE' | 'BUSY' | 'OFFLINE'>('AVAILABLE');
-  const [ngoAcceptedFoodTypes, setNgoAcceptedFoodTypes] = useState<string[]>([]);
+  const [ngoAcceptedFoodTypes, setNgoAcceptedFoodTypes] = useState<string[]>([
+    'COOKED_VEG',
+    'COOKED_NON_VEG',
+    'PACKAGED_FOOD',
+    'DRY_RATION',
+    'BAKERY',
+    'FRUITS_VEG',
+  ]);
 
   // Volunteer fields
   const [volName, setVolName] = useState('');
@@ -587,114 +594,128 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
                   )}
                 </motion.div>
 
-                {ngoAddress && ngoLat !== null && ngoLng !== null && (
-                  <motion.div 
-                    initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
-                    animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, height: 'auto' }}
-                    className="space-y-6 pt-4 border-t border-border overflow-hidden"
-                  >
-                    {/* Service Radius */}
-                    <motion.div variants={itemVariants}>
-                      <label className="label-premium">
-                        Rescue Coverage Radius
-                      </label>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                        {['2', '5', '10', '15', '20', '25'].map((r) => {
-                          const selected = ngoRadius === r;
-                          return (
-                            <button
-                              key={r}
-                              type="button"
-                              onClick={() => setNgoRadius(r)}
-                              className={`py-2 px-3 text-center text-xs sm:text-sm font-semibold rounded-sm border transition-all cursor-pointer ${
-                                selected
-                                  ? 'bg-primary border-transparent text-primary-foreground shadow-sm'
-                                  : 'bg-surface border-border text-foreground hover:bg-surface-muted'
-                              }`}
-                            >
-                              {r} km
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
+                {/* NGO Coverage Radius, Availability & Food Categories */}
+                <div className="space-y-6 pt-4 border-t border-border">
+                  {/* Service Radius */}
+                  <motion.div variants={itemVariants}>
+                    <label className="label-premium">
+                      Rescue Coverage Radius
+                    </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {['2', '5', '10', '15', '20', '25'].map((r) => {
+                        const selected = ngoRadius === r;
+                        return (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => setNgoRadius(r)}
+                            className={`py-2 px-3 text-center text-xs sm:text-sm font-semibold rounded-sm border transition-all cursor-pointer ${
+                              selected
+                                ? 'bg-primary border-transparent text-primary-foreground shadow-sm'
+                                : 'bg-surface border-border text-foreground hover:bg-surface-muted'
+                            }`}
+                          >
+                            {r} km
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
 
-                    {/* Availability */}
-                    <motion.div variants={itemVariants}>
-                      <label className="label-premium">
-                        Rescue Availability State
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {(
-                          [
-                            { id: 'AVAILABLE', label: '🟢 Active' },
-                            { id: 'BUSY', label: '🟡 Busy' },
-                            { id: 'OFFLINE', label: '🔴 Offline' },
-                          ] as const
-                        ).map((status) => {
-                          const selected = ngoAvailability === status.id;
-                          return (
-                            <button
-                              key={status.id}
-                              type="button"
-                              onClick={() => setNgoAvailability(status.id)}
-                              className={`py-2.5 px-3 text-center text-xs sm:text-sm font-semibold rounded-sm border transition-all cursor-pointer ${
-                                selected
-                                  ? 'bg-success-bg border-success-border text-success font-bold'
-                                  : 'bg-surface border-border text-foreground hover:bg-surface-muted'
-                              }`}
-                            >
-                              {status.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
+                  {/* Availability */}
+                  <motion.div variants={itemVariants}>
+                    <label className="label-premium">
+                      Rescue Availability State
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(
+                        [
+                          { id: 'AVAILABLE', label: '🟢 Active' },
+                          { id: 'BUSY', label: '🟡 Busy' },
+                          { id: 'OFFLINE', label: '🔴 Offline' },
+                        ] as const
+                      ).map((status) => {
+                        const selected = ngoAvailability === status.id;
+                        return (
+                          <button
+                            key={status.id}
+                            type="button"
+                            onClick={() => setNgoAvailability(status.id)}
+                            className={`py-2.5 px-3 text-center text-xs sm:text-sm font-semibold rounded-sm border transition-all cursor-pointer ${
+                              selected
+                                ? 'bg-success-bg border-success-border text-success font-bold'
+                                : 'bg-surface border-border text-foreground hover:bg-surface-muted'
+                            }`}
+                          >
+                            {status.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
 
-                    {/* Food types checklist */}
-                    <motion.div variants={itemVariants}>
-                      <label className="label-premium">
+                  {/* Food types checklist */}
+                  <motion.div variants={itemVariants}>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="label-premium !mb-0">
                         Accepted Food Categories
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {[
-                          { id: 'COOKED_VEG', label: 'Cooked Vegetarian' },
-                          { id: 'COOKED_NON_VEG', label: 'Cooked Non-Vegetarian' },
-                          { id: 'PACKAGED_FOOD', label: 'Packaged Food' },
-                          { id: 'DRY_RATION', label: 'Dry Ration' },
-                          { id: 'BAKERY', label: 'Bakery Items' },
-                          { id: 'FRUITS_VEG', label: 'Fruits & Vegetables' },
-                        ].map((type) => {
-                          const checked = ngoAcceptedFoodTypes.includes(type.id);
-                          return (
-                            <label
-                              key={type.id}
-                              className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-all ${
-                                checked
-                                  ? 'bg-success-bg border-success-border text-success font-bold'
-                                  : 'bg-surface border-border text-foreground hover:bg-surface-muted'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                className="rounded border-border text-primary focus:ring-primary accent-primary"
-                                checked={checked}
-                                onChange={() => {
-                                  if (checked) {
-                                    setNgoAcceptedFoodTypes(ngoAcceptedFoodTypes.filter((t) => t !== type.id));
-                                  } else {
-                                    setNgoAcceptedFoodTypes([...ngoAcceptedFoodTypes, type.id]);
-                                  }
-                                }}
-                              />
-                              <span className="text-xs font-semibold">{type.label}</span>
-                            </label>
-                          );
-                        })}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setNgoAcceptedFoodTypes(['COOKED_VEG', 'COOKED_NON_VEG', 'PACKAGED_FOOD', 'DRY_RATION', 'BAKERY', 'FRUITS_VEG'])}
+                          className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                        >
+                          Select All
+                        </button>
+                        <span className="text-border">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setNgoAcceptedFoodTypes([])}
+                          className="text-[11px] font-semibold text-muted-text hover:underline cursor-pointer"
+                        >
+                          Clear All
+                        </button>
                       </div>
-                    </motion.div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {[
+                        { id: 'COOKED_VEG', label: 'Cooked Vegetarian' },
+                        { id: 'COOKED_NON_VEG', label: 'Cooked Non-Vegetarian' },
+                        { id: 'PACKAGED_FOOD', label: 'Packaged Food' },
+                        { id: 'DRY_RATION', label: 'Dry Ration' },
+                        { id: 'BAKERY', label: 'Bakery Items' },
+                        { id: 'FRUITS_VEG', label: 'Fruits & Vegetables' },
+                      ].map((type) => {
+                        const checked = ngoAcceptedFoodTypes.includes(type.id);
+                        return (
+                          <label
+                            key={type.id}
+                            className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-all ${
+                              checked
+                                ? 'bg-success-bg border-success-border text-success font-bold'
+                                : 'bg-surface border-border text-foreground hover:bg-surface-muted'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="rounded border-border text-primary focus:ring-primary accent-primary"
+                              checked={checked}
+                              onChange={() => {
+                                if (checked) {
+                                  setNgoAcceptedFoodTypes(ngoAcceptedFoodTypes.filter((t) => t !== type.id));
+                                } else {
+                                  setNgoAcceptedFoodTypes([...ngoAcceptedFoodTypes, type.id]);
+                                }
+                              }}
+                            />
+                            <span className="text-xs font-semibold">{type.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </motion.div>
-                )}
+                </div>
               </div>
             )}
 

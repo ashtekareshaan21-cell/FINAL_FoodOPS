@@ -25,6 +25,7 @@ interface CreateDonationFormProps {
     latitude: number;
     longitude: number;
   } | null;
+  donorVerificationStatus?: string | null;
 }
 
 function AuditLoadingSequence() {
@@ -67,7 +68,7 @@ function AuditLoadingSequence() {
   );
 }
 
-export default function CreateDonationForm({ defaultLocation }: CreateDonationFormProps) {
+export default function CreateDonationForm({ defaultLocation, donorVerificationStatus }: CreateDonationFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -218,41 +219,88 @@ export default function CreateDonationForm({ defaultLocation }: CreateDonationFo
     setLoading(true);
     setError(null);
 
+    if (donorVerificationStatus && donorVerificationStatus !== 'VERIFIED') {
+      setError('Account pending verification. You must be a verified donor to publish listings.');
+      setLoading(false);
+      return;
+    }
+
     if (!pickupAddress || pickupLatitude === null || pickupLongitude === null) {
       setError('Please select a pickup location before submitting.');
       setLoading(false);
       return;
     }
 
-    const isoPreparationTime = preparationTime ? new Date(preparationTime).toISOString() : '';
-    const isoPickupAvailableAt = new Date(pickupAvailableAt).toISOString();
-    const isoPickupDeadlineAt = new Date(pickupDeadlineAt).toISOString();
+    let isoPreparationTime = '';
+    let isoPickupAvailableAt = '';
+    let isoPickupDeadlineAt = '';
 
-    const res = await createDonation({
-      title,
-      description,
-      foodCategory,
-      vegNonVegMixed,
-      quantity,
-      quantityUnit,
-      estimatedServings,
-      preparationTime: isoPreparationTime,
-      pickupAvailableAt: isoPickupAvailableAt,
-      pickupDeadlineAt: isoPickupDeadlineAt,
-      pickupAddress,
-      pickupLatitude: String(pickupLatitude),
-      pickupLongitude: String(pickupLongitude),
-      specialNotes,
-      auditId,
-    });
+    try {
+      if (preparationTime) {
+        const prepDate = new Date(preparationTime);
+        if (isNaN(prepDate.getTime())) {
+          throw new Error('Please enter a valid food preparation date & time.');
+        }
+        isoPreparationTime = prepDate.toISOString();
+      }
 
-    setLoading(false);
+      if (!pickupAvailableAt) {
+        throw new Error('Please select a pickup available date & time.');
+      }
+      const availDate = new Date(pickupAvailableAt);
+      if (isNaN(availDate.getTime())) {
+        throw new Error('Please enter a valid pickup available date & time.');
+      }
+      isoPickupAvailableAt = availDate.toISOString();
 
-    if (res.success) {
-      router.push('/donor');
-      router.refresh();
-    } else {
-      setError(res.error || 'Failed to create donation.');
+      if (!pickupDeadlineAt) {
+        throw new Error('Please select a pickup deadline date & time.');
+      }
+      const deadlineDate = new Date(pickupDeadlineAt);
+      if (isNaN(deadlineDate.getTime())) {
+        throw new Error('Please enter a valid pickup deadline date & time.');
+      }
+      isoPickupDeadlineAt = deadlineDate.toISOString();
+
+      if (deadlineDate.getTime() <= availDate.getTime()) {
+        throw new Error('Pickup deadline must be after the pickup available time.');
+      }
+    } catch (dateErr) {
+      setError(dateErr instanceof Error ? dateErr.message : 'Invalid date format selected.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await createDonation({
+        title,
+        description,
+        foodCategory,
+        vegNonVegMixed,
+        quantity,
+        quantityUnit,
+        estimatedServings,
+        preparationTime: isoPreparationTime,
+        pickupAvailableAt: isoPickupAvailableAt,
+        pickupDeadlineAt: isoPickupDeadlineAt,
+        pickupAddress,
+        pickupLatitude: String(pickupLatitude),
+        pickupLongitude: String(pickupLongitude),
+        specialNotes,
+        auditId,
+      });
+
+      if (res.success) {
+        router.push('/donor');
+        router.refresh();
+      } else {
+        setError(res.error || 'Failed to create donation.');
+      }
+    } catch (err) {
+      console.error('Donation submit error:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred while creating listing.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -738,6 +786,18 @@ export default function CreateDonationForm({ defaultLocation }: CreateDonationFo
           AI estimates visual characteristics and quantity. It does not detect pathogens or certify food as safe for consumption. Food safety remains subject to donor declarations, handling practices, time limits, and applicable food-safety requirements.
         </motion.div>
 
+        {/* Verification Status Notice */}
+        {donorVerificationStatus && donorVerificationStatus !== 'VERIFIED' && (
+          <motion.div variants={itemVariants} className="p-4 rounded-md bg-warning-bg border border-warning-border text-warning text-xs space-y-1">
+            <div className="font-bold flex items-center gap-1.5">
+              <span>⏳</span> Account Verification Pending
+            </div>
+            <p className="font-medium leading-relaxed">
+              Your donor profile is currently pending administrator verification. In compliance with operational safety standards, only verified donors can publish surplus food rescue listings.
+            </p>
+          </motion.div>
+        )}
+
         <motion.div variants={itemVariants} className="flex gap-4">
           <button
             type="button"
@@ -748,12 +808,14 @@ export default function CreateDonationForm({ defaultLocation }: CreateDonationFo
           </button>
           <motion.button
             type="submit"
-            disabled={loading}
-            whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
-            whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
-            className="btn-primary flex-grow py-3 shadow-md shadow-primary/10"
+            disabled={loading || (!!donorVerificationStatus && donorVerificationStatus !== 'VERIFIED')}
+            whileHover={shouldReduceMotion || (!!donorVerificationStatus && donorVerificationStatus !== 'VERIFIED') ? {} : { scale: 1.01 }}
+            whileTap={shouldReduceMotion || (!!donorVerificationStatus && donorVerificationStatus !== 'VERIFIED') ? {} : { scale: 0.99 }}
+            className={`btn-primary flex-grow py-3 shadow-md shadow-primary/10 ${
+              donorVerificationStatus && donorVerificationStatus !== 'VERIFIED' ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
-            {loading ? 'Creating request...' : 'Publish Donation'}
+            {loading ? 'Creating request...' : donorVerificationStatus && donorVerificationStatus !== 'VERIFIED' ? 'Verification Pending' : 'Publish Donation'}
           </motion.button>
         </motion.div>
       </form>
