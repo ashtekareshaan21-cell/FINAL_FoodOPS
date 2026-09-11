@@ -61,33 +61,6 @@ export default function LoginForm() {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string) => {
-    setLoading(true);
-    setError(null);
-    setEmail(demoEmail);
-    setPassword('password');
-
-    const res = await login({ email: demoEmail, password: 'password' });
-    setLoading(false);
-
-    if (res.success) {
-      if (res.role === 'DONOR') {
-        router.push('/donor');
-      } else if (res.role === 'NGO') {
-        router.push('/ngo');
-      } else if (res.role === 'VOLUNTEER') {
-        router.push('/volunteer');
-      } else if (res.role === 'ADMIN') {
-        router.push('/admin');
-      } else {
-        router.push('/');
-      }
-      router.refresh();
-    } else {
-      setError(res.error || 'Authentication failed. Please try again.');
-    }
-  };
-
   return (
     <motion.div 
       variants={containerVariants}
@@ -145,42 +118,6 @@ export default function LoginForm() {
           </motion.button>
         </motion.div>
       </form>
-
-      {/* Demo shortcuts */}
-      <motion.div variants={itemVariants} className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border"></div>
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-surface px-2.5 text-muted-light font-bold tracking-widest">
-            Demo Credentials
-          </span>
-        </div>
-      </motion.div>
-
-      <motion.div 
-        variants={itemVariants} 
-        className="flex flex-wrap gap-2 justify-center"
-      >
-        {[
-          { email: 'donor@foodops.org', label: '🏨 Donor' },
-          { email: 'ngo1@foodops.org', label: '🌍 NGO A' },
-          { email: 'ngo2@foodops.org', label: '🌍 NGO B' },
-          { email: 'ngo3@foodops.org', label: '⏳ NGO C' },
-          { email: 'volunteer@foodops.org', label: '🚴 Volunteer' },
-        ].map((demo) => (
-          <motion.button
-            key={demo.email}
-            type="button"
-            onClick={() => handleDemoLogin(demo.email)}
-            whileHover={shouldReduceMotion ? {} : { scale: 1.03, y: -1 }}
-            whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
-            className="btn-secondary rounded-full text-[11px] px-3.5 py-1.5"
-          >
-            {demo.label}
-          </motion.button>
-        ))}
-      </motion.div>
 
       <motion.div 
         variants={itemVariants}
