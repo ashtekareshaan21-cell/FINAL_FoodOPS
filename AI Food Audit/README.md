@@ -142,17 +142,5 @@ FoodOPS is a **visual screening tool only**.
 - It does NOT claim food is "safe to eat" or "unsafe"
 - All conclusions are based solely on visible information in the uploaded image
 
----
 
-## Environment Variables
 
-| Variable | Description |
-|---|---|
-| `GEMINI_API_KEY` | Your Google Gemini API key (required) |
-| `PORT` | Server port (default: `5000`) |
-
----
-
-## License
-
-MIT
