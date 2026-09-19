@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodOPS — Good Food, Greater Impact</title>
+  <meta name="description" content="FoodOPS is a modern food donation platform with AI visual audit capabilities to verify donated food efficiently and safely.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Main Container -->
+  <div class="app-wrapper">
+    
+    <!-- 1. Header Section -->
+    <header class="main-header">
+      <div class="brand-container">
+        <div class="brand-logo">
+          <!-- Recycling / Sustainability Food Icon -->
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 8a4 4 0 0 1 4 4" stroke-width="2.5"/>
+          </svg>
+          <span class="brand-name">FoodOPS</span>
+        </div>
+        <div class="brand-tagline">
+          <span class="tagline-dot"></span>
+          Good Food, Greater Impact.
+        </div>
+      </div>
+      
+      <div class="hero-text">
+        <h1 class="page-title">Donate Food</h1>
+        <p class="page-subtitle">
+          Provide basic details and upload a photo of the food. Our AI will identify the food and perform a basic visual verification.
+        </p>
+      </div>
+    </header>
+
+    <!-- 2. Donation Form & Image Upload -->
+    <main class="donation-section">
+      <form id="donationForm" class="donation-form" novalidate>
+        
+        <div class="form-columns-grid">
+          
+          <!-- Column 1: Food Details -->
+          <div class="card form-card">
+            <div class="card-header">
+              <div class="card-icon-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="card-title">Food Details</h2>
+                <p class="card-subtitle">Essential details about the surplus food</p>
+              </div>
+            </div>
+
+            <!-- Fields Grid -->
+            <div class="fields-grid">
+              
+              <!-- 1. Food Name -->
+              <div class="form-group full-width">
+                <label for="foodName" class="form-label">Food Name <span class="required">*</span></label>
+                <input type="text" id="foodName" name="foodName" class="form-control" placeholder="e.g. Veg Biryani, Fresh Apples, Bread Rolls" required>
+                <span class="error-msg" id="foodNameError">Please enter the food name.</span>
+              </div>
+
+              <!-- 2. Food Category -->
+              <div class="form-group full-width">
+                <label for="foodCategory" class="form-label">Food Category <span class="required">*</span></label>
+                <select id="foodCategory" name="foodCategory" class="form-control" required>
+                  <option value="" disabled selected>Select category...</option>
+                  <option value="Cooked Meal">Cooked Meal</option>
+                  <option value="Packaged Food">Packaged Food</option>
+                  <option value="Fruits">Fruits</option>
+                  <option value="Vegetables">Vegetables</option>
+                  <option value="Bakery">Bakery</option>
+                  <option value="Other">Other</option>
+                </select>
+                <span class="error-msg" id="foodCategoryError">Please select a category.</span>
+              </div>
+
+              <!-- 3. Quantity & Unit -->
+              <div class="form-group full-width">
+                <label for="quantity" class="form-label">Quantity <span class="required">*</span></label>
+                <div class="quantity-group">
+                  <input type="number" id="quantity" name="quantity" class="form-control" placeholder="5" min="0.1" step="any" required>
+                  <select id="quantityUnit" name="quantityUnit" class="form-control unit-select" required>
+                    <option value="kg" selected>kg</option>
+                    <option value="grams">grams</option>
+                    <option value="litres">litres</option>
+                    <option value="portions">portions</option>
+                  </select>
+                </div>
+                <span class="error-msg" id="quantityError">Please specify quantity.</span>
+              </div>
+
+              <!-- 4. Prepared At -->
+              <div class="form-group half-width">
+                <label for="preparedDate" class="form-label">Prepared Date <span class="required">*</span></label>
+                <input type="date" id="preparedDate" name="preparedDate" class="form-control" required>
+              </div>
+              <div class="form-group half-width">
+                <label for="preparedTime" class="form-label">Prepared Time <span class="required">*</span></label>
+                <input type="time" id="preparedTime" name="preparedTime" class="form-control" required>
+              </div>
+
+              <!-- 5. Available Until -->
+              <div class="form-group half-width">
+                <label for="availableDate" class="form-label">Available Until Date <span class="required">*</span></label>
+                <input type="date" id="availableDate" name="availableDate" class="form-control" required>
+              </div>
+              <div class="form-group half-width">
+                <label for="availableTime" class="form-label">Available Until Time <span class="required">*</span></label>
+                <input type="time" id="availableTime" name="availableTime" class="form-control" required>
+              </div>
+
+              <!-- 6. Location -->
+              <div class="form-group full-width">
+                <label for="location" class="form-label">Pickup Location <span class="required">*</span></label>
+                <input type="text" id="location" name="location" class="form-control" placeholder="e.g. Pune, Maharashtra" required>
+                <span class="error-msg" id="locationError">Please enter pickup location.</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Column 2: Image Upload -->
+          <div class="card form-card">
+            <div class="card-header">
+              <div class="card-icon-badge blue-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="card-title">Image Upload</h2>
+                <p class="card-subtitle">Clear photo of the food item or containers</p>
+              </div>
+            </div>
+
+            <div class="upload-container">
+              <input type="file" id="imageInput" name="foodImage" accept="image/jpeg,image/png,image/jpg,image/webp" class="file-input" required>
+              
+              <!-- Drag & Drop Zone -->
+              <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-content" id="dropZoneContent">
+                  <div class="upload-icon-circle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </div>
+                  <h3 class="upload-title">Upload Food Image</h3>
+                  <p class="upload-hint">Click to upload or drag and drop</p>
+                  <span class="supported-formats">Supported formats: JPG, PNG, JPEG, WEBP</span>
+                </div>
+
+                <!-- Preview Area -->
+                <div class="image-preview-wrapper" id="previewWrapper" style="display: none;">
+                  <img id="imagePreview" src="" alt="Food Preview" class="image-preview">
+                  <div class="preview-overlay">
+                    <button type="button" class="btn-change-image" id="changeImageBtn">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M23 4v6h-6"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                      </svg>
+                      Change Image
+                    </button>
+                    <button type="button" class="btn-remove-image" id="removeImageBtn">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <span class="error-msg image-error" id="imageError">Food image is required. Please upload a clear photo.</span>
+            </div>
+
+            <!-- Upload Guidelines Helper -->
+            <div class="upload-tips">
+              <div class="tip-icon">💡</div>
+              <p class="tip-text">
+                <strong>Tip:</strong> Ensure good lighting. Both packaged boxes and open vessels/containers are welcomed!
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 3. Optional Information Section -->
+        <div class="card optional-card margin-top-lg">
+          <div class="card-header border-bottom">
+            <div class="card-icon-badge green-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="card-title">Additional Information <span class="optional-tag">Optional</span></h2>
+              <p class="card-subtitle">Helps our AI refine visual packaging & dietary classification</p>
+            </div>
+          </div>
+
+          <div class="optional-fields-grid">
+            
+            <!-- Food Type -->
+            <div class="form-group">
+              <label for="foodType" class="form-label">Food Type</label>
+              <select id="foodType" name="foodType" class="form-control">
+                <option value="Vegetarian" selected>Vegetarian</option>
+                <option value="Non-Vegetarian">Non-Vegetarian</option>
+                <option value="Vegan">Vegan</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+            </div>
+
+            <!-- Container / Packaging -->
+            <div class="form-group">
+              <label for="containerType" class="form-label">Container / Packaging</label>
+              <select id="containerType" name="containerType" class="form-control">
+                <option value="Large Container">Large Container / Vessel</option>
+                <option value="Food Tray">Food Tray</option>
+                <option value="Meal Box">Meal Box</option>
+                <option value="Plastic Container">Plastic Container</option>
+                <option value="Steel Container">Steel Container</option>
+                <option value="Other">Other</option>
+                <option value="Unknown" selected>Unknown / Unspecified</option>
+              </select>
+            </div>
+
+            <!-- Additional Notes -->
+            <div class="form-group full-width-sm">
+              <label for="notes" class="form-label">Additional Notes</label>
+              <textarea id="notes" name="notes" class="form-control textarea" rows="2" placeholder="Mention ingredients, allergen info, or specific storage details..."></textarea>
+            </div>
+
+          </div>
+
+          <!-- Container flexibility reminder banner -->
+          <div class="flexibility-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <span>FoodOPS supports bulk items in large vessels, trays, baskets, and meal boxes. Individual packaging is not required.</span>
+          </div>
+        </div>
+
+        <!-- 4. Run AI Audit Button -->
+        <div class="action-bar">
+          <button type="submit" id="runAuditBtn" class="btn-primary-action">
+            <span class="btn-text">Run AI Audit</span>
+            <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+        </div>
+
+      </form>
+
+      <!-- Loading Overlay / State -->
+      <div id="loadingOverlay" class="loading-container" style="display: none;">
+        <div class="spinner-ring"></div>
+        <h3 class="loading-title">Analyzing food image...</h3>
+        <p class="loading-subtitle">Extracting visual features, estimating volume, and assessing visual condition</p>
+      </div>
+
+    </main>
+
+    <!-- 5. AI Food Audit Result Section (Initially hidden) -->
+    <section id="auditResultSection" class="audit-result-section" style="display: none;">
+      
+      <div class="result-header">
+        <div class="result-badge">
+          <span class="pulse-dot"></span> AI VISUAL AUDIT COMPLETE
+        </div>
+        <h2 class="result-title">AI Food Audit</h2>
+        <p class="result-subtitle">AI-assisted visual verification of the uploaded food.</p>
+      </div>
+
+      <div class="result-grid">
+        
+        <!-- Left Column: Uploaded Image Display -->
+        <div class="card result-card image-result-card">
+          <div class="result-card-header">
+            <h3 class="card-mini-title">Uploaded Photo</h3>
+            <span class="tag-verified">Visual Target</span>
+          </div>
+          <div class="result-image-frame">
+            <img id="resultImage" src="" alt="Audited Food Image" class="result-img">
+          </div>
+          <div class="image-timestamp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>Analyzed in Real-time</span>
+          </div>
+        </div>
+
+        <!-- Right Column: 4-Step Audit Findings -->
+        <div class="result-details-stack">
+
+          <!-- STEP 1: Food Type Verification -->
+          <div class="card result-card">
+            <div class="step-header">
+              <span class="step-badge">Step 1</span>
+              <h3 class="card-mini-title">Food Type Verification</h3>
+            </div>
+            <div class="findings-grid">
+              <div class="finding-block">
+                <span class="block-label">DONOR ENTERED</span>
+                <span class="metric-value" id="resDonorFoodName">—</span>
+              </div>
+              <div class="finding-block">
+                <span class="block-label">AI OBSERVED</span>
+                <span class="metric-value highlight" id="resFoodTypeObserved">—</span>
+              </div>
+            </div>
+            <div class="match-status-row">
+              <span class="match-badge" id="resFoodTypeMatchBadge">—</span>
+              <span class="match-message" id="resFoodTypeMessage">—</span>
+            </div>
+          </div>
+
+          <!-- STEP 2: Quality Check -->
+          <div class="card result-card">
+            <div class="step-header">
+              <span class="step-badge">Step 2</span>
+              <h3 class="card-mini-title">Visual Quality Check</h3>
+            </div>
+            <div class="info-cards-trio">
+              <div class="info-mini-card">
+                <div class="mini-card-icon green">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </div>
+                <div class="mini-card-body">
+                  <span class="mini-card-label">Visual Condition</span>
+                  <span class="mini-card-val" id="resQualityMessage">—</span>
+                </div>
+              </div>
+              <div class="info-mini-card">
+                <div class="mini-card-icon blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div class="mini-card-body">
+                  <span class="mini-card-label">Visible Issues</span>
+                  <span class="mini-card-val" id="resVisibleIssues">None obvious</span>
+                </div>
+              </div>
+            </div>
+            <!-- Investigation Alert: shown for VISIBLE_CONCERN (red) or UNCLEAR (amber) -->
+            <div class="investigation-alert" id="resInvestigationAlert" style="display:none;">
+              <span>🚨 INVESTIGATION NEEDED — Visible quality concern detected in image.</span>
+            </div>
+            <div class="unclear-alert" id="resUnclearAlert" style="display:none;">
+              <span>⚠️ MANUAL VERIFICATION REQUIRED — Image quality is insufficient to reliably assess food condition.</span>
+            </div>
+          </div>
+
+          <!-- STEP 3: Quantity Check -->
+          <div class="card result-card">
+            <div class="step-header">
+              <span class="step-badge">Step 3</span>
+              <h3 class="card-mini-title">Quantity Check</h3>
+            </div>
+            <div class="findings-grid">
+              <div class="finding-block">
+                <span class="block-label">DONOR ENTERED QUANTITY</span>
+                <span class="metric-value" id="resProvidedQty">—</span>
+              </div>
+              <div class="finding-block">
+                <span class="block-label">QUANTITY ASSESSMENT</span>
+                <span class="metric-value" id="resQuantityStatus">—</span>
+              </div>
+            </div>
+
+            <!-- Gemini's quantity message -->
+            <div class="quantity-disclaimer-box" id="resQuantityMessageBox">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span id="resQuantityMessage">Exact quantity cannot be verified from the image.</span>
+            </div>
+
+            <!-- Gemini's visible evidence description -->
+            <div class="quantity-evidence-box" id="resQuantityEvidenceBox" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span id="resQuantityEvidence"></span>
+            </div>
+
+            <!-- Quantity Review alert — shown only when quantity_review_needed = true -->
+            <div class="quantity-review-alert" id="resQuantityReviewAlert" style="display:none;">
+              <span>⚠️ QUANTITY REVIEW — The visible quantity may not match the entered amount. Manual verification recommended.</span>
+            </div>
+          </div>
+
+
+          <!-- STEP 4: Final AI Audit -->
+          <div class="card result-card final-status-card" id="resStatusCard">
+            <div class="step-header">
+              <span class="step-badge">Step 4</span>
+              <h3 class="card-mini-title">Final AI Audit</h3>
+            </div>
+
+            <div class="status-banner verified" id="resStatusBanner">
+              <span class="status-icon" id="resStatusIcon">&#10003;</span>
+              <span class="status-text" id="resStatusText">VERIFIED</span>
+            </div>
+
+            <p class="final-message-text" id="resFinalConclusion"></p>
+
+            <div class="final-action-box" id="resFinalActionBox" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span id="resRecommendedAction"></span>
+            </div>
+
+            <div class="safety-disclaimer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>AI verification is based only on visible information in the uploaded image. It does not certify food safety or detect invisible contamination.</span>
+            </div>
+          </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+      <p>FoodOPS — Smart Food Donation Visual Verification Platform &bull; SIH Edition</p>
+    </footer>
+
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
