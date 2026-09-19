@@ -61,6 +61,33 @@ export default function LoginForm() {
     }
   };
 
+  const handleDemoLogin = async (demoEmail: string, demoPassword = 'password') => {
+    setLoading(true);
+    setError(null);
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+
+    const res = await login({ email: demoEmail, password: demoPassword });
+    setLoading(false);
+
+    if (res.success) {
+      if (res.role === 'DONOR') {
+        router.push('/donor');
+      } else if (res.role === 'NGO') {
+        router.push('/ngo');
+      } else if (res.role === 'VOLUNTEER') {
+        router.push('/volunteer');
+      } else if (res.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
+      router.refresh();
+    } else {
+      setError(res.error || 'Demo login failed.');
+    }
+  };
+
   return (
     <motion.div 
       variants={containerVariants}
@@ -112,16 +139,78 @@ export default function LoginForm() {
             disabled={loading}
             whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
             whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
-            className="btn-primary w-full py-3 shadow-md shadow-primary/10 transition-shadow"
+            className="btn-primary w-full py-3 shadow-md shadow-primary/10 transition-shadow cursor-pointer"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </motion.button>
         </motion.div>
       </form>
 
+      {/* One-Tap Demo Logins */}
+      <motion.div variants={itemVariants} className="pt-2 border-t border-border space-y-3">
+        <div className="flex justify-between items-center text-[11px] font-bold text-muted uppercase tracking-wider">
+          <span>One-Tap Demo Sign In</span>
+          <span className="text-[10px] font-normal text-muted-light">Instant Access</span>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handleDemoLogin('donor@foodops.org')}
+            className="p-2.5 rounded border border-border bg-surface hover:bg-surface-muted hover:border-primary/40 font-semibold text-foreground flex items-center gap-2 cursor-pointer transition-colors text-left"
+          >
+            <span>🏨</span>
+            <div className="min-w-0">
+              <div className="truncate font-bold">Donor</div>
+              <div className="text-[10px] text-muted-light truncate">donor@foodops.org</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handleDemoLogin('ngo1@foodops.org')}
+            className="p-2.5 rounded border border-border bg-surface hover:bg-surface-muted hover:border-primary/40 font-semibold text-foreground flex items-center gap-2 cursor-pointer transition-colors text-left"
+          >
+            <span>🌍</span>
+            <div className="min-w-0">
+              <div className="truncate font-bold">NGO (Verified)</div>
+              <div className="text-[10px] text-muted-light truncate">ngo1@foodops.org</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handleDemoLogin('volunteer@foodops.org')}
+            className="p-2.5 rounded border border-border bg-surface hover:bg-surface-muted hover:border-primary/40 font-semibold text-foreground flex items-center gap-2 cursor-pointer transition-colors text-left"
+          >
+            <span>🚴</span>
+            <div className="min-w-0">
+              <div className="truncate font-bold">Volunteer Rider</div>
+              <div className="text-[10px] text-muted-light truncate">volunteer@foodops.org</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handleDemoLogin('ADMIN_FOODOPS', 'admin@123')}
+            className="p-2.5 rounded border border-border bg-surface hover:bg-surface-muted hover:border-primary/40 font-semibold text-foreground flex items-center gap-2 cursor-pointer transition-colors text-left"
+          >
+            <span>🛡️</span>
+            <div className="min-w-0">
+              <div className="truncate font-bold">Admin Portal</div>
+              <div className="text-[10px] text-muted-light truncate">ADMIN_FOODOPS</div>
+            </div>
+          </button>
+        </div>
+      </motion.div>
+
       <motion.div 
         variants={itemVariants}
-        className="text-center text-sm text-muted-text pt-4 border-t border-border"
+        className="text-center text-sm text-muted-text pt-2"
       >
         New to FoodOps?{' '}
         <Link href="/register" className="font-semibold text-primary hover:underline">

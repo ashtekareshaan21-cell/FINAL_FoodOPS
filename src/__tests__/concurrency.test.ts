@@ -94,7 +94,7 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
     const userCount1 = await prisma.user.count();
     const ngoCount1 = await prisma.nGOProfile.count();
 
-    expect(userCount1).toBe(6);
+    expect(userCount1).toBe(7);
     expect(ngoCount1).toBe(3);
 
     // Run seed second time
@@ -369,7 +369,7 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
     const unrelatedUser = await prisma.user.create({
       data: {
         email: 'unrelated@foodops.org',
-        phoneNumber: '+91 9999999998',
+        phoneNumber: '+91 9876543999',
         role: 'VOLUNTEER',
       },
     });

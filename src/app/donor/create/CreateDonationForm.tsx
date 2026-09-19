@@ -19,6 +19,15 @@ interface AuditResult {
   confidence?: number | null;
 }
 
+interface OCRScanResult {
+  text: string;
+  detectedLabels: string[];
+  confidence: number;
+  source: 'ocr';
+  status: string;
+  error?: string;
+}
+
 interface CreateDonationFormProps {
   defaultLocation?: {
     address: string;
@@ -82,6 +91,11 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
   const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
 
+  // OCR Extraction States
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrResult, setOcrResult] = useState<OCRScanResult | null>(null);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+
   const shouldReduceMotion = useReducedMotion();
   const yOffset = shouldReduceMotion ? 0 : 12;
 
@@ -111,6 +125,8 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
     setAuditId(null);
     setAuditResult(null);
     setAuditError(null);
+    setOcrResult(null);
+    setOcrError(null);
 
     if (file.size > 4 * 1024 * 1024) {
       setAuditError('Image size exceeds 4MB limit.');
@@ -133,6 +149,45 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
     reader.readAsDataURL(file);
   };
 
+  const handleRunOcrScan = async () => {
+    if (!base64Image || !mimeType) {
+      setOcrError('Please select a valid image first.');
+      return;
+    }
+
+    setOcrLoading(true);
+    setOcrError(null);
+
+    try {
+      const res = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64Image, mimeType }),
+      });
+
+      const data = await res.json();
+      if (res.ok && (data.status === 'SUCCESS' || data.status === 'EMPTY_RESULT')) {
+        setOcrResult(data);
+        if (data.status === 'EMPTY_RESULT') {
+          setOcrError('No visible text or labels found in this image.');
+        } else {
+          setOcrError(null);
+        }
+      } else {
+        const rawErr = data.error || '';
+        const cleanMsg = rawErr.includes('GoogleGenerativeAI') || rawErr.includes('Blocked') || rawErr.includes('403') || rawErr.includes('401')
+          ? 'Cloud AI service is unavailable. Text details can be entered manually.'
+          : (rawErr || 'OCR text extraction failed.');
+        setOcrError(cleanMsg);
+      }
+    } catch (err) {
+      console.error('OCR API error:', err);
+      setOcrError('An unexpected error occurred during OCR scanning.');
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
   const handleAnalyzeImage = async () => {
     if (!base64Image || !mimeType) {
       setAuditError('Please select a valid image first.');
@@ -149,7 +204,11 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
         setAuditId(res.auditId ?? null);
         setAuditResult((res.audit as unknown as AuditResult) ?? null);
       } else {
-        setAuditError(res.error || 'AI analysis failed.');
+        const rawErr = res.error || '';
+        const cleanMsg = rawErr.includes('GoogleGenerativeAI') || rawErr.includes('Blocked') || rawErr.includes('403') || rawErr.includes('401')
+          ? 'AI listing audit is temporarily unavailable. You can enter details manually.'
+          : (rawErr || 'AI analysis failed.');
+        setAuditError(cleanMsg);
       }
     } catch (err) {
       console.error(err);
@@ -382,25 +441,127 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
           </div>
           
           <AnimatePresence mode="wait">
-            {base64Image && !auditResult && !analyzing && (
-              <motion.button
-                key="btn-analyze"
-                type="button"
-                onClick={handleAnalyzeImage}
-                whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
-                className="btn-primary py-2 px-3.5 text-xs flex items-center gap-1.5"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                Analyze Listing with AI
-              </motion.button>
+            {base64Image && (
+              <div className="flex flex-wrap gap-2.5 items-center">
+                {!auditResult && !analyzing && (
+                  <motion.button
+                    key="btn-analyze"
+                    type="button"
+                    onClick={handleAnalyzeImage}
+                    whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
+                    whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
+                    className="btn-primary py-2 px-3.5 text-xs flex items-center gap-1.5"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    Analyze Listing with AI
+                  </motion.button>
+                )}
+
+                {!ocrResult && !ocrLoading && (
+                  <motion.button
+                    key="btn-ocr"
+                    type="button"
+                    onClick={handleRunOcrScan}
+                    whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
+                    whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
+                    className="px-3.5 py-2 text-xs font-bold rounded-sm border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Scan Packaging Text (OCR)
+                  </motion.button>
+                )}
+
+                {ocrLoading && (
+                  <div className="flex items-center gap-2 text-xs font-semibold text-primary py-2 px-3 bg-primary/5 rounded border border-primary/20">
+                    <svg className="animate-spin h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Extracting text from image...</span>
+                  </div>
+                )}
+              </div>
             )}
 
             {analyzing && (
               <motion.div key="seq-loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <AuditLoadingSequence />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {ocrError && (
+            <div className="p-3 rounded-sm bg-warning-bg border border-warning-border text-xs text-warning font-semibold">
+              {ocrError}
+            </div>
+          )}
+
+          <AnimatePresence>
+            {ocrResult && (ocrResult.text || ocrResult.detectedLabels.length > 0) && (
+              <motion.div
+                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="border border-blue-500/20 bg-blue-50/40 dark:bg-blue-950/20 rounded-md p-4 space-y-3"
+              >
+                <div className="flex justify-between items-center border-b border-border pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-2 w-2 rounded-full bg-blue-500" />
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">OCR Text Extraction Result</h4>
+                  </div>
+                  <span className="text-[10px] text-muted-light font-mono">Confidence: {ocrResult.confidence}%</span>
+                </div>
+
+                {ocrResult.text && (
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-muted mb-1 tracking-wider">Visible Extracted Text</p>
+                    <p className="text-xs font-mono bg-surface p-2.5 rounded border border-border text-foreground leading-relaxed whitespace-pre-wrap">
+                      {ocrResult.text}
+                    </p>
+                  </div>
+                )}
+
+                {ocrResult.detectedLabels.length > 0 && (
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-muted mb-1 tracking-wider">Detected Labels & Markings</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ocrResult.detectedLabels.map((label, idx) => (
+                        <span key={idx} className="px-2 py-0.5 text-[10px] font-medium bg-surface border border-border text-foreground rounded">
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {ocrResult.text && (
+                    <button
+                      type="button"
+                      onClick={() => setDescription((prev) => (prev ? `${prev}\n\n[OCR Label Text]: ${ocrResult.text}` : `[OCR Label Text]: ${ocrResult.text}`))}
+                      className="px-2.5 py-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 rounded cursor-pointer"
+                    >
+                      + Add to Description
+                    </button>
+                  )}
+                  {ocrResult.text && (
+                    <button
+                      type="button"
+                      onClick={() => setSpecialNotes((prev) => (prev ? `${prev}\n[Packaging OCR]: ${ocrResult.text}` : `[Packaging OCR]: ${ocrResult.text}`))}
+                      className="px-2.5 py-1 text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 rounded cursor-pointer"
+                    >
+                      + Add to Special Notes
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-[9px] text-muted-light italic border-t border-border pt-2 mt-2">
+                  <strong>Notice:</strong> OCR only extracts visible text and labels from packaging/vessels. It does not certify food safety or freshness.
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -541,8 +702,17 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
                     </div>
                   </div>
                 ) : (
-                  <div className="text-[11px] text-muted font-semibold italic">
-                    AI listing audit is currently unavailable. Please proceed with manual donation details.
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-500/20 rounded text-amber-700 dark:text-amber-300 text-xs space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      GEMINI_API_KEY Not Configured
+                    </p>
+                    <p className="text-[11px] text-amber-800 dark:text-amber-200 leading-relaxed">
+                      Your <code className="bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded font-mono text-[10px]">.env</code> is missing a valid <code className="font-bold font-mono">GEMINI_API_KEY</code>.
+                      To enable live AI Listing Audits & OCR Scanning, get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline font-bold">Google AI Studio</a>. You may also proceed with manual donation details.
+                    </p>
                   </div>
                 )}
               </motion.div>

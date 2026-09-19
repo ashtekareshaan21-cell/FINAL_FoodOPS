@@ -6,16 +6,20 @@ import Navbar from '@/components/Navbar';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 
 export default async function RegisterPage() {
-  // Fetch NGOs for volunteer registration dropdown
-  const ngos = await prisma.nGOProfile.findMany({
-    select: {
-      id: true,
-      organizationName: true,
-    },
-    orderBy: {
-      organizationName: 'asc',
-    },
-  });
+  let ngos: { id: string; organizationName: string }[] = [];
+  try {
+    ngos = await prisma.nGOProfile.findMany({
+      select: {
+        id: true,
+        organizationName: true,
+      },
+      orderBy: {
+        organizationName: 'asc',
+      },
+    });
+  } catch (err) {
+    console.error('Failed to fetch NGOs for registration page:', err);
+  }
 
   return (
     <div className="min-h-screen bg-transparent flex flex-col relative">
