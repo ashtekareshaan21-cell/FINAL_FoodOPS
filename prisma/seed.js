@@ -92,7 +92,7 @@ async function main() {
       isEmailVerified: true,
     },
   });
-  await prisma.donorProfile.upsert({
+  const donorProfile = await prisma.donorProfile.upsert({
     where: { userId: donorUser.id },
     update: {
       organizationName: 'Grand Banquet Hall',
@@ -142,7 +142,7 @@ async function main() {
       city: 'Bengaluru',
       baseLatitude: 12.9616,
       baseLongitude: 77.5846,
-      serviceRadiusKm: 10,
+      serviceRadiusKm: 15,
       availability: 'AVAILABLE',
       acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
       contactPerson: 'Preeti Nair',
@@ -157,7 +157,7 @@ async function main() {
       city: 'Bengaluru',
       baseLatitude: 12.9616,
       baseLongitude: 77.5846,
-      serviceRadiusKm: 10,
+      serviceRadiusKm: 15,
       availability: 'AVAILABLE',
       acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
       contactPerson: 'Preeti Nair',
@@ -294,6 +294,32 @@ async function main() {
       verificationStatus: 'VERIFIED',
     },
   });
+
+  // 7. Seed an active surplus donation for one-tap emulation
+  const existingActive = await prisma.donation.findFirst({
+    where: { donorId: donorProfile.id, status: 'AVAILABLE' },
+  });
+  if (!existingActive) {
+    await prisma.donation.create({
+      data: {
+        donorId: donorProfile.id,
+        title: 'Fresh Buffet Meal Surplus',
+        description: 'Freshly prepared vegetarian catering surplus, securely packed in sealed trays.',
+        foodCategory: 'COOKED_VEG',
+        vegNonVegMixed: 'VEG',
+        quantity: '25',
+        quantityUnit: 'kg',
+        estimatedServings: 50,
+        status: 'AVAILABLE',
+        pickupAddress: donorProfile.address,
+        pickupLatitude: donorProfile.latitude,
+        pickupLongitude: donorProfile.longitude,
+        pickupAvailableAt: new Date(),
+        pickupDeadlineAt: new Date(Date.now() + 12 * 60 * 60 * 1000),
+      },
+    });
+    console.log('Seeded active surplus donation for demo emulation.');
+  }
 
   console.log('Database seeded successfully (idempotent)!');
   await prisma.$disconnect();

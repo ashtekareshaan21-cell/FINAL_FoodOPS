@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { getPublicImpactStats } from '@/app/actions/donations';
+import { getSession } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import HeroSection from '@/components/Home/HeroSection';
 import OrdersScene from '@/components/Home/OrdersScene';
 import KitchenScene from '@/components/Home/KitchenScene';
@@ -16,6 +18,8 @@ import RoadmapSection from '@/components/Home/RoadmapSection';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 
 export default async function Home() {
+  const session = await getSession();
+
   let stats = {
     foodWeightKg: 0,
     completedRescues: 0,
@@ -23,12 +27,38 @@ export default async function Home() {
     waterSavedLiters: 0,
     verifiedNgos: 0,
     totalNgos: 0,
+    totalDonations: 0,
   };
 
+  let recentDonations: Array<{
+    id: string;
+    title: string;
+    foodCategory: string;
+    quantity: string;
+    quantityUnit: string;
+    createdAt: Date;
+  }> = [];
+
   try {
-    stats = await getPublicImpactStats();
+    const [fetchedStats, fetchedDonations] = await Promise.all([
+      getPublicImpactStats(),
+      prisma.donation.findMany({
+        take: 4,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          foodCategory: true,
+          quantity: true,
+          quantityUnit: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+    stats = fetchedStats;
+    recentDonations = fetchedDonations;
   } catch (error) {
-    console.error('Failed to load homepage impact stats:', error);
+    console.error('Failed to load homepage impact stats or donations:', error);
   }
 
   return (
@@ -38,10 +68,13 @@ export default async function Home() {
 
       <main className="flex-grow">
         {/* Animated Hero Section */}
-        <HeroSection />
+        <HeroSection sessionRole={session?.role} />
 
-        {/* Scene 1: Orders */}
-        <OrdersScene />
+        {/* Scene 1: Orders - fed from real database data */}
+        <OrdersScene 
+          totalAuditedRescues={stats.totalDonations} 
+          recentOrders={recentDonations} 
+        />
 
         {/* Scene 2: Kitchen */}
         <KitchenScene />
@@ -135,7 +168,11 @@ export default async function Home() {
 
       <footer className="bg-surface border-t border-border py-10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-muted text-xs font-semibold">
-          <p>&copy; {new Date().getFullYear()} FoodOps. Developed for the Climate Tech & Sustainability Hackathon.</p>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-foreground">FoodOps</span>
+            <span>&bull;</span>
+            <span>Surplus Food Rescue &amp; Recovery Logistics</span>
+          </div>
           <div className="flex gap-4 font-bold">
             <a href="#" className="hover:text-foreground">Compliance</a>
             <span>&bull;</span>

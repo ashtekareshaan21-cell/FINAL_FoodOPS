@@ -156,9 +156,7 @@ export default function ActiveRescuesList({ activeRescues, volunteers, assignVol
             return (
               <div
                 key={rescue.id}
-                className={`rescue-card bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-md hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-                }`}
+                className="rescue-card bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6 hover:shadow-md hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 opacity-100"
               >
                 {/* Details Section */}
                 <div className="flex-grow space-y-4">

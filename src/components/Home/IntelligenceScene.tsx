@@ -186,31 +186,29 @@ export default function IntelligenceScene() {
 
               {/* Core Node */}
               <div 
-                className={`intel-node absolute top-[160px] left-[160px] w-20 h-20 rounded-full bg-primary/5 border border-primary flex items-center justify-center z-20 transition-all ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0 scale-75' : 'opacity-100 scale-100'
-                }`}
+                className="intel-node absolute top-[160px] left-[160px] w-20 h-20 rounded-full bg-primary/5 border border-primary flex items-center justify-center z-20 transition-all opacity-100 scale-100"
               >
                 <span className="text-[10px] font-black text-primary tracking-widest text-center leading-none">FOODOPS<br /><span className="text-[8px] font-semibold text-muted-text">CORE</span></span>
               </div>
 
               {/* outlying peripheral nodes */}
               {/* ORDERS */}
-              <div className={`intel-node absolute top-[76px] left-[26px] w-12 h-12 rounded-lg bg-surface border border-border shadow-sm flex items-center justify-center z-10 transition-all ${mounted && !prefersReducedMotion() ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}>
+              <div className="intel-node absolute top-[76px] left-[26px] w-12 h-12 rounded-lg bg-surface border border-border shadow-sm flex items-center justify-center z-10 transition-all opacity-100 scale-100">
                 <span className="text-lg">📝</span>
               </div>
 
               {/* INVENTORY */}
-              <div className={`intel-node absolute top-[76px] right-[26px] w-12 h-12 rounded-lg bg-surface border border-border shadow-sm flex items-center justify-center z-10 transition-all ${mounted && !prefersReducedMotion() ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}>
+              <div className="intel-node absolute top-[76px] right-[26px] w-12 h-12 rounded-lg bg-surface border border-border shadow-sm flex items-center justify-center z-10 transition-all opacity-100 scale-100">
                 <span className="text-lg">📊</span>
               </div>
 
               {/* KITCHEN */}
-              <div className={`intel-node absolute bottom-[76px] left-[26px] w-12 h-12 rounded-lg bg-surface border border-border shadow-sm flex items-center justify-center z-10 transition-all ${mounted && !prefersReducedMotion() ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}>
+              <div className="intel-node absolute bottom-[76px] left-[26px] w-12 h-12 rounded-lg bg-surface border border-border shadow-sm flex items-center justify-center z-10 transition-all opacity-100 scale-100">
                 <span className="text-lg">🍳</span>
               </div>
 
               {/* DELIVERY */}
-              <div className={`intel-node absolute bottom-[76px] right-[26px] w-12 h-12 rounded-lg bg-surface border border-border shadow-sm flex items-center justify-center z-10 transition-all ${mounted && !prefersReducedMotion() ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}>
+              <div className="intel-node absolute bottom-[76px] right-[26px] w-12 h-12 rounded-lg bg-surface border border-border shadow-sm flex items-center justify-center z-10 transition-all opacity-100 scale-100">
                 <span className="text-lg">🚴</span>
               </div>
             </div>

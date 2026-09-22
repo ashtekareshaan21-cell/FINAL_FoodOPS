@@ -98,6 +98,27 @@ export async function getAllDonations() {
   return adminService.getAllDonations();
 }
 
+export async function getRecoveryDonations() {
+  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  return adminService.getRecoveryDonations();
+}
+
+export async function getAllImpactRecords() {
+  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  return adminService.getAllImpactRecords();
+}
+
+export async function getAllVerificationRequests() {
+  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  return adminService.getAllVerificationRequests();
+}
+
 export async function forceExpireDonation(donationId: string) {
   if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
   const session = await getSession();
@@ -117,3 +138,83 @@ export async function forceExpireDonation(donationId: string) {
     return { success: false, error: message };
   }
 }
+
+export async function verifyDonor(donorId: string) {
+  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    await adminService.verifyDonor(session.userId, donorId);
+    revalidatePath('/admin');
+    revalidatePath('/admin/data');
+    return { success: true };
+  } catch (error) {
+    console.error('Verify Donor error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to verify Donor.';
+    return { success: false, error: message };
+  }
+}
+
+export async function rejectDonor(donorId: string, reason: string) {
+  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    await adminService.rejectDonor(session.userId, donorId, reason);
+    revalidatePath('/admin');
+    revalidatePath('/admin/data');
+    return { success: true };
+  } catch (error) {
+    console.error('Reject Donor error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to reject Donor.';
+    return { success: false, error: message };
+  }
+}
+
+export async function verifyVolunteer(volunteerId: string) {
+  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    await adminService.verifyVolunteer(session.userId, volunteerId);
+    revalidatePath('/admin');
+    revalidatePath('/admin/data');
+    revalidatePath('/volunteer');
+    return { success: true };
+  } catch (error) {
+    console.error('Verify Volunteer error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to verify Volunteer.';
+    return { success: false, error: message };
+  }
+}
+
+export async function rejectVolunteer(volunteerId: string, reason: string) {
+  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    await adminService.rejectVolunteer(session.userId, volunteerId, reason);
+    revalidatePath('/admin');
+    revalidatePath('/admin/data');
+    revalidatePath('/volunteer');
+    return { success: true };
+  } catch (error) {
+    console.error('Reject Volunteer error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to reject Volunteer.';
+    return { success: false, error: message };
+  }
+}
+
+

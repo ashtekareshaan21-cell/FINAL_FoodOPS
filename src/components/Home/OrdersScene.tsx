@@ -5,17 +5,57 @@ import { createScope, animate } from 'animejs';
 import { MOTION } from '@/animations/config';
 import { prefersReducedMotion } from '@/animations/accessibility';
 
-const INCOMING_ORDERS = [
+export interface RecentOrderItem {
+  id: string;
+  title: string;
+  foodCategory: string;
+  quantity: string;
+  quantityUnit: string;
+  createdAt?: Date | string;
+}
+
+interface OrdersSceneProps {
+  totalAuditedRescues?: number;
+  recentOrders?: RecentOrderItem[];
+}
+
+const FALLBACK_ORDERS = [
   { id: '#1042', time: 'Just now', servings: '35 meals', category: '🥗 Veg' },
   { id: '#1043', time: '1 min ago', servings: '60 meals', category: '🍗 Non-Veg' },
   { id: '#1044', time: '3 min ago', servings: '18 meals', category: '🍞 Bakery' },
   { id: '#1045', time: '5 min ago', servings: '50 meals', category: '🍲 Mixed' }
 ];
 
-export default function OrdersScene() {
+export default function OrdersScene({ totalAuditedRescues, recentOrders }: OrdersSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
-  const [mounted, setMounted] = useState(false);
+  const [, setMounted] = useState(false);
+
+  const targetCount = typeof totalAuditedRescues === 'number' && !isNaN(totalAuditedRescues)
+    ? totalAuditedRescues
+    : 0;
+
+  // Build the 4 cards from real orders or fallbacks
+  const displayOrders = [0, 1, 2, 3].map((idx) => {
+    if (recentOrders && recentOrders[idx]) {
+      const o = recentOrders[idx];
+      const catLabel = o.foodCategory === 'COOKED_VEG' 
+        ? '🥗 Veg' 
+        : o.foodCategory === 'COOKED_NON_VEG' 
+        ? '🍗 Non-Veg' 
+        : o.foodCategory === 'BAKERY' 
+        ? '🍞 Bakery' 
+        : `🍲 ${o.foodCategory.replace(/_/g, ' ')}`;
+
+      return {
+        id: `#${o.id.slice(-4).toUpperCase()}`,
+        time: idx === 0 ? 'Just now' : `${idx * 2} min ago`,
+        servings: `${o.quantity} ${o.quantityUnit} (${o.title})`,
+        category: catLabel,
+      };
+    }
+    return FALLBACK_ORDERS[idx];
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -85,17 +125,18 @@ export default function OrdersScene() {
                 delay: 1100
               });
 
-              // Interpolate orders counter
+              // Interpolate orders counter from database value
               const counterObj = { val: 0 };
               const counterEl = counterRef.current;
               animate(counterObj, {
-                val: 127,
+                val: targetCount,
                 duration: 2000,
                 ease: MOTION.easing.smooth,
                 delay: 1300,
                 onRender: () => {
                   if (counterEl) {
-                    counterEl.innerText = Math.round(counterObj.val).toString();
+                    const rounded = Math.round(counterObj.val);
+                    counterEl.innerText = isNaN(rounded) ? String(targetCount) : rounded.toString();
                   }
                 }
               });
@@ -109,7 +150,7 @@ export default function OrdersScene() {
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [targetCount]);
 
   return (
     <section 
@@ -126,34 +167,28 @@ export default function OrdersScene() {
               Step 1: surplus listing declaration
             </span>
             <h2 
-              className={`scene-text text-4xl sm:text-6xl font-black text-foreground leading-[1.1] font-display transition-opacity duration-200 ${
-                'opacity-100'
-              }`}
+              className="scene-text text-4xl sm:text-6xl font-black text-foreground leading-[1.1] font-display transition-opacity duration-200 opacity-100"
             >
               EVERYTHING <br />
               STARTS WITH <br />
               <span className="text-primary font-display">ORDERS.</span>
             </h2>
             <p 
-              className={`scene-text text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 ${
-                'opacity-100'
-              }`}
+              className="scene-text text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 opacity-100"
             >
               Surplus listing declarations from banquets, events, or corporate dining halls feed instantly into the FoodOps operational queue.
             </p>
             
             {/* Real-time Order Count display */}
             <div 
-              className={`scene-text p-6 bg-surface border border-border rounded-lg shadow-sm w-fit transition-opacity duration-200 ${
-                'opacity-100'
-              }`}
+              className="scene-text p-6 bg-surface border border-border rounded-lg shadow-sm w-fit transition-opacity duration-200 opacity-100"
             >
               <div className="flex items-baseline gap-2">
                 <span 
                   ref={counterRef}
                   className="text-4xl font-black text-foreground tracking-tight font-mono"
                 >
-                  127
+                  {targetCount}
                 </span>
                 <span className="text-xs font-bold text-success uppercase tracking-wider">▲ ACTIVE</span>
               </div>
@@ -173,9 +208,7 @@ export default function OrdersScene() {
 
             {/* Central Node */}
             <div 
-              className={`order-core w-24 h-24 rounded-full bg-primary/10 border-2 border-primary flex flex-col items-center justify-center relative z-20 shadow-md transition-all ${
-                mounted && !prefersReducedMotion() ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
-              }`}
+              className="order-core w-24 h-24 rounded-full bg-primary/10 border-2 border-primary flex flex-col items-center justify-center relative z-20 shadow-md transition-all opacity-100 scale-100"
             >
               <span className="text-2xl animate-pulse">🛰️</span>
               <span className="text-[9px] font-black uppercase text-primary tracking-widest mt-1">GATEWAY</span>
@@ -184,58 +217,50 @@ export default function OrdersScene() {
             {/* Order cards floating and converging */}
             {/* Top Left */}
             <div 
-              className={`order-card absolute top-4 left-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all ${
-                'opacity-100'
-              }`}
+              className="order-card absolute top-4 left-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all opacity-100"
             >
               <div className="flex justify-between items-center mb-1">
-                <span className="font-mono text-xs font-bold text-foreground">{INCOMING_ORDERS[0].id}</span>
-                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{INCOMING_ORDERS[0].category}</span>
+                <span className="font-mono text-xs font-bold text-foreground">{displayOrders[0].id}</span>
+                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{displayOrders[0].category}</span>
               </div>
-              <p className="text-[10px] text-muted-text font-semibold">{INCOMING_ORDERS[0].servings} declared</p>
-              <p className="text-[9px] text-muted-light mt-1 font-mono">{INCOMING_ORDERS[0].time}</p>
+              <p className="text-[10px] text-muted-text font-semibold truncate">{displayOrders[0].servings}</p>
+              <p className="text-[9px] text-muted-light mt-1 font-mono">{displayOrders[0].time}</p>
             </div>
 
             {/* Top Right */}
             <div 
-              className={`order-card absolute top-4 right-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all ${
-                'opacity-100'
-              }`}
+              className="order-card absolute top-4 right-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all opacity-100"
             >
               <div className="flex justify-between items-center mb-1">
-                <span className="font-mono text-xs font-bold text-foreground">{INCOMING_ORDERS[1].id}</span>
-                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{INCOMING_ORDERS[1].category}</span>
+                <span className="font-mono text-xs font-bold text-foreground">{displayOrders[1].id}</span>
+                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{displayOrders[1].category}</span>
               </div>
-              <p className="text-[10px] text-muted-text font-semibold">{INCOMING_ORDERS[1].servings} declared</p>
-              <p className="text-[9px] text-muted-light mt-1 font-mono">{INCOMING_ORDERS[1].time}</p>
+              <p className="text-[10px] text-muted-text font-semibold truncate">{displayOrders[1].servings}</p>
+              <p className="text-[9px] text-muted-light mt-1 font-mono">{displayOrders[1].time}</p>
             </div>
 
             {/* Bottom Left */}
             <div 
-              className={`order-card absolute bottom-4 left-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all ${
-                'opacity-100'
-              }`}
+              className="order-card absolute bottom-4 left-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all opacity-100"
             >
               <div className="flex justify-between items-center mb-1">
-                <span className="font-mono text-xs font-bold text-foreground">{INCOMING_ORDERS[2].id}</span>
-                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{INCOMING_ORDERS[2].category}</span>
+                <span className="font-mono text-xs font-bold text-foreground">{displayOrders[2].id}</span>
+                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{displayOrders[2].category}</span>
               </div>
-              <p className="text-[10px] text-muted-text font-semibold">{INCOMING_ORDERS[2].servings} declared</p>
-              <p className="text-[9px] text-muted-light mt-1 font-mono">{INCOMING_ORDERS[2].time}</p>
+              <p className="text-[10px] text-muted-text font-semibold truncate">{displayOrders[2].servings}</p>
+              <p className="text-[9px] text-muted-light mt-1 font-mono">{displayOrders[2].time}</p>
             </div>
 
             {/* Bottom Right */}
             <div 
-              className={`order-card absolute bottom-4 right-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all ${
-                'opacity-100'
-              }`}
+              className="order-card absolute bottom-4 right-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all opacity-100"
             >
               <div className="flex justify-between items-center mb-1">
-                <span className="font-mono text-xs font-bold text-foreground">{INCOMING_ORDERS[3].id}</span>
-                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{INCOMING_ORDERS[3].category}</span>
+                <span className="font-mono text-xs font-bold text-foreground">{displayOrders[3].id}</span>
+                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{displayOrders[3].category}</span>
               </div>
-              <p className="text-[10px] text-muted-text font-semibold">{INCOMING_ORDERS[3].servings} declared</p>
-              <p className="text-[9px] text-muted-light mt-1 font-mono">{INCOMING_ORDERS[3].time}</p>
+              <p className="text-[10px] text-muted-text font-semibold truncate">{displayOrders[3].servings}</p>
+              <p className="text-[9px] text-muted-light mt-1 font-mono">{displayOrders[3].time}</p>
             </div>
 
           </div>

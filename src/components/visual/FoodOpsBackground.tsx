@@ -58,7 +58,7 @@ export default function FoodOpsBackground({ variant = 'dashboard' }: FoodOpsBack
   if (!mounted) {
     // Render static fallback during SSR to prevent flashes
     return (
-      <div className="fixed inset-0 w-full h-full bg-[#030705] pointer-events-none -z-50" />
+      <div className="fixed inset-0 w-full h-full bg-[#f8faf9] pointer-events-none -z-50" />
     );
   }
 

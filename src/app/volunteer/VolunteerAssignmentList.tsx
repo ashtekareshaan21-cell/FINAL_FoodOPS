@@ -12,6 +12,12 @@ import { DeliveryRouteTracker } from '@/animations/delivery';
 export interface VolunteerAssignmentItem {
   id: string;
   status: string;
+  ngo?: {
+    organizationName: string;
+    baseAddress: string;
+    baseLatitude: number;
+    baseLongitude: number;
+  };
   donation: {
     id: string;
     title: string;
@@ -43,7 +49,7 @@ const STATUS_FLOW = ['ASSIGNED', 'TRAVELING', 'ARRIVED', 'PICKED_UP', 'DELIVERIN
 
 const STATUS_LABELS: Record<string, string> = {
   ASSIGNED: '📍 Assigned',
-  TRAVELING: '🚴 Traveling',
+  TRAVELING: '🚴 Traveling to Donor',
   ARRIVED: '🏁 Arrived at Donor',
   PICKED_UP: '📦 Picked Up',
   DELIVERING: '🚛 Delivering to NGO',
@@ -139,9 +145,9 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
     }
   };
 
-  const handleStatusUpdate = async (assignmentId: string, nextStatus: string) => {
-    setLoadingMap(prev => ({ ...prev, [assignmentId]: true }));
-    setErrorMap(prev => ({ ...prev, [assignmentId]: null }));
+  const handleStatusUpdate = async (task: VolunteerAssignmentItem, nextStatus: string) => {
+    setLoadingMap(prev => ({ ...prev, [task.id]: true }));
+    setErrorMap(prev => ({ ...prev, [task.id]: null }));
 
     let mappedAction = nextStatus;
     if (nextStatus === 'TRAVELING') mappedAction = 'START_PICKUP';
@@ -149,16 +155,24 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
     else if (nextStatus === 'DELIVERING') mappedAction = 'START_DELIVERY';
 
     try {
-      const res = await updateAssignmentStatus(assignmentId, mappedAction);
+      const res = await updateAssignmentStatus(task.id, mappedAction);
       if (res.success) {
+        // Trigger external Google Maps navigation window per requirement 7
+        if (mappedAction === 'START_PICKUP') {
+          const url = buildGoogleMapsSearchUrl(task.donation.pickupLatitude, task.donation.pickupLongitude);
+          window.open(url, '_blank', 'noopener,noreferrer');
+        } else if (mappedAction === 'START_DELIVERY' && task.ngo?.baseLatitude && task.ngo?.baseLongitude) {
+          const url = buildGoogleMapsSearchUrl(task.ngo.baseLatitude, task.ngo.baseLongitude);
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
         router.refresh();
       } else {
-        setErrorMap(prev => ({ ...prev, [assignmentId]: res.error || 'Failed to update status.' }));
+        setErrorMap(prev => ({ ...prev, [task.id]: res.error || 'Failed to update status.' }));
       }
     } catch (err) {
-      setErrorMap(prev => ({ ...prev, [assignmentId]: 'Failed to update assignment status.' }));
+      setErrorMap(prev => ({ ...prev, [task.id]: 'Failed to update assignment status.' }));
     } finally {
-      setLoadingMap(prev => ({ ...prev, [assignmentId]: false }));
+      setLoadingMap(prev => ({ ...prev, [task.id]: false }));
     }
   };
 
@@ -190,9 +204,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
             return (
               <div
                 key={task.id}
-                className={`volunteer-card bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col lg:flex-row justify-between gap-6 hover:shadow-md hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 ${
-                  mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-                }`}
+                className="volunteer-card bg-surface border border-border rounded-lg p-6 shadow-sm flex flex-col lg:flex-row justify-between gap-6 hover:shadow-md hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 opacity-100"
               >
                 {/* Details Section */}
                 <div className="flex-grow space-y-4">
@@ -232,35 +244,32 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-surface-muted p-4 rounded-md border border-border font-medium text-muted-text">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-[#f0f4f1] p-4 rounded-xl border border-emerald-200/80 font-medium text-slate-700">
                     <div>
-                      <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Donor Facility</p>
-                      <p className="font-semibold text-foreground mt-0.5">{task.donation.donor.organizationName}</p>
-                      <p className="text-muted-light mt-0.5">{task.donation.donor.user?.phoneNumber}</p>
-                    </div>
-                    <div>
-                      <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Pickup Address</p>
-                      <p className="font-semibold text-foreground mt-0.5">{task.donation.pickupAddress}</p>
-                      <a
-                        href={buildGoogleMapsSearchUrl(task.donation.pickupLatitude, task.donation.pickupLongitude)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline mt-1.5"
-                      >
-                        🗺️ View Map Routing &rarr;
-                      </a>
-                    </div>
-                    <div>
-                      <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Food Metrics</p>
-                      <p className="font-semibold text-foreground mt-0.5">
-                        {task.donation.quantity} {task.donation.quantityUnit} &bull; <span className="text-primary font-bold">Category: {task.donation.foodCategory}</span>
+                      <p className="font-bold text-[#0b3c26] uppercase tracking-wider text-[10px] flex items-center gap-1">
+                        <span>🏨</span> Donor Facility Location
                       </p>
+                      <p className="font-extrabold text-slate-900 text-sm mt-0.5">{task.donation.donor.organizationName}</p>
+                      <p className="text-slate-600 font-mono mt-0.5">{task.donation.pickupAddress}</p>
+                      <p className="text-slate-500 font-semibold mt-0.5">📞 {task.donation.donor.user?.phoneNumber || 'Phone on file'}</p>
                     </div>
+
                     <div>
-                      <p className="font-bold text-foreground uppercase tracking-wider text-[9px]">Expiry Deadline</p>
-                      <p className="font-semibold text-danger font-mono mt-0.5">
-                        <ClientDateTime date={task.donation.pickupDeadlineAt} />
+                      <p className="font-bold text-[#0b3c26] uppercase tracking-wider text-[10px] flex items-center gap-1">
+                        <span>🏛️</span> Receiver NGO Location
                       </p>
+                      <p className="font-extrabold text-slate-900 text-sm mt-0.5">{task.ngo?.organizationName || 'Receiver NGO'}</p>
+                      <p className="text-slate-600 font-mono mt-0.5">{task.ngo?.baseAddress || 'Base address on record'}</p>
+                    </div>
+
+                    <div className="sm:col-span-2 pt-2 border-t border-emerald-200/60 flex flex-wrap justify-between items-center gap-2">
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-slate-800">Item:</span>
+                        <span className="font-bold text-[#0b3c26] bg-emerald-100 px-2 py-0.5 rounded">{task.donation.quantity} {task.donation.quantityUnit} &bull; {task.donation.title}</span>
+                      </div>
+                      <div className="text-[11px] font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        Deadline: <ClientDateTime date={task.donation.pickupDeadlineAt} />
+                      </div>
                     </div>
                   </div>
 
@@ -269,10 +278,10 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                 </div>
 
                 {/* Operations Actions Panel */}
-                <div className="flex-shrink-0 lg:w-80 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-border pt-6 lg:pt-0 lg:pl-6">
+                <div className="flex-shrink-0 lg:w-80 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-slate-200 pt-6 lg:pt-0 lg:pl-6">
                   {error && (
                     <div 
-                      className="mb-3 p-3 rounded-sm bg-danger-bg border border-danger-border text-danger text-xs font-semibold animate-fade-in"
+                      className="mb-3 p-3 rounded-md bg-danger-bg border border-danger-border text-danger text-xs font-semibold animate-fade-in"
                     >
                       {error}
                     </div>
@@ -280,17 +289,17 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
 
                   {/* Secure Handover OTP Form when rider has ARRIVED */}
                   {uiStatus === 'ARRIVED' ? (
-                    <div className="space-y-4">
+                    <div className="space-y-4 bg-emerald-50/50 p-4 rounded-xl border border-emerald-200">
                       <div className="flex justify-between items-center">
-                        <p className="text-xs font-bold text-foreground uppercase tracking-wide">Secure Pickup Handover</p>
-                        <span className="badge-premium bg-primary/5 text-primary border border-primary/10 tracking-widest text-[9px] uppercase font-extrabold px-2">
-                          OTP CHECK
+                        <p className="text-xs font-extrabold text-[#0b3c26] uppercase tracking-wide">Donor Pickup Handover</p>
+                        <span className="status-badge status-badge-active text-[10px]">
+                          OTP VERIFICATION
                         </span>
                       </div>
 
                       {otpSent && (
                         <div 
-                          className="p-2.5 bg-success-bg border border-success-border rounded-sm text-success text-[11px] font-semibold leading-normal animate-fade-in"
+                          className="p-2.5 bg-success-bg border border-success-border rounded-md text-success text-[11px] font-semibold leading-normal animate-fade-in"
                         >
                           ✓ {otpSent}
                         </div>
@@ -301,7 +310,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                           type="button"
                           disabled={loading}
                           onClick={() => handleRequestOtp(task.id)}
-                          className="w-full btn-secondary text-xs py-2 flex items-center justify-center gap-1.5 font-bold hover:scale-[1.01] transition-transform duration-150"
+                          className="w-full btn-secondary text-xs py-3 min-h-[44px] flex items-center justify-center gap-1.5 font-bold hover:bg-white"
                         >
                           ✉️ Request OTP Code from Donor
                         </button>
@@ -311,7 +320,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                             type="text"
                             maxLength={6}
                             disabled={loading}
-                            className="input-premium py-2.5 px-3 text-center text-sm font-mono tracking-widest font-bold uppercase placeholder:tracking-normal placeholder:font-sans"
+                            className="input-premium py-3 px-3 text-center text-base font-mono tracking-widest font-bold uppercase placeholder:tracking-normal placeholder:font-sans min-h-[44px]"
                             placeholder="Enter 6-Digit OTP"
                             value={otpMap[task.id] || ''}
                             onChange={(e) => {
@@ -325,22 +334,22 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                           type="button"
                           disabled={loading || (otpMap[task.id] || '').length !== 6}
                           onClick={() => handleVerifyOtp(task.id, 'CONFIRM_PICKUP')}
-                          className="w-full btn-primary py-2.5 text-xs font-bold shadow-md shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] transition-all"
+                          className="w-full btn-primary py-3.5 text-sm font-extrabold min-h-[44px] shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {loading ? 'Verifying...' : 'Verify Handover Code'}
+                          {loading ? 'Verifying Code...' : 'Verify Pickup Handover ✓'}
                         </button>
                       </div>
                     </div>
                   ) : uiStatus === 'DELIVERING' ? (
-                    <div className="space-y-4">
+                    <div className="space-y-4 bg-teal-50/50 p-4 rounded-xl border border-teal-200">
                       <div className="flex justify-between items-center">
-                        <p className="text-xs font-bold text-foreground uppercase tracking-wide">Secure Delivery Handover</p>
-                        <span className="badge-premium bg-primary/5 text-primary border border-primary/10 tracking-widest text-[9px] uppercase font-extrabold px-2">
-                          OTP CHECK
+                        <p className="text-xs font-extrabold text-teal-900 uppercase tracking-wide">NGO Delivery Handover</p>
+                        <span className="status-badge bg-teal-100 text-teal-800 border-teal-300 text-[10px]">
+                          FINAL HANDOVER
                         </span>
                       </div>
 
-                      <p className="text-[10px] text-muted-text font-medium leading-relaxed bg-surface-muted p-2.5 rounded-sm border border-border">
+                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed bg-white p-3 rounded-lg border border-teal-100">
                         Ask NGO coordinator to generate a Delivery Handover OTP from their dashboard and enter it below.
                       </p>
 
@@ -350,7 +359,7 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                             type="text"
                             maxLength={6}
                             disabled={loading}
-                            className="input-premium py-2.5 px-3 text-center text-sm font-mono tracking-widest font-bold uppercase placeholder:tracking-normal placeholder:font-sans"
+                            className="input-premium py-3 px-3 text-center text-base font-mono tracking-widest font-bold uppercase placeholder:tracking-normal placeholder:font-sans min-h-[44px]"
                             placeholder="Enter 6-Digit OTP"
                             value={otpMap[task.id] || ''}
                             onChange={(e) => {
@@ -364,26 +373,26 @@ export default function VolunteerAssignmentList({ assignments, updateAssignmentS
                           type="button"
                           disabled={loading || (otpMap[task.id] || '').length !== 6}
                           onClick={() => handleVerifyOtp(task.id, 'CONFIRM_DELIVERY')}
-                          className="w-full btn-primary py-2.5 text-xs font-bold shadow-md shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] transition-all"
+                          className="w-full btn-primary py-3.5 text-sm font-extrabold min-h-[44px] shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {loading ? 'Verifying...' : 'Verify Delivery Handover'}
+                          {loading ? 'Verifying...' : 'Verify Delivery & Complete 🏁'}
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <p className="text-xs font-bold text-foreground uppercase tracking-wide">Operational Transit Action</p>
+                      <p className="text-xs font-extrabold text-[#0b3c26] uppercase tracking-wide">Operational Transit Action</p>
                       {nextStatus ? (
                         <button
                           type="button"
                           disabled={loading}
-                          onClick={() => handleStatusUpdate(task.id, nextStatus)}
-                          className="w-full btn-primary py-3 shadow-md shadow-primary/10 hover:scale-[1.01] active:scale-[0.99] transition-transform duration-150"
+                          onClick={() => handleStatusUpdate(task, nextStatus)}
+                          className="w-full btn-primary py-3.5 text-sm font-extrabold min-h-[48px] shadow-md hover:scale-[1.01] active:scale-[0.99] transition-transform duration-150 flex items-center justify-center gap-2"
                         >
-                          {loading ? 'Updating...' : `Set status to ${nextStatus.replace(/_/g, ' ')}`}
+                          {loading ? 'Updating...' : `Set Status to ${nextStatus.replace(/_/g, ' ')} 🚀`}
                         </button>
                       ) : (
-                        <div className="bg-success-bg border border-success-border text-success text-xs font-bold p-4 rounded-md text-center animate-fade-in">
+                        <div className="bg-emerald-50 border border-emerald-200 text-[#0b3c26] text-xs font-bold p-4 rounded-xl text-center animate-fade-in">
                           🎉 Rescue task is fully completed!
                         </div>
                       )}

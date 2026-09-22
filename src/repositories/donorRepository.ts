@@ -23,4 +23,20 @@ export const donorRepository = {
   async count(args?: Prisma.DonorProfileCountArgs, tx: TxOrPrisma = prisma) {
     return tx.donorProfile.count(args);
   },
+
+  async updateVerificationStatus(
+    id: string,
+    data: { verificationStatus: 'VERIFIED' | 'REJECTED' | 'UNDER_REVIEW' | 'PENDING_VERIFICATION'; rejectionReason?: string },
+    tx: TxOrPrisma = prisma
+  ) {
+    return tx.donorProfile.update({
+      where: { id },
+      data: {
+        verificationStatus: data.verificationStatus,
+        rejectionReason: data.rejectionReason,
+        verificationApprovedAt: data.verificationStatus === 'VERIFIED' ? new Date() : undefined,
+      },
+    });
+  },
 };
+

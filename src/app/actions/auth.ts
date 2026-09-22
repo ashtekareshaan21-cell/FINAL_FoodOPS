@@ -3,6 +3,7 @@
 import { authService } from '@/services/authService';
 import { setSession, deleteSession, getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { auditService } from '@/services/auditService';
 import { prisma } from '@/lib/db';
 import { UserRole } from '@prisma/client';
@@ -138,5 +139,55 @@ export async function logout() {
     });
   }
   await deleteSession();
-  revalidatePath('/');
+  revalidatePath('/', 'layout');
+  redirect('/login');
 }
+
+export async function sendDonorPhoneOtpAction() {
+  const session = await getSession();
+  if (!session || session.role !== 'DONOR') {
+    return { success: false, error: 'Unauthorized.' };
+  }
+
+  try {
+    const res = await authService.sendDonorPhoneOtp(session.userId);
+    return res;
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to send OTP.';
+    return { success: false, error: message };
+  }
+}
+
+export async function verifyDonorPhoneOtpAction(otp: string) {
+  const session = await getSession();
+  if (!session || session.role !== 'DONOR') {
+    return { success: false, error: 'Unauthorized.' };
+  }
+
+  try {
+    const res = await authService.verifyDonorPhoneOtp(session.userId, otp);
+    revalidatePath('/donor');
+    return res;
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to verify OTP.';
+    return { success: false, error: message };
+  }
+}
+
+export async function getDonorPhoneStatus() {
+  const session = await getSession();
+  if (!session || session.role !== 'DONOR') return { isPhoneVerified: false, phoneNumber: '' };
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { isPhoneVerified: true, phoneNumber: true },
+  });
+
+  return {
+    isPhoneVerified: !!user?.isPhoneVerified,
+    phoneNumber: user?.phoneNumber || '',
+  };
+}
+

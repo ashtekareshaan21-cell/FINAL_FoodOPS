@@ -145,9 +145,7 @@ export default function KitchenScene() {
                 <div className="space-y-3 relative">
                   <div 
                     ref={cardRef1}
-                    className={`p-3.5 bg-surface border border-border rounded-md shadow-sm transition-all duration-300 relative z-20 ${
-                      mounted && !prefersReducedMotion() ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-                    }`}
+                    className="p-3.5 bg-surface border border-border rounded-md shadow-sm transition-all duration-300 relative z-20 opacity-100 scale-100"
                   >
                     <div className="flex justify-between items-start">
                       <span className="font-mono text-[10px] font-bold">#1042</span>
@@ -171,9 +169,7 @@ export default function KitchenScene() {
                 <div className="space-y-3 relative">
                   <div 
                     ref={cardRef2}
-                    className={`p-3.5 bg-surface border border-border rounded-md shadow-sm transition-all duration-300 relative z-20 ${
-                      mounted && !prefersReducedMotion() ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-                    }`}
+                    className="p-3.5 bg-surface border border-border rounded-md shadow-sm transition-all duration-300 relative z-20 opacity-100 scale-100"
                   >
                     <div className="flex justify-between items-start">
                       <span className="font-mono text-[10px] font-bold">#1043</span>

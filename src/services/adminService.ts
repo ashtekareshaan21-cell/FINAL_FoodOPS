@@ -19,13 +19,32 @@ export const adminService = {
   },
 
   async verifyNgo(adminUserId: string, ngoId: string) {
-    const updated = await ngoRepository.updateStatus(ngoId, {
-      status: 'VERIFIED',
-      verificationApprovedAt: new Date(),
+    const ngo = await ngoRepository.findById(ngoId);
+    if (!ngo) throw new Error('NGO profile not found.');
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const res = await tx.nGOProfile.update({
+        where: { id: ngoId },
+        data: {
+          status: 'VERIFIED',
+          verificationApprovedAt: new Date(),
+        },
+      });
+
+      await tx.user.update({
+        where: { id: ngo.userId },
+        data: { verificationStatus: 'VERIFIED' },
+      });
+
+      await tx.verificationRequest.updateMany({
+        where: { userId: ngo.userId, status: 'PENDING_VERIFICATION' },
+        data: { status: 'VERIFIED', reviewedAt: new Date(), reviewerId: adminUserId },
+      });
+
+      return res;
     });
 
-    const ngo = await ngoRepository.findById(ngoId);
-    if (ngo && ngo.user?.email) {
+    if (ngo.user?.email) {
       await emailService.sendNGOApprovedEmail(ngo.user.email, ngo.organizationName);
     }
 
@@ -42,10 +61,30 @@ export const adminService = {
   },
 
   async rejectNgo(adminUserId: string, ngoId: string, reason: string) {
-    const updated = await ngoRepository.updateStatus(ngoId, {
-      status: 'SUSPENDED',
-      rejectionReason: reason,
-      verificationRejectedAt: new Date(),
+    const ngo = await ngoRepository.findById(ngoId);
+    if (!ngo) throw new Error('NGO profile not found.');
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const res = await tx.nGOProfile.update({
+        where: { id: ngoId },
+        data: {
+          status: 'REJECTED',
+          rejectionReason: reason,
+          verificationRejectedAt: new Date(),
+        },
+      });
+
+      await tx.user.update({
+        where: { id: ngo.userId },
+        data: { verificationStatus: 'REJECTED' },
+      });
+
+      await tx.verificationRequest.updateMany({
+        where: { userId: ngo.userId, status: 'PENDING_VERIFICATION' },
+        data: { status: 'REJECTED', reviewedAt: new Date(), reviewerId: adminUserId, rejectionReason: reason },
+      });
+
+      return res;
     });
 
     await auditService.log(prisma, {
@@ -54,11 +93,165 @@ export const adminService = {
       action: 'NGO_REJECTED',
       entityType: 'NGOProfile',
       entityId: ngoId,
-      newValues: { status: 'SUSPENDED', rejectionReason: reason },
+      newValues: { status: 'REJECTED', rejectionReason: reason },
     });
 
     return updated;
   },
+
+  async verifyDonor(adminUserId: string, donorId: string) {
+    const donor = await prisma.donorProfile.findUnique({ where: { id: donorId } });
+    if (!donor) throw new Error('Donor profile not found.');
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const res = await tx.donorProfile.update({
+        where: { id: donorId },
+        data: {
+          verificationStatus: 'VERIFIED',
+          verificationApprovedAt: new Date(),
+        },
+      });
+
+      await tx.user.update({
+        where: { id: donor.userId },
+        data: { verificationStatus: 'VERIFIED', isPhoneVerified: true },
+      });
+
+      await tx.verificationRequest.updateMany({
+        where: { userId: donor.userId, status: 'PENDING_VERIFICATION' },
+        data: { status: 'VERIFIED', reviewedAt: new Date(), reviewerId: adminUserId },
+      });
+
+      return res;
+    });
+
+    await auditService.log(prisma, {
+      userId: adminUserId,
+      role: 'ADMIN',
+      action: 'DONOR_APPROVED',
+      entityType: 'DonorProfile',
+      entityId: donorId,
+      newValues: { status: 'VERIFIED' },
+    });
+
+    return updated;
+  },
+
+  async rejectDonor(adminUserId: string, donorId: string, reason: string) {
+    const donor = await prisma.donorProfile.findUnique({ where: { id: donorId } });
+    if (!donor) throw new Error('Donor profile not found.');
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const res = await tx.donorProfile.update({
+        where: { id: donorId },
+        data: {
+          verificationStatus: 'REJECTED',
+          rejectionReason: reason,
+        },
+      });
+
+      await tx.user.update({
+        where: { id: donor.userId },
+        data: { verificationStatus: 'REJECTED' },
+      });
+
+      await tx.verificationRequest.updateMany({
+        where: { userId: donor.userId, status: 'PENDING_VERIFICATION' },
+        data: { status: 'REJECTED', reviewedAt: new Date(), reviewerId: adminUserId, rejectionReason: reason },
+      });
+
+      return res;
+    });
+
+    await auditService.log(prisma, {
+      userId: adminUserId,
+      role: 'ADMIN',
+      action: 'DONOR_REJECTED',
+      entityType: 'DonorProfile',
+      entityId: donorId,
+      newValues: { status: 'REJECTED', rejectionReason: reason },
+    });
+
+    return updated;
+  },
+
+  async verifyVolunteer(adminUserId: string, volunteerId: string) {
+    const volunteer = await prisma.volunteer.findUnique({ where: { id: volunteerId } });
+    if (!volunteer) throw new Error('Volunteer profile not found.');
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const res = await tx.volunteer.update({
+        where: { id: volunteerId },
+        data: {
+          verificationStatus: 'VERIFIED',
+          rejectionReason: null,
+        },
+      });
+
+      await tx.user.update({
+        where: { id: volunteer.userId },
+        data: { verificationStatus: 'VERIFIED', isPhoneVerified: true },
+      });
+
+      await tx.verificationRequest.updateMany({
+        where: { userId: volunteer.userId, status: 'PENDING_VERIFICATION' },
+        data: { status: 'VERIFIED', reviewedAt: new Date(), reviewerId: adminUserId },
+      });
+
+      return res;
+    });
+
+    await auditService.log(prisma, {
+      userId: adminUserId,
+      role: 'ADMIN',
+      action: 'VOLUNTEER_APPROVED',
+      entityType: 'Volunteer',
+      entityId: volunteerId,
+      newValues: { status: 'VERIFIED' },
+    });
+
+    return updated;
+  },
+
+  async rejectVolunteer(adminUserId: string, volunteerId: string, reason: string) {
+    const volunteer = await prisma.volunteer.findUnique({ where: { id: volunteerId } });
+    if (!volunteer) throw new Error('Volunteer profile not found.');
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const res = await tx.volunteer.update({
+        where: { id: volunteerId },
+        data: {
+          verificationStatus: 'REJECTED',
+          rejectionReason: reason,
+        },
+      });
+
+      await tx.user.update({
+        where: { id: volunteer.userId },
+        data: { verificationStatus: 'REJECTED' },
+      });
+
+      await tx.verificationRequest.updateMany({
+        where: { userId: volunteer.userId, status: 'PENDING_VERIFICATION' },
+        data: { status: 'REJECTED', reviewedAt: new Date(), reviewerId: adminUserId, rejectionReason: reason },
+      });
+
+      return res;
+    });
+
+    await auditService.log(prisma, {
+      userId: adminUserId,
+      role: 'ADMIN',
+      action: 'VOLUNTEER_REJECTED',
+      entityType: 'Volunteer',
+      entityId: volunteerId,
+      newValues: { status: 'REJECTED', rejectionReason: reason },
+    });
+
+    return updated;
+  },
+
+
 
   async getAdminStats() {
     const totalDonors = await donorRepository.count();
@@ -113,7 +306,12 @@ export const adminService = {
 
   async getAllDonors() {
     return donorRepository.findMany({
-      include: { user: true },
+      include: {
+        user: true,
+        _count: {
+          select: { donations: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   },
@@ -140,8 +338,44 @@ export const adminService = {
       include: {
         donor: true,
         acceptedNgo: true,
+        assignment: {
+          include: {
+            volunteer: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  },
+
+  async getRecoveryDonations() {
+    return donationRepository.findMany({
+      where: {
+        status: {
+          in: ['EXPIRED', 'RECOVERY_ESCALATED', 'ORGANIC_RECOVERY'],
+        },
+      },
+      include: {
+        donor: true,
+        acceptedNgo: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  },
+
+  async getAllImpactRecords() {
+    return prisma.impactRecord.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  },
+
+  async getAllVerificationRequests() {
+    return prisma.verificationRequest.findMany({
+      include: {
+        user: true,
+        documents: true,
+      },
+      orderBy: { submittedAt: 'desc' },
     });
   },
 

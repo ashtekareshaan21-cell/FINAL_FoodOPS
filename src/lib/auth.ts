@@ -33,7 +33,10 @@ function base64UrlDecode(str: string): string {
   return Buffer.from(str, 'base64').toString();
 }
 
-export function signToken(payload: Omit<JWTPayload, 'exp'>, expiresInSeconds = 86400): string {
+// Long-lived persistent session duration (1 year in seconds) so the user stays logged in until explicit sign out
+export const SESSION_MAX_AGE_SECONDS = 365 * 24 * 60 * 60; // 31,536,000s (1 year)
+
+export function signToken(payload: Omit<JWTPayload, 'exp'>, expiresInSeconds = SESSION_MAX_AGE_SECONDS): string {
   const header = { alg: 'HS256', typ: 'JWT' };
   const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
   const fullPayload = { ...payload, exp };
@@ -90,20 +93,39 @@ export async function getSession(): Promise<JWTPayload | null> {
 }
 
 export async function setSession(payload: Omit<JWTPayload, 'exp'>) {
-  const token = signToken(payload);
+  const token = signToken(payload, SESSION_MAX_AGE_SECONDS);
   const cookieStore = await cookies();
+  const expiresDate = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
+  
   cookieStore.set('session', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 86400, // 1 day
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    expires: expiresDate,
   });
 }
 
 export async function deleteSession() {
   const cookieStore = await cookies();
-  cookieStore.delete('session');
+  try {
+    cookieStore.delete('session');
+  } catch {
+    // Ignore in read-only contexts
+  }
+  try {
+    cookieStore.set('session', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+      expires: new Date(0),
+    });
+  } catch {
+    // Ignore in read-only contexts
+  }
 }
 
 export function isAdminPortalEnabled(): boolean {

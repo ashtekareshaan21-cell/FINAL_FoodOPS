@@ -1,8 +1,20 @@
+export const dynamic = 'force-dynamic';
+
 import LoginForm from './LoginForm';
 import Navbar from '@/components/Navbar';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
+import { getSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await getSession();
+  if (session) {
+    if (session.role === 'DONOR') redirect('/donor');
+    if (session.role === 'NGO') redirect('/ngo');
+    if (session.role === 'VOLUNTEER') redirect('/volunteer');
+    if (session.role === 'ADMIN') redirect('/admin');
+    redirect('/');
+  }
   return (
     <div className="min-h-screen bg-transparent flex flex-col relative">
       <FoodOpsBackground variant="auth" />

@@ -85,7 +85,7 @@ export function DeliveryRouteTracker({ status, className = '' }: DeliveryRouteTr
     const anim = animate(obj, {
       progress: endPercent,
       duration: isActive ? 5000 : 1500,
-      ease: 'inOut(quad)',
+      ease: 'inOutQuad',
       loop: isActive,
       onRender: () => {
         updatePosition(obj.progress);

@@ -9,9 +9,9 @@ export const MOTION = {
   },
   easing: {
     bounce: 'spring(1, 80, 10, 0)', // Spring for micro-interactions and notifications
-    smooth: 'out(cubic)',           // Standard smooth easing
+    smooth: 'outCubic',             // Standard smooth easing
     springCompact: 'spring(1, 90, 12, 0)',
-    standard: 'out(quad)',          // Light transitions
-    inOut: 'inOut(quad)',           // Subtle slow-in-slow-out
+    standard: 'outQuad',            // Light transitions
+    inOut: 'inOutQuad',             // Subtle slow-in-slow-out
   }
 };

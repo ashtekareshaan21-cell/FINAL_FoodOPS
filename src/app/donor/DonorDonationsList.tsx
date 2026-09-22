@@ -151,10 +151,8 @@ function DonationProgressStepper({ status }: { status: string }) {
 
 export default function DonorDonationsList({ donations }: DonorDonationsListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const el = containerRef.current;
     if (!el || prefersReducedMotion()) return;
 
@@ -180,9 +178,7 @@ export default function DonorDonationsList({ donations }: DonorDonationsListProp
         return (
           <div
             key={donation.id}
-            className={`donation-card bg-surface border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 flex flex-col md:flex-row ${
-              mounted && !prefersReducedMotion() ? 'opacity-0' : 'opacity-100'
-            }`}
+            className="donation-card bg-surface border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.005] hover:-translate-y-0.5 transition-all duration-300 flex flex-col md:flex-row opacity-100"
           >
             {/* Food image */}
             <div className="relative w-full md:w-56 h-48 md:h-auto flex-shrink-0 bg-surface-muted">

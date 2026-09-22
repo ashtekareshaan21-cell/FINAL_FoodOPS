@@ -15,9 +15,12 @@ export async function POST(req: NextRequest) {
       if (!file) {
         return NextResponse.json(
           {
+            success: false,
+            hasReadableText: false,
             text: '',
+            lines: [],
             detectedLabels: [],
-            confidence: 0,
+            confidence: 'low',
             source: 'ocr',
             status: 'FAILED',
             error: 'No image file provided in request.'
@@ -36,9 +39,12 @@ export async function POST(req: NextRequest) {
     } else {
       return NextResponse.json(
         {
+          success: false,
+          hasReadableText: false,
           text: '',
+          lines: [],
           detectedLabels: [],
-          confidence: 0,
+          confidence: 'low',
           source: 'ocr',
           status: 'FAILED',
           error: 'Content-Type must be multipart/form-data or application/json.'
@@ -50,9 +56,12 @@ export async function POST(req: NextRequest) {
     if (!base64Image) {
       return NextResponse.json(
         {
+          success: false,
+          hasReadableText: false,
           text: '',
+          lines: [],
           detectedLabels: [],
-          confidence: 0,
+          confidence: 'low',
           source: 'ocr',
           status: 'FAILED',
           error: 'Image data is empty.'
@@ -73,12 +82,15 @@ export async function POST(req: NextRequest) {
     console.error('[API /api/ocr error]', errorMessage);
     return NextResponse.json(
       {
+        success: false,
+        hasReadableText: false,
         text: '',
+        lines: [],
         detectedLabels: [],
-        confidence: 0,
+        confidence: 'low',
         source: 'ocr',
         status: 'FAILED',
-        error: errorMessage
+        error: 'Failed to process image for text extraction.'
       },
       { status: 500 }
     );

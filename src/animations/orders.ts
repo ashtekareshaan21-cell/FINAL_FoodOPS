@@ -28,6 +28,6 @@ export function animateStatusPulse(target: any) {
     scale: [1, 1.04, 1],
     duration: MOTION.duration.slow,
     loop: true,
-    ease: 'inOut(sine)',
+    ease: 'inOutSine',
   });
 }

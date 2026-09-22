@@ -10,6 +10,8 @@ import DonorDonationsList from './DonorDonationsList';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 import VerificationBanner from '@/components/VerificationBanner';
 
+import DonorPhoneOtpBanner from '@/components/DonorPhoneOtpBanner';
+
 export default async function DonorDashboard() {
   const session = await getSession();
   if (!session || session.role !== 'DONOR') {
@@ -18,6 +20,7 @@ export default async function DonorDashboard() {
 
   const donor = await prisma.donorProfile.findUnique({
     where: { userId: session.userId },
+    include: { user: true },
   });
 
   if (!donor) {
@@ -36,6 +39,11 @@ export default async function DonorDashboard() {
           status={donor.verificationStatus}
           role="DONOR"
           rejectionReason={donor.rejectionReason}
+        />
+
+        <DonorPhoneOtpBanner
+          isPhoneVerified={donor.user.isPhoneVerified}
+          phoneNumber={donor.user.phoneNumber}
         />
 
         {/* Header Section */}

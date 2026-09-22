@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword } from '@/lib/password';
 import { prisma } from '@/lib/db';
 import { RegisterDonorInput, RegisterNGOInput, RegisterVolunteerInput, LoginInput } from '@/app/actions/auth';
 import { auditService } from './auditService';
+import crypto from 'crypto';
 
 export const authService = {
   async registerDonor(input: RegisterDonorInput) {
@@ -26,7 +27,7 @@ export const authService = {
         role: 'DONOR',
         accountStatus: 'ACTIVE',
         verificationStatus: 'PENDING_VERIFICATION',
-        isPhoneVerified: true,
+        isPhoneVerified: false,
         isEmailVerified: true,
       }, tx);
 
@@ -290,7 +291,7 @@ export const authService = {
         isEmailVerified: true,
       },
     });
-    await prisma.donorProfile.upsert({
+    const donorProfile = await prisma.donorProfile.upsert({
       where: { userId: donorUser.id },
       update: {
         organizationName: 'Grand Banquet Hall',
@@ -340,7 +341,7 @@ export const authService = {
         city: 'Bengaluru',
         baseLatitude: 12.9616,
         baseLongitude: 77.5846,
-        serviceRadiusKm: 10,
+        serviceRadiusKm: 15,
         availability: 'AVAILABLE',
         acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
         contactPerson: 'Preeti Nair',
@@ -355,7 +356,7 @@ export const authService = {
         city: 'Bengaluru',
         baseLatitude: 12.9616,
         baseLongitude: 77.5846,
-        serviceRadiusKm: 10,
+        serviceRadiusKm: 15,
         availability: 'AVAILABLE',
         acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
         contactPerson: 'Preeti Nair',
@@ -494,6 +495,35 @@ export const authService = {
         verificationStatus: 'VERIFIED',
       },
     });
+
+    // 7. Seed active demo surplus donation so emulation is immediately ready
+    const existingActiveDonation = await prisma.donation.findFirst({
+      where: {
+        donorId: donorProfile.id,
+        status: 'AVAILABLE',
+      },
+    });
+
+    if (!existingActiveDonation) {
+      await prisma.donation.create({
+        data: {
+          donorId: donorProfile.id,
+          title: 'Fresh Buffet Meal Surplus',
+          description: 'Freshly prepared vegetarian catering surplus, securely packed in sealed trays.',
+          foodCategory: 'COOKED_VEG',
+          vegNonVegMixed: 'VEG',
+          quantity: '25',
+          quantityUnit: 'kg',
+          estimatedServings: 50,
+          status: 'AVAILABLE',
+          pickupAddress: donorProfile.address,
+          pickupLatitude: donorProfile.latitude,
+          pickupLongitude: donorProfile.longitude,
+          pickupAvailableAt: new Date(),
+          pickupDeadlineAt: new Date(Date.now() + 12 * 60 * 60 * 1000),
+        },
+      });
+    }
   },
 
   async login(input: LoginInput) {
@@ -569,5 +599,110 @@ export const authService = {
     });
 
     return user;
+  },
+
+  async sendDonorPhoneOtp(userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found.');
+
+    // Check rate limiting: existing active OTP within last 60 seconds
+    const existing = await prisma.oTPAttempt.findFirst({
+      where: {
+        userId,
+        purpose: 'DONOR_PHONE_VERIFICATION',
+        createdAt: { gte: new Date(Date.now() - 60 * 1000) },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existing) {
+      throw new Error('Please wait 60 seconds before requesting another OTP.');
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min expiry
+
+    await prisma.oTPAttempt.create({
+      data: {
+        userId,
+        otp,
+        purpose: 'DONOR_PHONE_VERIFICATION',
+        expiresAt,
+      },
+    });
+
+    await auditService.log(prisma, {
+      userId,
+      role: user.role,
+      action: 'DONOR_PHONE_OTP_SENT',
+      entityType: 'User',
+      entityId: userId,
+    });
+
+    return {
+      success: true,
+      message: `OTP code sent to ${user.phoneNumber}.`,
+      devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
+    };
+  },
+
+  async verifyDonorPhoneOtp(userId: string, otpInput: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found.');
+
+    const attempt = await prisma.oTPAttempt.findFirst({
+      where: {
+        userId,
+        purpose: 'DONOR_PHONE_VERIFICATION',
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!attempt) {
+      throw new Error('OTP expired or not found. Please request a new code.');
+    }
+
+    if (attempt.attemptCount >= 5) {
+      throw new Error('Too many invalid attempts. Please request a new OTP.');
+    }
+
+    // Increment attempt count
+    await prisma.oTPAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        attemptCount: { increment: 1 },
+        lastAttemptAt: new Date(),
+      },
+    });
+
+    if (attempt.otp !== otpInput.trim()) {
+      throw new Error('Invalid OTP code.');
+    }
+
+    // Mark attempt as used and verify user's phone
+    await prisma.oTPAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        isUsed: true,
+        usedAt: new Date(),
+      },
+    });
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isPhoneVerified: true },
+    });
+
+    await auditService.log(prisma, {
+      userId,
+      role: user.role,
+      action: 'DONOR_PHONE_VERIFIED',
+      entityType: 'User',
+      entityId: userId,
+    });
+
+    return { success: true };
   },
 };

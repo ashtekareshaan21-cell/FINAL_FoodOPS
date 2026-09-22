@@ -4,18 +4,36 @@ import { prisma } from '@/lib/db';
 import RegisterForm from './RegisterForm';
 import Navbar from '@/components/Navbar';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
+import { getSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 export default async function RegisterPage() {
+  const session = await getSession();
+  if (session) {
+    if (session.role === 'DONOR') redirect('/donor');
+    if (session.role === 'NGO') redirect('/ngo');
+    if (session.role === 'VOLUNTEER') redirect('/volunteer');
+    if (session.role === 'ADMIN') redirect('/admin');
+    redirect('/');
+  }
+
   let ngos: { id: string; organizationName: string }[] = [];
   try {
-    ngos = await prisma.nGOProfile.findMany({
+    const fetchedNgos = await prisma.nGOProfile.findMany({
       select: {
         id: true,
         organizationName: true,
       },
-      orderBy: {
-        organizationName: 'asc',
-      },
+      orderBy: [
+        { status: 'desc' },
+        { organizationName: 'asc' },
+      ],
+    });
+    // Ensure the registered Bengaluru NGO (Save Food Foundation) is prioritized at top of list
+    ngos = fetchedNgos.sort((a, b) => {
+      if (a.organizationName.includes('Save Food Foundation')) return -1;
+      if (b.organizationName.includes('Save Food Foundation')) return 1;
+      return 0;
     });
   } catch (err) {
     console.error('Failed to fetch NGOs for registration page:', err);

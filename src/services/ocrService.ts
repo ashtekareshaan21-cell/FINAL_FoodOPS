@@ -1,24 +1,38 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import * as crypto from 'crypto';
 
 export interface OCRResult {
+  success: boolean;
+  hasReadableText: boolean;
   text: string;
+  lines: string[];
   detectedLabels: string[];
-  confidence: number;
+  confidence: 'high' | 'medium' | 'low';
+  message?: string;
   source: 'ocr';
   status: 'SUCCESS' | 'FAILED' | 'API_KEY_MISSING' | 'EMPTY_RESULT';
   error?: string;
 }
 
-const OCR_PROMPT = `You are a high-accuracy OCR engine. Analyze the provided image and extract all visible text, printed labels, handwritten text, brand names, expiry/preparation dates, ingredient lists, or numeric markings.
+const STRICT_OCR_PROMPT = `You are a strict, high-accuracy optical character recognition (OCR) engine.
+Extract ONLY text that is visibly and legibly present in the provided image.
 
-Strictly output ONLY a valid JSON object with the following schema:
+STRICT RULES:
+1. Extract ONLY visible text printed or handwritten on packages, labels, containers, or tags.
+2. Do NOT infer, guess, autocomplete, correct, translate, or invent text.
+3. Preserve the visible text as closely as possible to what is actually printed.
+4. If a word, number, or character is partially visible, obscured, or uncertain, mark it as [UNCLEAR] rather than guessing.
+5. If there is NO readable packaging or printed text visible in the image, return an empty text string ("") and empty arrays.
+6. Do NOT provide product descriptions, food safety conclusions, nutritional claims, expiry predictions, or any information that is not visibly readable.
+7. Return strictly valid JSON with this schema:
 {
-  "text": "Full extracted visible text concatenated into readable prose, or empty string if no text visible",
-  "detectedLabels": ["array of short string snippets representing individual labels, titles, dates, or key terms found"],
-  "confidence": 85 // number between 0 and 100 representing confidence in text extraction
+  "text": "Full extracted visible text preserving linebreaks, or empty string if no readable text",
+  "lines": ["each individual line of visible text exactly as seen"],
+  "detectedLabels": ["specific short printed words, dates, batch numbers, or brand terms visibly seen"],
+  "hasReadableText": true,
+  "confidence": "high"
 }
-
-Do not make food safety determinations or health claims. Extract ONLY observable printed or handwritten text and visual labels.
+Note: "confidence" must be strictly one of "high", "medium", or "low" representing visual character legibility.
 No markdown formatting, code blocks, or text outside the JSON object.`;
 
 export function validateMagicNumbers(buffer: Buffer): boolean {
@@ -59,9 +73,12 @@ export const ocrService = {
 
     if (!allowedMimeTypes.includes(mimeType)) {
       return {
+        success: false,
+        hasReadableText: false,
         text: '',
+        lines: [],
         detectedLabels: [],
-        confidence: 0,
+        confidence: 'low',
         source: 'ocr',
         status: 'FAILED',
         error: 'Unsupported image format. Allowed formats: JPEG, PNG, WEBP.'
@@ -73,9 +90,12 @@ export const ocrService = {
       buffer = Buffer.from(base64Image, 'base64');
     } catch {
       return {
+        success: false,
+        hasReadableText: false,
         text: '',
+        lines: [],
         detectedLabels: [],
-        confidence: 0,
+        confidence: 'low',
         source: 'ocr',
         status: 'FAILED',
         error: 'Invalid base64 image data.'
@@ -84,9 +104,12 @@ export const ocrService = {
 
     if (buffer.length === 0) {
       return {
+        success: false,
+        hasReadableText: false,
         text: '',
+        lines: [],
         detectedLabels: [],
-        confidence: 0,
+        confidence: 'low',
         source: 'ocr',
         status: 'EMPTY_RESULT',
         error: 'Image file is empty (0 bytes).'
@@ -95,9 +118,12 @@ export const ocrService = {
 
     if (buffer.length > 4 * 1024 * 1024) {
       return {
+        success: false,
+        hasReadableText: false,
         text: '',
+        lines: [],
         detectedLabels: [],
-        confidence: 0,
+        confidence: 'low',
         source: 'ocr',
         status: 'FAILED',
         error: 'Image size exceeds maximum limit of 4MB.'
@@ -106,30 +132,32 @@ export const ocrService = {
 
     if (!validateMagicNumbers(buffer)) {
       return {
+        success: false,
+        hasReadableText: false,
         text: '',
+        lines: [],
         detectedLabels: [],
-        confidence: 0,
+        confidence: 'low',
         source: 'ocr',
         status: 'FAILED',
         error: 'Corrupted image file or invalid binary signature.'
       };
     }
 
+    // Safe server-side telemetry (never logs API keys, auth headers, or raw base64 data)
+    const imageFingerprint = crypto.createHash('sha256').update(buffer).digest('hex').substring(0, 12);
+    console.log(`[OCR Pipeline] Request received: MIME=${normalizedMime}, Size=${buffer.length} bytes, Fingerprint=${imageFingerprint}`);
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey.trim() === '' || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-      if (process.env.NODE_ENV !== 'test') {
-        return {
-          text: 'Visual Inspection Label: Fresh Prepared Food (Packaging & Safety Inspected)',
-          detectedLabels: ['Prepared Meal', 'Fresh Batch', 'Food Container', 'Visual Inspection Passed'],
-          confidence: 90,
-          source: 'ocr',
-          status: 'SUCCESS'
-        };
-      }
       return {
+        success: false,
+        hasReadableText: false,
         text: '',
+        lines: [],
         detectedLabels: [],
-        confidence: 0,
+        confidence: 'low',
+        message: 'GEMINI_API_KEY is missing or not configured in environment.',
         source: 'ocr',
         status: 'API_KEY_MISSING',
         error: 'GEMINI_API_KEY is missing or not configured in environment.'
@@ -138,9 +166,9 @@ export const ocrService = {
 
     const candidateModels = Array.from(new Set([
       process.env.GEMINI_MODEL,
-      'gemini-flash-latest',
       'gemini-3.6-flash',
       'gemini-3.5-flash',
+      'gemini-flash-latest',
       'gemini-2.5-flash-lite',
       'gemini-2.5-flash',
       'gemini-1.5-flash',
@@ -150,6 +178,7 @@ export const ocrService = {
 
     for (const modelName of candidateModels) {
       try {
+        console.log(`[OCR Pipeline] Calling model "${modelName}" for image ${imageFingerprint}`);
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
           model: modelName,
@@ -165,18 +194,22 @@ export const ocrService = {
               mimeType: normalizedMime,
             },
           },
-          OCR_PROMPT,
+          STRICT_OCR_PROMPT,
         ]);
 
         const responseText = response.response.text();
         if (!responseText || responseText.trim() === '') {
+          console.log(`[OCR Pipeline] Model "${modelName}" returned empty response for image ${imageFingerprint}`);
           return {
+            success: true,
+            hasReadableText: false,
             text: '',
+            lines: [],
             detectedLabels: [],
-            confidence: 0,
+            confidence: 'low',
+            message: 'No clearly readable packaging text detected.',
             source: 'ocr',
-            status: 'EMPTY_RESULT',
-            error: 'No text extracted from the image.'
+            status: 'EMPTY_RESULT'
           };
         }
 
@@ -189,50 +222,72 @@ export const ocrService = {
 
         const parsed = JSON.parse(cleaned);
 
-        const text = typeof parsed.text === 'string' ? parsed.text.trim() : '';
-        const detectedLabels = Array.isArray(parsed.detectedLabels)
-          ? parsed.detectedLabels.filter((x: unknown) => typeof x === 'string' && x.trim().length > 0)
+        const rawText = typeof parsed.text === 'string' ? parsed.text.trim() : '';
+        const rawLines = Array.isArray(parsed.lines)
+          ? parsed.lines.filter((x: unknown) => typeof x === 'string' && x.trim().length > 0).map((x: string) => x.trim())
+          : (rawText ? rawText.split('\n').map((l: string) => l.trim()).filter(Boolean) : []);
+        const rawLabels = Array.isArray(parsed.detectedLabels)
+          ? parsed.detectedLabels.filter((x: unknown) => typeof x === 'string' && x.trim().length > 0).map((x: string) => x.trim())
           : [];
-        const confidence = typeof parsed.confidence === 'number' && parsed.confidence >= 0 && parsed.confidence <= 100
-          ? Math.round(parsed.confidence)
-          : (text || detectedLabels.length > 0 ? 80 : 0);
 
-        const isEmpty = !text && detectedLabels.length === 0;
+        // Determine confidence: strict readability metric ("high" | "medium" | "low")
+        let confidence: 'high' | 'medium' | 'low' = 'low';
+        if (parsed.confidence === 'high' || parsed.confidence === 'medium' || parsed.confidence === 'low') {
+          confidence = parsed.confidence;
+        } else if (typeof parsed.confidence === 'number') {
+          confidence = parsed.confidence >= 75 ? 'high' : (parsed.confidence >= 40 ? 'medium' : 'low');
+        } else if (rawText.length > 0) {
+          confidence = 'medium';
+        }
 
+        const hasReadableText = (Boolean(parsed.hasReadableText) || rawText.length > 0) && rawText.length > 0;
+
+        if (!hasReadableText || (rawText === '' && rawLabels.length === 0)) {
+          console.log(`[OCR Pipeline] No visible text found on image ${imageFingerprint}`);
+          return {
+            success: true,
+            hasReadableText: false,
+            text: '',
+            lines: [],
+            detectedLabels: [],
+            confidence: 'low',
+            message: 'No clearly readable packaging text detected.',
+            source: 'ocr',
+            status: 'EMPTY_RESULT'
+          };
+        }
+
+        console.log(`[OCR Pipeline] Success for ${imageFingerprint}: ${rawText.length} chars, ${rawLines.length} lines, confidence=${confidence}`);
         return {
-          text,
-          detectedLabels,
-          confidence: isEmpty ? 0 : confidence,
+          success: true,
+          hasReadableText: true,
+          text: rawText,
+          lines: rawLines,
+          detectedLabels: rawLabels,
+          confidence,
           source: 'ocr',
-          status: isEmpty ? 'EMPTY_RESULT' : 'SUCCESS'
+          status: 'SUCCESS'
         };
       } catch (err: unknown) {
         lastError = err;
-        console.warn(`[OCR Service] Gemini model "${modelName}" failed, trying next candidate...`, err instanceof Error ? err.message : err);
+        console.warn(`[OCR Pipeline] Model "${modelName}" failed for image ${imageFingerprint}:`, err instanceof Error ? err.message : err);
       }
     }
 
     const errorMessage = lastError instanceof Error ? lastError.message : 'Unknown OCR processing error';
-    console.error('[OCR Service Error]', errorMessage);
-
-    if (process.env.NODE_ENV !== 'test') {
-      return {
-        text: 'Food Label: Fresh Prepared Meal (Visual Batch Tag: Inspected & Verified for Surplus Donation)',
-        detectedLabels: ['Prepared Food', 'Food Packaging', 'Fresh Batch', 'Visual Inspection Passed'],
-        confidence: 92,
-        source: 'ocr',
-        status: 'SUCCESS'
-      };
-    }
+    console.error(`[OCR Pipeline] All models failed for image ${imageFingerprint}:`, errorMessage);
 
     return {
+      success: false,
+      hasReadableText: false,
       text: '',
+      lines: [],
       detectedLabels: [],
-      confidence: 0,
+      confidence: 'low',
+      message: 'Could not scan packaging text from the image. You can enter details manually.',
       source: 'ocr',
       status: 'FAILED',
       error: errorMessage
     };
   }
 };
-

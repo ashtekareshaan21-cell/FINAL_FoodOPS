@@ -461,7 +461,7 @@ export const donationService = {
       where: {
         acceptedNgoId: ngo.id,
         status: {
-          in: ['COMPLETED', 'CANCELLED'],
+          in: ['COMPLETED', 'CANCELLED', 'EXPIRED', 'RECOVERY_ESCALATED', 'ORGANIC_RECOVERY'],
         },
       },
       include: {
@@ -470,6 +470,9 @@ export const donationService = {
           include: {
             volunteer: true,
           },
+        },
+        statusHistory: {
+          orderBy: { changedAt: 'asc' },
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -575,6 +578,7 @@ export const donationService = {
         },
       },
       include: {
+        ngo: true,
         donation: {
           include: {
             donor: {
