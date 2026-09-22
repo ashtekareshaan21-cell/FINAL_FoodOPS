@@ -143,12 +143,16 @@ export const donationService = {
 
     const ngoEmail = assignment.ngo.user.email;
     const donationTitle = assignment.donation.title;
-    await emailService.sendPickupOtpEmail(ngoEmail, donationTitle, otpVal);
+    try {
+      await emailService.sendPickupOtpEmail(ngoEmail, donationTitle, otpVal);
+    } catch (emailErr) {
+      console.warn('Delivery OTP email send failed (non-critical):', emailErr);
+    }
 
     return {
       success: true,
       otp: otpVal,
-      message: 'Delivery Verification OTP generated successfully and sent to NGO email.',
+      message: 'Delivery Verification OTP generated successfully.',
     };
   },
 
@@ -1059,12 +1063,16 @@ export const donationService = {
 
     const donorEmail = assignment.donation.donor.user.email;
     const donationTitle = assignment.donation.title;
-    await emailService.sendPickupOtpEmail(donorEmail, donationTitle, otpVal);
+    try {
+      await emailService.sendPickupOtpEmail(donorEmail, donationTitle, otpVal);
+    } catch (emailErr) {
+      console.warn('Pickup OTP email send failed (non-critical):', emailErr);
+    }
 
     if (user.role === 'VOLUNTEER') {
       return {
         success: true,
-        message: 'A secure handover OTP has been generated and sent to the donor.',
+        message: 'OTP has been generated. Ask the donor to open their portal and click "View Handover OTP".',
       };
     } else {
       return {
