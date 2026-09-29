@@ -88,7 +88,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
                   `${stats.foodWeightKg || 0} kg`
                 )}
               </p>
-              <p className="mt-1.5 text-xs text-muted-text leading-normal">Surplus weight collected and safely distributed.</p>
+              <p className="mt-1.5 text-xs text-muted-text leading-normal">Total surplus food weight rescued via direct delivery and organic recovery.</p>
             </div>
           </div>
 
@@ -108,7 +108,7 @@ export default function EsgMetrics({ stats }: EsgMetricsProps) {
                   `${stats.completedRescues || 0}`
                 )}
               </p>
-              <p className="mt-1.5 text-xs text-muted-text leading-normal">Successful end-to-end driver transit deliveries.</p>
+              <p className="mt-1.5 text-xs text-muted-text leading-normal">Rescues completed via direct delivery or biogas/organic recovery.</p>
             </div>
           </div>
 

@@ -260,9 +260,14 @@ export const adminService = {
     const pendingNgos = await ngoRepository.count({ where: { status: 'PENDING_VERIFICATION' } });
     const totalVolunteers = await volunteerRepository.count();
     const totalDonations = await donationRepository.count();
-    const completedRescues = await donationRepository.count({ where: { status: 'COMPLETED' } });
+    // Count all donations that were successfully handled (completed delivery OR diverted to biogas/organic recovery)
+    const completedRescues = await donationRepository.count({
+      where: {
+        status: { in: ['COMPLETED', 'EXPIRED', 'ORGANIC_RECOVERY'] },
+      },
+    });
 
-    // Aggregate rescue impact (non-biogas)
+    // Aggregate rescue impact (non-biogas, i.e. direct food delivery)
     const rescueImpact = await donationRepository.aggregateImpact({
       where: {
         NOT: { calculationMethod: 'BIOGAS_RECOVERY_2026' },
@@ -281,12 +286,15 @@ export const adminService = {
       },
       _sum: {
         co2EquivalentKg: true,
+        waterSavedLiters: true,
         foodWeightKg: true,
       },
     });
 
     const rescueWeight = rescueImpact._sum?.foodWeightKg || 0;
     const divertedWeight = recoveryImpact._sum?.foodWeightKg || 0;
+    // Total weight rescued = direct delivery + biogas/organic diversion (all food handled)
+    const totalFoodWeightKg = rescueWeight + divertedWeight;
 
     return {
       totalDonors,
@@ -297,8 +305,8 @@ export const adminService = {
       totalDonations,
       completedRescues,
       co2SavedKg: (rescueImpact._sum?.co2EquivalentKg || 0) + (recoveryImpact._sum?.co2EquivalentKg || 0),
-      waterSavedLiters: rescueImpact._sum?.waterSavedLiters || 0,
-      foodWeightKg: rescueWeight,
+      waterSavedLiters: (rescueImpact._sum?.waterSavedLiters || 0) + (recoveryImpact._sum?.waterSavedLiters || 0),
+      foodWeightKg: totalFoodWeightKg,
       divertedWeightKg: divertedWeight,
       biogasGeneratedKwh: divertedWeight * 0.25,
     };

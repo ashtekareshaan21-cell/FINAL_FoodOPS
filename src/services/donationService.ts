@@ -752,7 +752,23 @@ export const donationService = {
         isCompleted = true;
         auditAction = 'DONATION_COMPLETED';
 
-        const weightKg = parseFloat(assignment.donation.quantity) || 10.0;
+        const parsedQty = parseFloat(assignment.donation.quantity.replace(/[^\d.]/g, ''));
+        const rawQty = isNaN(parsedQty) || parsedQty <= 0 ? 10.0 : parsedQty;
+        // Convert to kg based on unit
+        const unit = (assignment.donation.quantityUnit || 'KG').toUpperCase();
+        let weightKg: number;
+        if (unit === 'GRAMS' || unit === 'G') {
+          weightKg = rawQty / 1000;
+        } else if (unit === 'SERVINGS' || unit === 'PIECES' || unit === 'PORTIONS') {
+          // Estimate ~0.3 kg per serving
+          weightKg = rawQty * 0.3;
+        } else if (unit === 'LITERS' || unit === 'L') {
+          // Approximate 1L ≈ 1kg for liquid food
+          weightKg = rawQty;
+        } else {
+          // KG or unknown – use as-is
+          weightKg = rawQty;
+        }
         const category = assignment.donation.foodCategory.toLowerCase();
         const factor = IMPACT_FACTORS[category] || IMPACT_FACTORS['mixed'];
 
