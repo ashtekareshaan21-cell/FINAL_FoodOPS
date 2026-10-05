@@ -1,11 +1,11 @@
 // Prisma schema for FoodOps platform
 
-datasource db {
-  provider = "sqlite"
-}
-
 generator client {
   provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
 }
 
 // ============ ENUMS ============
