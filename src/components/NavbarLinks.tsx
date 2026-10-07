@@ -52,7 +52,19 @@ export default function NavbarLinks({ role, adminEnabled }: NavbarLinksProps) {
             href="/ngo/active"
             className={getLinkClasses('/ngo/active')}
           >
-            Active Rescues
+            Active Rescues & Monitor
+          </Link>
+          <Link
+            href="/ngo/volunteers"
+            className={getLinkClasses('/ngo/volunteers')}
+          >
+            Volunteers & Fleet
+          </Link>
+          <Link
+            href="/ngo/recovery"
+            className={getLinkClasses('/ngo/recovery')}
+          >
+            Organic Recovery
           </Link>
           <Link
             href="/ngo/history"

@@ -6,6 +6,7 @@ import { emailService } from './emailService';
 import { prisma } from '@/lib/db';
 import { auditService } from './auditService';
 import { validateStateTransition } from './donationStateMachine';
+import { dynamicImpactEngine } from './dynamicImpactEngine';
 
 export const adminService = {
   async getPendingNgos() {
@@ -267,10 +268,18 @@ export const adminService = {
       },
     });
 
-    // Aggregate rescue impact (non-biogas, i.e. direct food delivery)
+    // Aggregate rescue impact (direct food delivery)
     const rescueImpact = await donationRepository.aggregateImpact({
       where: {
-        NOT: { calculationMethod: 'BIOGAS_RECOVERY_2026' },
+        NOT: {
+          OR: [
+            { calculationMethod: 'BIOGAS_RECOVERY_2026' },
+            { calculationMethod: { contains: 'RECOVERY' } },
+            { calculationMethod: { contains: 'ANAEROBIC' } },
+            { calculationMethod: { contains: 'AEROBIC' } },
+            { calculationMethod: { contains: 'CIRCULAR' } },
+          ],
+        },
       },
       _sum: {
         co2EquivalentKg: true,
@@ -279,10 +288,16 @@ export const adminService = {
       },
     });
 
-    // Aggregate biogas recovery impact
+    // Aggregate dynamic recovery impact (biogas, biomethanation, composting, goshala)
     const recoveryImpact = await donationRepository.aggregateImpact({
       where: {
-        calculationMethod: 'BIOGAS_RECOVERY_2026',
+        OR: [
+          { calculationMethod: 'BIOGAS_RECOVERY_2026' },
+          { calculationMethod: { contains: 'RECOVERY' } },
+          { calculationMethod: { contains: 'ANAEROBIC' } },
+          { calculationMethod: { contains: 'AEROBIC' } },
+          { calculationMethod: { contains: 'CIRCULAR' } },
+        ],
       },
       _sum: {
         co2EquivalentKg: true,
@@ -293,8 +308,15 @@ export const adminService = {
 
     const rescueWeight = rescueImpact._sum?.foodWeightKg || 0;
     const divertedWeight = recoveryImpact._sum?.foodWeightKg || 0;
-    // Total weight rescued = direct delivery + biogas/organic diversion (all food handled)
     const totalFoodWeightKg = rescueWeight + divertedWeight;
+
+    // Aggregate live clean energy generated from recovery missions
+    const missionEnergy = await prisma.organicRecoveryMission.aggregate({
+      _sum: { cleanEnergyKwh: true },
+    });
+    const liveCleanEnergyKwh =
+      (missionEnergy._sum?.cleanEnergyKwh || 0) +
+      (divertedWeight > 0 && !missionEnergy._sum?.cleanEnergyKwh ? divertedWeight * 1.15 : 0);
 
     return {
       totalDonors,
@@ -308,7 +330,7 @@ export const adminService = {
       waterSavedLiters: (rescueImpact._sum?.waterSavedLiters || 0) + (recoveryImpact._sum?.waterSavedLiters || 0),
       foodWeightKg: totalFoodWeightKg,
       divertedWeightKg: divertedWeight,
-      biogasGeneratedKwh: divertedWeight * 0.25,
+      biogasGeneratedKwh: Number(liveCleanEnergyKwh.toFixed(1)),
     };
   },
 
@@ -434,17 +456,25 @@ export const adminService = {
         newValues: { status: 'EXPIRED', cancelReason: 'Admin Force Expired / Diverted to Biogas Recovery' },
       });
 
-      const co2EquivalentKg = weightKg * 1.8;
+      const recoveryImpact = dynamicImpactEngine.calculateRecoveryImpact({
+        foodWeightKg: weightKg,
+        title: donation.title,
+        description: donation.description,
+        wasteCategory: donation.foodCategory,
+        vegNonVeg: donation.vegNonVegMixed,
+        facilityType: 'BIOMETHANATION',
+        facilityName: 'Municipal Anaerobic Recovery Plant',
+      });
 
       await tx.impactRecord.create({
         data: {
           donationId,
           foodWeightKg: weightKg,
           estimatedServings: 0,
-          co2EquivalentKg,
-          waterSavedLiters: 0,
-          calculationMethod: 'BIOGAS_RECOVERY_2026',
-          factorsUsed: `biogas_recovery: co2=1.8, water=0, yield=0.25kwh/kg`,
+          co2EquivalentKg: recoveryImpact.netCo2SavedKg,
+          waterSavedLiters: recoveryImpact.waterSavedLiters,
+          calculationMethod: recoveryImpact.calculationMethod,
+          factorsUsed: recoveryImpact.factorsUsed,
         },
       });
     });

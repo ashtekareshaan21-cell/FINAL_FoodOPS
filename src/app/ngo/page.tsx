@@ -9,6 +9,7 @@ import NgoSettings from './NgoSettings';
 import NearbyDonationsList from './NearbyDonationsList';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 import VerificationBanner from '@/components/VerificationBanner';
+import NgoNavTabs from '@/components/NgoNavTabs';
 
 export default async function NgoDashboard() {
   const session = await getSession();
@@ -41,6 +42,8 @@ export default async function NgoDashboard() {
           role="NGO"
           rejectionReason={ngo.rejectionReason}
         />
+
+        <NgoNavTabs />
 
         {/* Header */}
         <div className="mb-10 pb-6 border-b border-border">

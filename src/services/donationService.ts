@@ -10,16 +10,7 @@ import { CreateDonationInput } from '@/app/actions/donations';
 import { normalizeFoodCategory, matchingService } from './matchingService';
 import { auditService } from './auditService';
 import { validateStateTransition, DonationOperation } from './donationStateMachine';
-
-const IMPACT_FACTORS: Record<string, { co2: number; water: number }> = {
-  'grains': { co2: 1.2, water: 2500 },
-  'vegetables': { co2: 0.5, water: 300 },
-  'fruits': { co2: 0.7, water: 900 },
-  'dairy': { co2: 3.2, water: 1000 },
-  'meat': { co2: 7.0, water: 15000 },
-  'bakery': { co2: 1.5, water: 1200 },
-  'mixed': { co2: 2.5, water: 1500 },
-};
+import { dynamicImpactEngine } from './dynamicImpactEngine';
 
 export const donationService = {
   async runLazyExpiryCheck() {
@@ -75,17 +66,25 @@ export const donationService = {
             newValues: { status: 'EXPIRED', cancelReason: 'SLA Expiration - Recovery Required' },
           });
 
-          const co2EquivalentKg = weightKg * 1.8;
+          const recoveryImpact = dynamicImpactEngine.calculateRecoveryImpact({
+            foodWeightKg: weightKg,
+            title: fresh.title,
+            description: fresh.description,
+            wasteCategory: fresh.foodCategory,
+            vegNonVeg: fresh.vegNonVegMixed,
+            facilityType: 'BIOMETHANATION',
+            facilityName: 'Municipal Anaerobic Grid',
+          });
 
           await tx.impactRecord.create({
             data: {
               donationId: fresh.id,
               foodWeightKg: weightKg,
               estimatedServings: 0,
-              co2EquivalentKg,
-              waterSavedLiters: 0,
-              calculationMethod: 'BIOGAS_RECOVERY_2026',
-              factorsUsed: `biogas_recovery: co2=1.8, water=0, yield=0.25kwh/kg`,
+              co2EquivalentKg: recoveryImpact.netCo2SavedKg,
+              waterSavedLiters: recoveryImpact.waterSavedLiters,
+              calculationMethod: recoveryImpact.calculationMethod,
+              factorsUsed: recoveryImpact.factorsUsed,
             },
           });
         });
@@ -769,22 +768,39 @@ export const donationService = {
           // KG or unknown – use as-is
           weightKg = rawQty;
         }
-        const category = assignment.donation.foodCategory.toLowerCase();
-        const factor = IMPACT_FACTORS[category] || IMPACT_FACTORS['mixed'];
-
-        const co2Saved = weightKg * factor.co2;
-        const waterSaved = weightKg * factor.water;
-        const servings = assignment.donation.estimatedServings || Math.round(weightKg / 0.3);
+        const dynamicRescue = dynamicImpactEngine.calculateRescueImpact({
+          foodWeightKg: weightKg,
+          title: assignment.donation.title,
+          description: assignment.donation.description,
+          category: assignment.donation.foodCategory,
+          vegNonVeg: assignment.donation.vegNonVegMixed,
+          estimatedServings: assignment.donation.estimatedServings,
+          pickupCoords:
+            assignment.donation.pickupLatitude && assignment.donation.pickupLongitude
+              ? {
+                  latitude: assignment.donation.pickupLatitude,
+                  longitude: assignment.donation.pickupLongitude,
+                }
+              : null,
+          dropoffCoords:
+            assignment.ngo.baseLatitude && assignment.ngo.baseLongitude
+              ? {
+                  latitude: assignment.ngo.baseLatitude,
+                  longitude: assignment.ngo.baseLongitude,
+                }
+              : null,
+          vehicleType: assignment.volunteer.vehicleInfo,
+        });
 
         await tx.impactRecord.create({
           data: {
             donationId: assignment.donationId,
-            foodWeightKg: weightKg,
-            estimatedServings: servings,
-            co2EquivalentKg: co2Saved,
-            waterSavedLiters: waterSaved,
-            calculationMethod: 'FAO_FACTORS_2026',
-            factorsUsed: `${category}: co2=${factor.co2}, water=${factor.water}`,
+            foodWeightKg: dynamicRescue.foodWeightKg,
+            estimatedServings: dynamicRescue.estimatedServings,
+            co2EquivalentKg: dynamicRescue.netCo2SavedKg,
+            waterSavedLiters: dynamicRescue.waterSavedLiters,
+            calculationMethod: dynamicRescue.calculationMethod,
+            factorsUsed: dynamicRescue.factorsUsed,
           },
         });
       } else {
@@ -921,17 +937,25 @@ export const donationService = {
         newValues: { status: 'EXPIRED', cancelReason: `Spoiled / Diverted to Biogas Recovery: ${reason}` },
       });
 
-      const co2EquivalentKg = weightKg * 1.8;
+      const recoveryImpact = dynamicImpactEngine.calculateRecoveryImpact({
+        foodWeightKg: weightKg,
+        title: donation.title,
+        description: donation.description,
+        wasteCategory: donation.foodCategory,
+        vegNonVeg: donation.vegNonVegMixed,
+        facilityType: 'BIOMETHANATION',
+        facilityName: 'Municipal Anaerobic Grid',
+      });
 
       await tx.impactRecord.create({
         data: {
           donationId,
           foodWeightKg: weightKg,
           estimatedServings: 0,
-          co2EquivalentKg,
-          waterSavedLiters: 0,
-          calculationMethod: 'BIOGAS_RECOVERY_2026',
-          factorsUsed: `biogas_recovery: co2=1.8, water=0, yield=0.25kwh/kg`,
+          co2EquivalentKg: recoveryImpact.netCo2SavedKg,
+          waterSavedLiters: recoveryImpact.waterSavedLiters,
+          calculationMethod: recoveryImpact.calculationMethod,
+          factorsUsed: recoveryImpact.factorsUsed,
         },
       });
     });

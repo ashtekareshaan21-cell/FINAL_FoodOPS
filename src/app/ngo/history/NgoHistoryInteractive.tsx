@@ -42,7 +42,17 @@ export interface NgoHistoryDonation {
 
 interface NgoHistoryInteractiveProps {
   history: NgoHistoryDonation[];
-  impactMap: Record<string, { foodWeightKg: number; estimatedServings: number; co2EquivalentKg: number; waterSavedLiters: number }>;
+  impactMap: Record<
+    string,
+    {
+      foodWeightKg: number;
+      estimatedServings: number;
+      co2EquivalentKg: number;
+      waterSavedLiters: number;
+      calculationMethod?: string;
+      factorsUsed?: string;
+    }
+  >;
 }
 
 export default function NgoHistoryInteractive({ history, impactMap }: NgoHistoryInteractiveProps) {
@@ -226,8 +236,17 @@ export default function NgoHistoryInteractive({ history, impactMap }: NgoHistory
 
             {/* Impact Record if Available */}
             {impactMap[selectedDonation.id] && (
-              <div className="bg-success-bg/20 border border-success-border p-4 rounded-lg">
-                <p className="font-bold text-success uppercase tracking-wider text-[10px] mb-2">Verified Ecological Impact Metrics</p>
+              <div className="bg-success-bg/20 border border-success-border p-4 rounded-lg space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <p className="font-bold text-success uppercase tracking-wider text-[10px]">
+                    Verified Ecological Impact Metrics
+                  </p>
+                  {impactMap[selectedDonation.id].calculationMethod && (
+                    <span className="text-[9px] font-mono font-bold bg-success-bg text-success border border-success-border px-1.5 py-0.5 rounded">
+                      {impactMap[selectedDonation.id].calculationMethod}
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div>
                     <p className="text-lg font-extrabold text-success">{impactMap[selectedDonation.id].foodWeightKg.toFixed(1)} kg</p>
@@ -246,6 +265,13 @@ export default function NgoHistoryInteractive({ history, impactMap }: NgoHistory
                     <p className="text-[10px] text-muted-text">Water Saved</p>
                   </div>
                 </div>
+
+                {impactMap[selectedDonation.id].factorsUsed && (
+                  <div className="pt-2 border-t border-success-border/40 text-[10px] text-muted-text">
+                    <span className="font-bold text-foreground">Live Telemetry & Factors: </span>
+                    <span className="font-mono text-[9px]">{impactMap[selectedDonation.id].factorsUsed}</span>
+                  </div>
+                )}
               </div>
             )}
 

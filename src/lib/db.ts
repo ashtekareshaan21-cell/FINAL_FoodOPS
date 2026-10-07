@@ -25,7 +25,7 @@ function createPrismaClient(url: string): PrismaClient {
 function getPrismaClient(): PrismaClient {
   const dbUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('file:')
     ? process.env.DATABASE_URL
-    : (process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgresql://') || process.env.DATABASE_URL.startsWith('postgres://'))
+    : (process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgresql://') || process.env.DATABASE_URL.startsWith('postgres://')) && !process.env.DATABASE_URL.includes('[YOUR-PASSWORD]')
         ? process.env.DATABASE_URL
         : 'file:./dev.db');
 

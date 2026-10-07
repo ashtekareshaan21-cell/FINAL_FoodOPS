@@ -409,11 +409,18 @@ export default function AdminDataBrowser({
                       <td className="py-3 pr-4 font-mono">{imp.co2EquivalentKg.toFixed(1)} kg</td>
                       <td className="py-3 pr-4 font-mono">{imp.waterSavedLiters.toFixed(0)} L</td>
                       <td className="py-3">
-                        <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold font-mono ${
-                          imp.calculationMethod.includes('BIOGAS')
-                            ? 'bg-warning-bg text-warning border border-warning-border'
-                            : 'bg-success-bg text-success border border-success-border'
-                        }`}>
+                        <span
+                          title={imp.factorsUsed}
+                          className={`px-2 py-0.5 rounded-sm text-[10px] font-bold font-mono cursor-help ${
+                            imp.calculationMethod.includes('BIOGAS') ||
+                            imp.calculationMethod.includes('RECOVERY') ||
+                            imp.calculationMethod.includes('ANAEROBIC') ||
+                            imp.calculationMethod.includes('AEROBIC') ||
+                            imp.calculationMethod.includes('CIRCULAR')
+                              ? 'bg-warning-bg text-warning border border-warning-border'
+                              : 'bg-success-bg text-success border border-success-border'
+                          }`}
+                        >
                           {imp.calculationMethod}
                         </span>
                       </td>

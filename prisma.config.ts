@@ -9,10 +9,12 @@ dotenv.config();
 
 import { defineConfig } from 'prisma/config';
 
-const isFileDb = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('file:');
-const dbUrl = isFileDb
-  ? process.env.DATABASE_URL!
-  : (process.env.DIRECT_URL || process.env.DATABASE_URL || 'file:./dev.db');
+const isPlaceholder = (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('[YOUR-PASSWORD]')) ||
+  (process.env.DIRECT_URL && process.env.DIRECT_URL.includes('[YOUR-PASSWORD]'));
+
+const dbUrl = (!isPlaceholder && process.env.DIRECT_URL)
+  ? process.env.DIRECT_URL
+  : ((!isPlaceholder && process.env.DATABASE_URL) ? process.env.DATABASE_URL : 'file:./dev.db');
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',

@@ -34,12 +34,26 @@ export default async function NgoHistoryPage() {
     },
   });
 
-  const impactMap = impactRecords.reduce<Record<string, { foodWeightKg: number; estimatedServings: number; co2EquivalentKg: number; waterSavedLiters: number }>>((acc, record) => {
+  const impactMap = impactRecords.reduce<
+    Record<
+      string,
+      {
+        foodWeightKg: number;
+        estimatedServings: number;
+        co2EquivalentKg: number;
+        waterSavedLiters: number;
+        calculationMethod: string;
+        factorsUsed: string;
+      }
+    >
+  >((acc, record) => {
     acc[record.donationId] = {
       foodWeightKg: record.foodWeightKg,
       estimatedServings: record.estimatedServings,
       co2EquivalentKg: record.co2EquivalentKg,
       waterSavedLiters: record.waterSavedLiters,
+      calculationMethod: record.calculationMethod,
+      factorsUsed: record.factorsUsed,
     };
     return acc;
   }, {});

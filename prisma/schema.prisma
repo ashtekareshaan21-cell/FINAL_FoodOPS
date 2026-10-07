@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 // ============ ENUMS ============
@@ -269,6 +269,7 @@ model Donation {
   assignment        VolunteerAssignment?
   images            DonationImage[]
   audits            FoodListingAudit[]
+  organicMission    OrganicRecoveryMission?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   cancelledAt       DateTime?
@@ -402,5 +403,62 @@ model FoodListingAudit {
 
   @@index([donationId])
   @@index([donorId])
+}
+
+model OrganicFacility {
+  id                 String   @id @default(cuid())
+  name               String
+  facilityType       String   // "BIOMETHANATION_PLANT", "BIO_CNG_STATION", "COMMUNITY_COMPOSTER", "ANIMAL_FEED_SHELTER"
+  operatorName       String
+  address            String
+  city               String   @default("Pune")
+  latitude           Float
+  longitude          Float
+  contactPhone       String
+  contactEmail       String?
+  dailyCapacityKg    Float    @default(5000)
+  currentLoadKg      Float    @default(0)
+  acceptedWasteTypes String   @default("COOKED_FOOD,VEGETABLE_WASTE,BAKERY_EXPIRED,ORGANIC_SLURRY")
+  processingMethod   String   // "ANAEROBIC_DIGESTION", "AEROBIC_WINDROW", "THERMOPHILIC_COMPOSTING", "FEED_PROCESSING"
+  outputProduct      String   // "BIO_GAS_AND_SLURRY", "RICH_ORGANIC_COMPOST", "CATTLE_FEED", "BIO_CNG"
+  isActive           Boolean  @default(true)
+  missions           OrganicRecoveryMission[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([city])
+  @@index([facilityType])
+  @@index([isActive])
+}
+
+model OrganicRecoveryMission {
+  id                      String          @id @default(cuid())
+  donationId              String          @unique
+  donation                Donation        @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  facilityId              String
+  facility                OrganicFacility @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  initiatedById           String
+  assignedVolunteerId     String?
+  assignedVolunteerName   String?
+  vehicleType             String?         @default("Cargo Auto")
+  status                  String          @default("DISPATCHED") // "DISPATCHED", "IN_TRANSIT", "ARRIVED_AT_FACILITY", "PROCESSED", "REJECTED"
+  divertReason            String?
+  foodWeightKg            Float
+  wasteCategory           String          @default("MIXED_ORGANIC")
+  gateEntryOtp            String?
+  gateEntryConfirmedAt    DateTime?
+  processingCompletedAt   DateTime?
+  cleanEnergyKwh          Float?          // ~1.25 kWh/kg via biomethanation
+  biogasM3                Float?          // ~0.25 m3/kg
+  bioFertilizerKg         Float?          // ~0.35 kg/kg
+  landfillMethaneAvoidedKg Float?         // ~1.9 kg CO2e/kg
+  notes                   String?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  @@index([facilityId])
+  @@index([status])
+  @@index([assignedVolunteerId])
+  @@index([createdAt])
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ClientDateTime from '@/components/ClientDateTime';
 
@@ -66,14 +67,22 @@ export default function AdminRecoveryView({
 
   return (
     <div className="bg-surface border border-border rounded-lg p-6 shadow-sm overflow-hidden space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-bold text-foreground">Food Recovery & Diversion Pathways</h2>
           <p className="text-xs text-muted-text">Manage expired or un-rescued surplus listings diverted to energy recovery or organic composting.</p>
         </div>
-        <span className="badge-premium bg-warning-bg text-warning border border-warning-border tracking-widest text-[10px] uppercase font-extrabold px-2.5 py-1">
-          {recoveryDonations.length} Recovery Items
-        </span>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/ngo/recovery"
+            className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 hover:bg-primary/20 transition-all flex items-center gap-1.5"
+          >
+            <span>♻️ Open Pune Biomethanation Hub</span>
+          </Link>
+          <span className="badge-premium bg-warning-bg text-warning border border-warning-border tracking-widest text-[10px] uppercase font-extrabold px-2.5 py-1">
+            {recoveryDonations.length} Recovery Items
+          </span>
+        </div>
       </div>
 
       {recoveryDonations.length === 0 ? (

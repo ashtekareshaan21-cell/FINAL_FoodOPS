@@ -8,6 +8,7 @@ import { getNgoVolunteers } from '@/app/actions/ngo';
 import ActiveRescuesList from './ActiveRescuesList';
 import Navbar from '@/components/Navbar';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
+import NgoNavTabs from '@/components/NgoNavTabs';
 
 export default async function ActiveRescuesPage() {
   const session = await getSession();
@@ -32,18 +33,21 @@ export default async function ActiveRescuesPage() {
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 pb-5 border-b border-border">
+        <NgoNavTabs />
+
+        <div className="mb-6 pb-4 border-b border-border">
           <h1 className="text-3xl font-extrabold text-foreground tracking-tight font-display">
-            Active Rescues & Assignments
+            Live Rescue Command Center
           </h1>
           <p className="mt-1 text-sm text-muted-text">
-            Assign volunteers to claimed donations and monitor pickup progress.
+            Monitor multiple concurrent food rescues across volunteers, allot pending tasks, and track real-time delivery progress.
           </p>
         </div>
 
         <ActiveRescuesList 
           activeRescues={activeRescues} 
-          volunteers={volunteers} 
+          volunteers={volunteers}
+          ngo={ngo}
           assignVolunteer={assignVolunteer}
         />
       </main>

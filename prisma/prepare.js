@@ -17,7 +17,7 @@ let schemaContent = fs.readFileSync(schemaPath, 'utf8');
 const isPostgres = process.env.DATABASE_URL && (
   process.env.DATABASE_URL.startsWith('postgresql://') || 
   process.env.DATABASE_URL.startsWith('postgres://')
-);
+) && !process.env.DATABASE_URL.includes('[YOUR-PASSWORD]');
 
 const postgresDatasource = `datasource db {
   provider = "postgresql"
