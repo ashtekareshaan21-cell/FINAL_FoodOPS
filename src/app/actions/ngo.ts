@@ -139,6 +139,9 @@ export async function advanceRescueStage(donationId: string) {
  * Instant demo rescue generator for immediate live testing
  */
 export async function seedDemoRescues() {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true' && process.env.NODE_ENV !== 'test') {
+    return { success: false, error: 'Demo seeding is disabled outside demo mode.' };
+  }
   const session = await getSession();
   if (!session || session.role !== 'NGO') {
     return { success: false, error: 'Unauthorized.' };

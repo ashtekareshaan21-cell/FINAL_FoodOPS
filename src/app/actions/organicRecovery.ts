@@ -22,7 +22,10 @@ export async function getOrganicRecoveryData() {
   }
 
   try {
-    return await organicRecoveryService.getOrganicRecoveryDashboardData();
+    return await organicRecoveryService.getOrganicRecoveryDashboardData(
+      session.userId,
+      session.role
+    );
   } catch (error) {
     console.error('getOrganicRecoveryData error:', error);
     return {
@@ -87,6 +90,9 @@ export async function confirmFacilityArrival(missionId: string, otp?: string) {
 }
 
 export async function seedDemoExpiredDonations() {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true' && process.env.NODE_ENV !== 'test') {
+    return { success: false, error: 'Demo seeding is disabled outside demo mode.' };
+  }
   const session = await getSession();
   if (!session || (session.role !== 'NGO' && session.role !== 'ADMIN')) {
     return { success: false, error: 'Unauthorized.' };

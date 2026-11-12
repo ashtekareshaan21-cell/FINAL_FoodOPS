@@ -155,7 +155,7 @@ export const ngoFleetService = {
       throw new Error('A user with this email or phone number already exists.');
     }
 
-    const defaultPasswordHash = hashPassword('Password123!');
+    const defaultPasswordHash = hashPassword(crypto.randomBytes(24).toString('hex'));
 
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -216,9 +216,10 @@ export const ngoFleetService = {
     // 1. Fetch eligible donations
     let donationsToAssign = [];
     if (options.donationIds && options.donationIds.length > 0) {
+      const uniqueIds = Array.from(new Set(options.donationIds));
       donationsToAssign = await prisma.donation.findMany({
         where: {
-          id: { in: options.donationIds },
+          id: { in: uniqueIds },
           acceptedNgoId: ngo.id,
           status: { in: ['ACCEPTED', 'VOLUNTEER_ASSIGNED'] },
         },
@@ -227,6 +228,9 @@ export const ngoFleetService = {
           assignment: true,
         },
       });
+      if (donationsToAssign.length !== uniqueIds.length) {
+        throw new Error('One or more requested donations were not found.');
+      }
     } else {
       // All unassigned accepted donations for this NGO
       donationsToAssign = await prisma.donation.findMany({
@@ -522,6 +526,10 @@ export const ngoFleetService = {
    * and live concurrent tracking without manual steps!
    */
   async seedDemoRescuesForNgo(ngoUserId: string) {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true' && process.env.NODE_ENV !== 'test') {
+      throw new Error('Demo seeding is disabled outside demo mode.');
+    }
+
     const ngo = await ngoRepository.findByUserId(ngoUserId);
     if (!ngo) throw new Error('NGO profile not found');
 
@@ -535,7 +543,7 @@ export const ngoFleetService = {
           data: {
             email: `demo_donor_${Date.now()}@foodops.org`,
             phoneNumber: `+91 91000${Math.floor(10000 + Math.random() * 90000)}`,
-            passwordHash: hashPassword('password'),
+            passwordHash: hashPassword(crypto.randomBytes(24).toString('hex')),
             role: 'DONOR',
             accountStatus: 'ACTIVE',
             verificationStatus: 'VERIFIED',

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { dispatchOrganicRecovery, confirmFacilityArrival, seedDemoExpiredDonations } from '@/app/actions/organicRecovery';
 import { dynamicImpactEngine } from '@/services/dynamicImpactEngine';
+import { IS_DEMO_MODE } from '@/lib/siteConfig';
 
 export interface OrganicFacilityItem {
   id: string;
@@ -187,6 +188,7 @@ export default function OrganicRecoveryView({
 
   // Handle Seed Demo Expired
   const handleSeedDemo = async () => {
+    if (!IS_DEMO_MODE) return;
     startTransition(async () => {
       const res = await seedDemoExpiredDonations();
       if (res.success) {
@@ -307,14 +309,16 @@ export default function OrganicRecoveryView({
             <span>New Recovery Mission</span>
           </button>
 
-          {/* Seed Demo Button */}
-          <button
-            onClick={handleSeedDemo}
-            disabled={isPending}
-            className="px-3.5 py-2.5 rounded-xl bg-surface-muted hover:bg-slate-200 text-foreground font-bold text-xs border border-border flex items-center gap-1.5 transition-all"
-          >
-            <span>⚡ Seed Test Expired Food</span>
-          </button>
+          {/* Seed Demo Button (demo mode only) */}
+          {IS_DEMO_MODE && (
+            <button
+              onClick={handleSeedDemo}
+              disabled={isPending}
+              className="px-3.5 py-2.5 rounded-xl bg-surface-muted hover:bg-slate-200 text-foreground font-bold text-xs border border-border flex items-center gap-1.5 transition-all"
+            >
+              <span>⚡ Seed Test Expired Food</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -382,13 +386,15 @@ export default function OrganicRecoveryView({
                 No surplus food has been diverted to organic recovery facilities yet. When food expires
                 or is diverted from the active rescues screen, dispatch it here.
               </p>
-              <button
-                onClick={handleSeedDemo}
-                disabled={isPending}
-                className="btn-primary px-4 py-2 text-xs font-bold shadow-xs inline-flex items-center gap-1.5"
-              >
-                <span>⚡ Seed Expired Food to Test Flow</span>
-              </button>
+              {IS_DEMO_MODE && (
+                <button
+                  onClick={handleSeedDemo}
+                  disabled={isPending}
+                  className="btn-primary px-4 py-2 text-xs font-bold shadow-xs inline-flex items-center gap-1.5"
+                >
+                  <span>⚡ Seed Expired Food to Test Flow</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -528,13 +534,15 @@ export default function OrganicRecoveryView({
                 Food that passed human consumption safety limits and must be converted into clean biogas/compost.
               </p>
             </div>
-            <button
-              onClick={handleSeedDemo}
-              disabled={isPending}
-              className="text-xs font-bold text-primary hover:underline cursor-pointer"
-            >
-              + Seed Expired Items
-            </button>
+            {IS_DEMO_MODE && (
+              <button
+                onClick={handleSeedDemo}
+                disabled={isPending}
+                className="text-xs font-bold text-primary hover:underline cursor-pointer"
+              >
+                + Seed Expired Items
+              </button>
+            )}
           </div>
 
           {candidateDonations.length === 0 ? (
@@ -706,13 +714,15 @@ export default function OrganicRecoveryView({
                 {candidateDonations.length === 0 ? (
                   <div className="p-3 bg-surface-muted border border-border rounded-lg text-xs text-muted-text flex justify-between items-center">
                     <span>No pending expired listings found.</span>
-                    <button
-                      type="button"
-                      onClick={handleSeedDemo}
-                      className="text-primary font-bold hover:underline"
-                    >
-                      + Seed Demo
-                    </button>
+                    {IS_DEMO_MODE && (
+                      <button
+                        type="button"
+                        onClick={handleSeedDemo}
+                        className="text-primary font-bold hover:underline"
+                      >
+                        + Seed Demo
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <select

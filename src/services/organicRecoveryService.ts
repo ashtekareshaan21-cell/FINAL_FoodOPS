@@ -128,8 +128,18 @@ export const organicRecoveryService = {
 
     const { donationId, facilityId, assignedVolunteerId, vehicleType, divertReason, notes } = input;
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error('User not found');
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { ngoProfile: true },
+    });
+    if (!user || (user.role !== 'NGO' && user.role !== 'ADMIN')) {
+      throw new Error('Not found');
+    }
+
+    const ngo = user.role === 'NGO' ? user.ngoProfile : null;
+    if (user.role === 'NGO' && !ngo) {
+      throw new Error('NGO profile not found');
+    }
 
     const facility = await prisma.organicFacility.findUnique({ where: { id: facilityId } });
     if (!facility) throw new Error('Organic facility not found');
@@ -137,7 +147,10 @@ export const organicRecoveryService = {
     let volunteerName: string | null = null;
     if (assignedVolunteerId) {
       const vol = await prisma.volunteer.findUnique({ where: { id: assignedVolunteerId } });
-      if (vol) volunteerName = vol.name;
+      if (!vol || (ngo && vol.ngoId !== ngo.id)) {
+        throw new Error('Volunteer not found');
+      }
+      volunteerName = vol.name;
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -146,6 +159,9 @@ export const organicRecoveryService = {
         include: { donor: true },
       });
       if (!donation) throw new Error('Donation not found');
+      if (ngo && donation.acceptedNgoId !== ngo.id) {
+        throw new Error('Donation not found');
+      }
 
       // State transition validation: allow moving from EXPIRED or RECOVERY_ESCALATED or ACCEPTED (spoil divert)
       if (donation.status === 'EXPIRED') {
@@ -312,11 +328,28 @@ export const organicRecoveryService = {
    * Confirm arrival and weighbridge acceptance at the processing facility.
    */
   async confirmFacilityArrival(userId: string, missionId: string, otp?: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { ngoProfile: true },
+    });
+    if (!user || (user.role !== 'NGO' && user.role !== 'ADMIN')) {
+      throw new Error('Mission not found');
+    }
+
     const mission = await prisma.organicRecoveryMission.findUnique({
       where: { id: missionId },
       include: { facility: true, donation: true },
     });
     if (!mission) throw new Error('Mission not found');
+
+    const isAdmin = user.role === 'ADMIN';
+    const isInitiator = mission.initiatedById === userId;
+    const isAssignedNgo = Boolean(
+      user.ngoProfile && mission.donation.acceptedNgoId === user.ngoProfile.id
+    );
+    if (!isAdmin && !isInitiator && !isAssignedNgo) {
+      throw new Error('Mission not found');
+    }
 
     if (otp && mission.gateEntryOtp && otp.trim() !== mission.gateEntryOtp.trim()) {
       throw new Error('Invalid Gate Entry OTP for facility weighbridge.');
@@ -344,7 +377,7 @@ export const organicRecoveryService = {
 
       await auditService.log(tx, {
         userId,
-        role: 'NGO',
+        role: user.role,
         action: 'ORGANIC_RECOVERY_PROCESSED',
         entityType: 'OrganicRecoveryMission',
         entityId: missionId,
@@ -365,20 +398,76 @@ export const organicRecoveryService = {
   },
 
   /**
-   * Fetch complete data for Organic Recovery views (NGO / Admin).
+   * Fetch complete data for Organic Recovery views (scoped by caller NGO or Admin).
    */
-  async getOrganicRecoveryDashboardData() {
+  async getOrganicRecoveryDashboardData(userId?: string, role?: string) {
     await this.ensureFacilitiesSeeded();
+
+    const isAdmin = role === 'ADMIN';
+    let ngoId: string | null = null;
+    if (!isAdmin) {
+      if (!userId) {
+        return {
+          facilities: [],
+          missions: [],
+          candidateDonations: [],
+          metrics: {
+            totalMissions: 0,
+            totalWasteKg: 0,
+            totalCleanEnergyKwh: 0,
+            totalBioFertilizerKg: 0,
+            totalMethaneAvoidedKg: 0,
+          },
+        };
+      }
+      const ngo = await prisma.nGOProfile.findUnique({ where: { userId } });
+      if (!ngo) {
+        return {
+          facilities: [],
+          missions: [],
+          candidateDonations: [],
+          metrics: {
+            totalMissions: 0,
+            totalWasteKg: 0,
+            totalCleanEnergyKwh: 0,
+            totalBioFertilizerKg: 0,
+            totalMethaneAvoidedKg: 0,
+          },
+        };
+      }
+      ngoId = ngo.id;
+    }
 
     const [facilities, missions, candidateDonations] = await Promise.all([
       prisma.organicFacility.findMany({
         where: { isActive: true },
         include: {
-          _count: { select: { missions: true } },
+          _count: {
+            select: {
+              missions: isAdmin
+                ? true
+                : {
+                    where: {
+                      OR: [
+                        { initiatedById: userId },
+                        { donation: { acceptedNgoId: ngoId } },
+                      ],
+                    },
+                  },
+            },
+          },
         },
         orderBy: { dailyCapacityKg: 'desc' },
       }),
       prisma.organicRecoveryMission.findMany({
+        where: isAdmin
+          ? undefined
+          : {
+              OR: [
+                { initiatedById: userId },
+                { donation: { acceptedNgoId: ngoId } },
+              ],
+            },
         include: {
           facility: true,
           donation: {
@@ -391,6 +480,7 @@ export const organicRecoveryService = {
       }),
       prisma.donation.findMany({
         where: {
+          ...(isAdmin ? {} : { acceptedNgoId: ngoId }),
           status: { in: ['EXPIRED', 'RECOVERY_ESCALATED', 'CANCELLED'] },
           organicMission: null, // Not yet dispatched
         },
@@ -434,6 +524,9 @@ export const organicRecoveryService = {
    * test the Organic Recovery flow.
    */
   async seedDemoExpiredDonations(userId: string) {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true' && process.env.NODE_ENV !== 'test') {
+      throw new Error('Demo seeding is disabled outside demo mode.');
+    }
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new Error('User not found');
 
