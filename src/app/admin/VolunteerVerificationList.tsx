@@ -156,7 +156,7 @@ export default function VolunteerVerificationList({
                     <td className="py-3 pr-4 font-mono text-muted-light">{v.user.email}</td>
                     <td className="py-3 pr-4">
                       <p className="font-semibold text-foreground">{v.vehicleInfo || 'Standard Courier'}</p>
-                      <p className="text-[10px] text-muted-light">{v.operatingArea || v.city || 'Bengaluru Metro'}</p>
+                      <p className="text-[10px] text-muted-light">{v.operatingArea || v.city || 'Pune Metro'}</p>
                     </td>
                     <td className="py-3 pr-4">
                       <span

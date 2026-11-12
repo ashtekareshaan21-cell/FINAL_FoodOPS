@@ -62,11 +62,11 @@ interface ActiveRescuesListProps {
 }
 
 const RESCUE_STAGES = [
-  { key: 'VOLUNTEER_ASSIGNED', label: '1. Assigned', icon: '👤' },
-  { key: 'PICKUP_IN_PROGRESS', label: '2. To Donor', icon: '🛵' },
-  { key: 'PICKED_UP', label: '3. Collected', icon: '📦' },
-  { key: 'DELIVERY_IN_PROGRESS', label: '4. To NGO Base', icon: '🚚' },
-  { key: 'COMPLETED', label: '5. Completed', icon: '🏁' },
+  { key: 'VOLUNTEER_ASSIGNED', label: '1. Assigned', icon: '01' },
+  { key: 'PICKUP_IN_PROGRESS', label: '2. To Donor', icon: '02' },
+  { key: 'PICKED_UP', label: '3. Collected', icon: '03' },
+  { key: 'DELIVERY_IN_PROGRESS', label: '4. To NGO Base', icon: '04' },
+  { key: 'COMPLETED', label: '5. Completed', icon: '05' },
 ];
 
 function getStageIndex(status: string) {

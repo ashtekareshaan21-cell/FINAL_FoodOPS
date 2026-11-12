@@ -5,7 +5,11 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
   throw new Error('JWT_SECRET environment variable is required in production.');
 }
-const effectiveSecret = JWT_SECRET || 'fallback_secret_for_foodops';
+const globalAuthState = globalThis as unknown as { __foodopsEphemeralJwtSecret?: string };
+if (!JWT_SECRET && !globalAuthState.__foodopsEphemeralJwtSecret) {
+  globalAuthState.__foodopsEphemeralJwtSecret = crypto.randomBytes(32).toString('hex');
+}
+const effectiveSecret = JWT_SECRET || globalAuthState.__foodopsEphemeralJwtSecret!;
 
 interface JWTPayload {
   userId: string;

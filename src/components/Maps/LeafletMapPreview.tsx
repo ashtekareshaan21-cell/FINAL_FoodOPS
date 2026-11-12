@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const emeraldIcon = L.icon({
   iconUrl: `data:image/svg+xml;utf8,${encodeURIComponent(`
@@ -73,8 +74,7 @@ export default function LeafletMapPreview({
   return (
     <div
       ref={mapContainerRef}
-      className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 relative z-10"
-      style={{ height }}
+      className={`rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100 relative z-10 ${height === '150px' ? 'h-[150px]' : 'h-[220px]'}`}
     />
   );
 }

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { prisma } from '@/lib/db';
 import { ngoRepository } from '@/repositories/ngoRepository';
 import { auditService } from './auditService';
@@ -547,11 +548,11 @@ export const ngoFleetService = {
       donor = await prisma.donorProfile.create({
         data: {
           userId: donorUser.id,
-          organizationName: 'Grand Hyatt Catering & Banquets',
+          organizationName: 'Sample Catering Kitchen',
           organizationType: 'CATERER',
           contactPerson: 'Arun Varma',
-          address: '88, Outer Ring Road, Bellandur, Bengaluru',
-          city: 'Bengaluru',
+          address: 'Shivajinagar Area, Pune, Maharashtra',
+          city: 'Pune',
           latitude: ngo.baseLatitude + 0.015,
           longitude: ngo.baseLongitude + 0.012,
           verificationStatus: 'VERIFIED',
@@ -617,7 +618,7 @@ export const ngoFleetService = {
           estimatedServings: item.estimatedServings,
           pickupAvailableAt: now,
           pickupDeadlineAt: item.deadline,
-          pickupAddress: `${donor.organizationName}, Bengaluru`,
+          pickupAddress: `${donor.organizationName}, Pune`,
           pickupLatitude: ngo.baseLatitude + item.latOffset,
           pickupLongitude: ngo.baseLongitude + item.lngOffset,
           status: 'ACCEPTED',

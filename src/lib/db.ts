@@ -9,7 +9,11 @@ function createPrismaClient(url: string): PrismaClient {
     const { Pool } = require('pg');
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaPg } = require('@prisma/adapter-pg');
-    const pool = new Pool({ connectionString: url });
+    const isSupabase = url.includes('supabase.com') || url.includes('supabase.co');
+    const pool = new Pool({
+      connectionString: url,
+      ...(isSupabase ? { ssl: { rejectUnauthorized: false } } : {}),
+    });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter });
   } else {

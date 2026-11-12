@@ -1,164 +1,187 @@
-export const dynamic = 'force-dynamic';
-
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { getPublicImpactStats } from '@/app/actions/donations';
-import { getSession } from '@/lib/auth';
-import { prisma } from '@/lib/db';
 import HeroSection from '@/components/Home/HeroSection';
-import OrdersScene from '@/components/Home/OrdersScene';
-import KitchenScene from '@/components/Home/KitchenScene';
-import InventoryScene from '@/components/Home/InventoryScene';
-import IntelligenceScene from '@/components/Home/IntelligenceScene';
-import DeliveryScene from '@/components/Home/DeliveryScene';
-import AnalyticsScene from '@/components/Home/AnalyticsScene';
-import FinalScene from '@/components/Home/FinalScene';
+import LazyHomeScenes from '@/components/Home/LazyHomeScenes';
 import EsgMetrics from '@/components/Home/EsgMetrics';
 import RoadmapSection from '@/components/Home/RoadmapSection';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
+import SiteFooter from '@/components/SiteFooter';
+import {
+  IconArrowRight,
+  IconDonor,
+  IconNgo,
+  IconRider,
+} from '@/components/Icons';
+import {
+  CANONICAL_SITE_URL,
+  CONTACT_EMAIL,
+  HAS_CONFIGURED_CONTACT_EMAIL,
+} from '@/lib/siteConfig';
 
-export default async function Home() {
-  const session = await getSession();
+export const dynamic = 'force-static';
 
-  let stats = {
-    foodWeightKg: 0,
-    completedRescues: 0,
-    co2SavedKg: 0,
-    waterSavedLiters: 0,
-    verifiedNgos: 0,
-    totalNgos: 0,
-    totalDonations: 0,
-  };
+export const metadata: Metadata = {
+  title: 'FoodOPS | High-Efficiency Surplus Food Rescue Logistics',
+  description:
+    'Surplus food rescue coordination in Pune and Pimpri-Chinchwad connecting commercial kitchens, verified NGOs, and volunteer riders with safety checks and OTP handovers.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'FoodOPS',
+    title: 'FoodOPS | High-Efficiency Surplus Food Rescue Logistics',
+    description:
+      'Surplus food rescue coordination in Pune and Pimpri-Chinchwad connecting commercial kitchens, verified NGOs, and volunteer riders with safety checks and OTP handovers.',
+    url: `${CANONICAL_SITE_URL}/`,
+    images: [
+      {
+        url: `${CANONICAL_SITE_URL}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: 'FoodOPS - Surplus food rescue, pilot in Pune',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'FoodOPS | High-Efficiency Surplus Food Rescue Logistics',
+    description:
+      'Surplus food rescue coordination in Pune and Pimpri-Chinchwad connecting commercial kitchens, verified NGOs, and volunteer riders.',
+    images: [`${CANONICAL_SITE_URL}/opengraph-image`],
+  },
+};
 
-  let recentDonations: Array<{
-    id: string;
-    title: string;
-    foodCategory: string;
-    quantity: string;
-    quantityUnit: string;
-    createdAt: Date;
-  }> = [];
-
-  try {
-    const [fetchedStats, fetchedDonations] = await Promise.all([
-      getPublicImpactStats(),
-      prisma.donation.findMany({
-        take: 4,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          title: true,
-          foodCategory: true,
-          quantity: true,
-          quantityUnit: true,
-          createdAt: true,
-        },
-      }),
-    ]);
-    stats = fetchedStats;
-    recentDonations = fetchedDonations;
-  } catch (error) {
-    console.error('Failed to load homepage impact stats or donations:', error);
-  }
+export default function Home() {
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'FoodOPS',
+      url: CANONICAL_SITE_URL,
+      description:
+        'Surplus food rescue coordination in Pune and Pimpri-Chinchwad connecting commercial donors, verified NGOs, and volunteer riders.',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'Pune',
+        addressRegion: 'Maharashtra',
+        addressCountry: 'IN',
+      },
+      ...(HAS_CONFIGURED_CONTACT_EMAIL ? { email: CONTACT_EMAIL } : {}),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'FoodOPS',
+      url: CANONICAL_SITE_URL,
+      description:
+        'Surplus food rescue coordination platform for commercial kitchens, verified NGOs, and riders in Pune and Pimpri-Chinchwad.',
+    },
+  ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-transparent text-foreground transition-colors duration-300 relative">
+    <div className="flex flex-col min-h-screen bg-transparent text-foreground relative">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData).replace(/</g, '\\u003c'),
+        }}
+      />
       <FoodOpsBackground variant="hero" />
       <Navbar />
 
-      <main className="flex-grow">
-        {/* Animated Hero Section */}
-        <HeroSection sessionRole={session?.role} />
+      <main id="main-content" className="flex-grow">
+        <HeroSection />
 
-        {/* Scene 1: Orders - fed from real database data */}
-        <OrdersScene 
-          totalAuditedRescues={stats.totalDonations} 
-          recentOrders={recentDonations} 
-        />
+        {/* Live ESG Balance Sheet backed by GET /api/stats */}
+        <EsgMetrics />
 
-        {/* Scene 2: Kitchen */}
-        <KitchenScene />
+        {/* Lazy-loaded illustrative workflow walkthrough */}
+        <LazyHomeScenes />
 
-        {/* Scene 3: Inventory */}
-        <InventoryScene />
-
-        {/* Scene 4: Intelligence */}
-        <IntelligenceScene />
-
-        {/* Scene 5: Delivery */}
-        <DeliveryScene />
-
-        {/* Scene 6: Analytics & command-center */}
-        <AnalyticsScene />
-
-        {/* Live ESG Balance Sheet (Impact Statistics) */}
-        <EsgMetrics stats={stats} />
-
-        {/* Scene 7: Climax system diagram & CTA */}
-        <FinalScene />
-
-        {/* Roadmap section: "FoodOps is evolving" */}
+        {/* Roadmap section */}
         <RoadmapSection />
 
-        {/* How It Works Process Sections */}
-        <section id="how-it-works" className="bg-surface border-t border-border py-24">
+        {/* Role Entry Points (F17) */}
+        <section id="how-it-works" className="bg-surface border-t border-border py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16 space-y-3">
-              <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Verification & Logistics Timeline</span>
+            <div className="text-center mb-14 space-y-3">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">
+                Verification &amp; Logistics Roles
+              </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground font-display">
-                Rescue Operations
+                How FoodOPS Works
               </h2>
-              <p className="max-w-2xl mx-auto text-sm text-muted-text leading-relaxed font-medium">
-                FoodOps coordinates donors, NGOs, and riders to ensure safe, transparent collections.
+              <p className="max-w-2xl mx-auto text-sm text-slate-700 leading-relaxed font-medium">
+                FoodOPS coordinates donors, NGOs, and riders across Pune and Pimpri-Chinchwad. Choose your role to inspect verification steps before registering.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Donor */}
-              <div className="group bg-surface p-8 rounded-lg border border-border hover:border-primary/20 hover:scale-[1.01] hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+              <div className="bg-surface p-8 rounded-lg border border-border hover:border-primary/30 shadow-xs flex flex-col justify-between space-y-6">
                 <div>
-                  <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary mb-6 group-hover:scale-105 transition-transform">
-                    🏨
+                  <div className="w-11 h-11 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-center text-[#0b3c26] mb-5">
+                    <IconDonor className="w-5 h-5" />
                   </div>
-                  <h3 className="text-sm font-bold text-foreground mb-2">1. List Surplus</h3>
-                  <p className="text-muted-text text-xs leading-relaxed mb-6 font-medium">
-                    Commercial kitchens list surplus items. Gemini AI scans photos, reviews packaging styles, estimates weight, and flags spillage warnings.
+                  <h3 className="text-base font-extrabold text-foreground mb-2">
+                    1. Donors: List Surplus
+                  </h3>
+                  <p className="text-slate-700 text-xs sm:text-sm leading-relaxed font-medium">
+                    Commercial kitchens declare safe-window surplus with weight and pickup deadline. On the roadmap: photo-assisted listing checks to estimate quantity and flag damaged packaging.
                   </p>
                 </div>
-                <Link href="/register" className="text-primary font-bold text-xs hover:underline inline-flex items-center gap-1">
-                  Onboard Facility &rarr;
+                <Link
+                  href="/for-donors"
+                  className="text-[#0b3c26] font-bold text-xs sm:text-sm hover:underline inline-flex items-center gap-1.5"
+                >
+                  <span>Explore Donor onboarding</span>
+                  <IconArrowRight className="w-4 h-4" />
                 </Link>
               </div>
 
               {/* NGO */}
-              <div className="group bg-surface p-8 rounded-lg border border-border hover:border-primary/20 hover:scale-[1.01] hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+              <div className="bg-surface p-8 rounded-lg border border-border hover:border-primary/30 shadow-xs flex flex-col justify-between space-y-6">
                 <div>
-                  <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary mb-6 group-hover:scale-105 transition-transform">
-                    🌍
+                  <div className="w-11 h-11 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-center text-[#0b3c26] mb-5">
+                    <IconNgo className="w-5 h-5" />
                   </div>
-                  <h3 className="text-sm font-bold text-foreground mb-2">2. Match & Claim</h3>
-                  <p className="text-muted-text text-xs leading-relaxed mb-6 font-medium">
-                    Verified NGOs are matched by service radius and accepted categories. Atomic database locks prevent concurrent claims.
+                  <h3 className="text-base font-extrabold text-foreground mb-2">
+                    2. NGOs: Match &amp; Claim
+                  </h3>
+                  <p className="text-slate-700 text-xs sm:text-sm leading-relaxed font-medium">
+                    Verified NGOs are matched by service radius and food categories. First-accept database locks prevent two organisations from claiming the same listing.
                   </p>
                 </div>
-                <Link href="/register" className="text-primary font-bold text-xs hover:underline inline-flex items-center gap-1">
-                  Onboard NGO Org &rarr;
+                <Link
+                  href="/for-ngos"
+                  className="text-[#0b3c26] font-bold text-xs sm:text-sm hover:underline inline-flex items-center gap-1.5"
+                >
+                  <span>Explore NGO onboarding</span>
+                  <IconArrowRight className="w-4 h-4" />
                 </Link>
               </div>
 
-              {/* Volunteer */}
-              <div className="group bg-surface p-8 rounded-lg border border-border hover:border-primary/20 hover:scale-[1.01] hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+              {/* Rider */}
+              <div className="bg-surface p-8 rounded-lg border border-border hover:border-primary/30 shadow-xs flex flex-col justify-between space-y-6">
                 <div>
-                  <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary mb-6 group-hover:scale-105 transition-transform">
-                    🚴
+                  <div className="w-11 h-11 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-center text-[#0b3c26] mb-5">
+                    <IconRider className="w-5 h-5" />
                   </div>
-                  <h3 className="text-sm font-bold text-foreground mb-2">3. Transit & Handover</h3>
-                  <p className="text-muted-text text-xs leading-relaxed mb-6 font-medium">
-                    Rescue riders confirm pickup via a secure, time-bound digital OTP check. Carbon abatement impact metrics are instantly calculated and registered.
+                  <h3 className="text-base font-extrabold text-foreground mb-2">
+                    3. Riders: Transit &amp; Handover
+                  </h3>
+                  <p className="text-slate-700 text-xs sm:text-sm leading-relaxed font-medium">
+                    Assigned riders check container condition at pickup, verify the private one-time OTP provided by the donor, and log delivery at the receiving NGO point.
                   </p>
                 </div>
-                <Link href="/register" className="text-primary font-bold text-xs hover:underline inline-flex items-center gap-1">
-                  Join Rider Team &rarr;
+                <Link
+                  href="/for-riders"
+                  className="text-[#0b3c26] font-bold text-xs sm:text-sm hover:underline inline-flex items-center gap-1.5"
+                >
+                  <span>Explore Rider onboarding</span>
+                  <IconArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
@@ -166,20 +189,7 @@ export default async function Home() {
         </section>
       </main>
 
-      <footer className="bg-surface border-t border-border py-10 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-muted text-xs font-semibold">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-foreground">FoodOps</span>
-            <span>&bull;</span>
-            <span>Surplus Food Rescue &amp; Recovery Logistics</span>
-          </div>
-          <div className="flex gap-4 font-bold">
-            <a href="#" className="hover:text-foreground">Compliance</a>
-            <span>&bull;</span>
-            <a href="#" className="hover:text-foreground">FSSAI Rules</a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

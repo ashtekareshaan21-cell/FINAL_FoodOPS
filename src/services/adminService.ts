@@ -261,34 +261,53 @@ export const adminService = {
     const pendingNgos = await ngoRepository.count({ where: { status: 'PENDING_VERIFICATION' } });
     const totalVolunteers = await volunteerRepository.count();
     const totalDonations = await donationRepository.count();
-    // Count all donations that were successfully handled (completed delivery OR diverted to biogas/organic recovery)
+    // Section 15 rule: Only COMPLETED rescues increment real completed rescue counters.
     const completedRescues = await donationRepository.count({
       where: {
-        status: { in: ['COMPLETED', 'EXPIRED', 'ORGANIC_RECOVERY'] },
+        status: 'COMPLETED',
       },
     });
-
-    // Aggregate rescue impact (direct food delivery)
-    const rescueImpact = await donationRepository.aggregateImpact({
+    const activeRescues = await donationRepository.count({
       where: {
-        NOT: {
-          OR: [
-            { calculationMethod: 'BIOGAS_RECOVERY_2026' },
-            { calculationMethod: { contains: 'RECOVERY' } },
-            { calculationMethod: { contains: 'ANAEROBIC' } },
-            { calculationMethod: { contains: 'AEROBIC' } },
-            { calculationMethod: { contains: 'CIRCULAR' } },
-          ],
+        status: {
+          in: ['ACCEPTED', 'VOLUNTEER_ASSIGNED', 'PICKUP_IN_PROGRESS', 'PICKED_UP', 'DELIVERY_IN_PROGRESS'],
         },
       },
-      _sum: {
-        co2EquivalentKg: true,
-        waterSavedLiters: true,
-        foodWeightKg: true,
-      },
     });
 
-    // Aggregate dynamic recovery impact (biogas, biomethanation, composting, goshala)
+    const completedDonations = await prisma.donation.findMany({
+      where: { status: 'COMPLETED' },
+      select: { id: true },
+    });
+    const completedDonationIds = completedDonations.map((d) => d.id);
+
+    // Aggregate rescue impact (direct food delivery only — never merged with organic recovery weight)
+    const rescueImpact =
+      completedDonationIds.length > 0
+        ? await donationRepository.aggregateImpact({
+            where: {
+              donationId: {
+                in: completedDonationIds,
+              },
+              NOT: {
+                OR: [
+                  { calculationMethod: 'BIOGAS_RECOVERY_2026' },
+                  { calculationMethod: { contains: 'RECOVERY' } },
+                  { calculationMethod: { contains: 'ANAEROBIC' } },
+                  { calculationMethod: { contains: 'AEROBIC' } },
+                  { calculationMethod: { contains: 'CIRCULAR' } },
+                ],
+              },
+            },
+            _sum: {
+              co2EquivalentKg: true,
+              waterSavedLiters: true,
+              foodWeightKg: true,
+            },
+          })
+        : { _sum: { co2EquivalentKg: 0, waterSavedLiters: 0, foodWeightKg: 0 } };
+
+    // Aggregate dynamic recovery impact (biogas, biomethanation, composting, goshala) as its own separate line
     const recoveryImpact = await donationRepository.aggregateImpact({
       where: {
         OR: [
@@ -308,7 +327,6 @@ export const adminService = {
 
     const rescueWeight = rescueImpact._sum?.foodWeightKg || 0;
     const divertedWeight = recoveryImpact._sum?.foodWeightKg || 0;
-    const totalFoodWeightKg = rescueWeight + divertedWeight;
 
     // Aggregate live clean energy generated from recovery missions
     const missionEnergy = await prisma.organicRecoveryMission.aggregate({
@@ -326,9 +344,10 @@ export const adminService = {
       totalVolunteers,
       totalDonations,
       completedRescues,
-      co2SavedKg: (rescueImpact._sum?.co2EquivalentKg || 0) + (recoveryImpact._sum?.co2EquivalentKg || 0),
-      waterSavedLiters: (rescueImpact._sum?.waterSavedLiters || 0) + (recoveryImpact._sum?.waterSavedLiters || 0),
-      foodWeightKg: totalFoodWeightKg,
+      activeRescues,
+      co2SavedKg: rescueImpact._sum?.co2EquivalentKg || 0,
+      waterSavedLiters: rescueImpact._sum?.waterSavedLiters || 0,
+      foodWeightKg: rescueWeight,
       divertedWeightKg: divertedWeight,
       biogasGeneratedKwh: Number(liveCleanEnergyKwh.toFixed(1)),
     };

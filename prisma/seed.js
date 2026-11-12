@@ -1,4 +1,14 @@
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
+
+const envLocalPath = path.join(__dirname, '..', '.env.local');
+const envPath = path.join(__dirname, '..', '.env');
+if (fs.existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath });
+}
+dotenv.config({ path: envPath });
+
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
 
@@ -12,7 +22,7 @@ function hashPassword(password) {
 const isPostgres = process.env.DATABASE_URL && (
   process.env.DATABASE_URL.startsWith('postgresql://') || 
   process.env.DATABASE_URL.startsWith('postgres://')
-);
+) && !process.env.DATABASE_URL.includes('[YOUR-PASSWORD]');
 
 async function main() {
   console.log('Seeding database idempotently...');
@@ -22,7 +32,12 @@ async function main() {
     console.log('Using PostgreSQL driver adapter for seeding...');
     const { Pool } = require('pg');
     const { PrismaPg } = require('@prisma/adapter-pg');
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const dbUrl = process.env.DATABASE_URL;
+    const isSupabase = dbUrl.includes('supabase.com') || dbUrl.includes('supabase.co');
+    const pool = new Pool({
+      connectionString: dbUrl,
+      ...(isSupabase ? { ssl: { rejectUnauthorized: false } } : {}),
+    });
     const adapter = new PrismaPg(pool);
     prisma = new PrismaClient({ adapter });
   } else {
@@ -98,10 +113,10 @@ async function main() {
       organizationName: 'Grand Banquet Hall',
       organizationType: 'CATERER',
       contactPerson: 'Rahul Sharma',
-      address: '45, Residency Road, Bengaluru',
-      city: 'Bengaluru',
-      latitude: 12.9716,
-      longitude: 77.5946,
+      address: 'Sector 1, Pune, Maharashtra',
+      city: 'Pune',
+      latitude: 18.5204,
+      longitude: 73.8567,
       verificationStatus: 'VERIFIED',
     },
     create: {
@@ -109,10 +124,10 @@ async function main() {
       organizationName: 'Grand Banquet Hall',
       organizationType: 'CATERER',
       contactPerson: 'Rahul Sharma',
-      address: '45, Residency Road, Bengaluru',
-      city: 'Bengaluru',
-      latitude: 12.9716,
-      longitude: 77.5946,
+      address: 'Sector 1, Pune, Maharashtra',
+      city: 'Pune',
+      latitude: 18.5204,
+      longitude: 73.8567,
       verificationStatus: 'VERIFIED',
     },
   });
@@ -138,10 +153,10 @@ async function main() {
       organizationName: 'Save Food Foundation',
       registrationNumber: 'FSSAI-29623000000001',
       status: 'VERIFIED',
-      baseAddress: '10, MG Road, Bengaluru',
-      city: 'Bengaluru',
-      baseLatitude: 12.9616,
-      baseLongitude: 77.5846,
+      baseAddress: 'Shivajinagar Area, Pune, Maharashtra',
+      city: 'Pune',
+      baseLatitude: 18.5308,
+      baseLongitude: 73.8475,
       serviceRadiusKm: 15,
       availability: 'AVAILABLE',
       acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -153,10 +168,10 @@ async function main() {
       organizationName: 'Save Food Foundation',
       registrationNumber: 'FSSAI-29623000000001',
       status: 'VERIFIED',
-      baseAddress: '10, MG Road, Bengaluru',
-      city: 'Bengaluru',
-      baseLatitude: 12.9616,
-      baseLongitude: 77.5846,
+      baseAddress: 'Shivajinagar Area, Pune, Maharashtra',
+      city: 'Pune',
+      baseLatitude: 18.5308,
+      baseLongitude: 73.8475,
       serviceRadiusKm: 15,
       availability: 'AVAILABLE',
       acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -186,10 +201,10 @@ async function main() {
       organizationName: 'Hunger Relief Agency',
       registrationNumber: 'FSSAI-29623000000002',
       status: 'VERIFIED',
-      baseAddress: '20, Brigade Road, Bengaluru',
-      city: 'Bengaluru',
-      baseLatitude: 12.9816,
-      baseLongitude: 77.6046,
+      baseAddress: 'Nigdi Area, Pimpri-Chinchwad, Maharashtra',
+      city: 'Pimpri-Chinchwad',
+      baseLatitude: 18.6492,
+      baseLongitude: 73.7707,
       serviceRadiusKm: 10,
       availability: 'AVAILABLE',
       acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -201,10 +216,10 @@ async function main() {
       organizationName: 'Hunger Relief Agency',
       registrationNumber: 'FSSAI-29623000000002',
       status: 'VERIFIED',
-      baseAddress: '20, Brigade Road, Bengaluru',
-      city: 'Bengaluru',
-      baseLatitude: 12.9816,
-      baseLongitude: 77.6046,
+      baseAddress: 'Nigdi Area, Pimpri-Chinchwad, Maharashtra',
+      city: 'Pimpri-Chinchwad',
+      baseLatitude: 18.6492,
+      baseLongitude: 73.7707,
       serviceRadiusKm: 10,
       availability: 'AVAILABLE',
       acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -234,10 +249,10 @@ async function main() {
       organizationName: 'Care & Share Society',
       registrationNumber: 'FSSAI-29623000000003',
       status: 'PENDING_VERIFICATION',
-      baseAddress: '30, Indiranagar, Bengaluru',
-      city: 'Bengaluru',
-      baseLatitude: 12.9916,
-      baseLongitude: 77.6146,
+      baseAddress: 'Kothrud Area, Pune, Maharashtra',
+      city: 'Pune',
+      baseLatitude: 18.5074,
+      baseLongitude: 73.8077,
       serviceRadiusKm: 10,
       availability: 'AVAILABLE',
       acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -249,10 +264,10 @@ async function main() {
       organizationName: 'Care & Share Society',
       registrationNumber: 'FSSAI-29623000000003',
       status: 'PENDING_VERIFICATION',
-      baseAddress: '30, Indiranagar, Bengaluru',
-      city: 'Bengaluru',
-      baseLatitude: 12.9916,
-      baseLongitude: 77.6146,
+      baseAddress: 'Kothrud Area, Pune, Maharashtra',
+      city: 'Pune',
+      baseLatitude: 18.5074,
+      baseLongitude: 73.8077,
       serviceRadiusKm: 10,
       availability: 'AVAILABLE',
       acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -303,8 +318,8 @@ async function main() {
     await prisma.donation.create({
       data: {
         donorId: donorProfile.id,
-        title: 'Fresh Buffet Meal Surplus',
-        description: 'Freshly prepared vegetarian catering surplus, securely packed in sealed trays.',
+        title: 'Veg Biryani - Sample Catering Surplus',
+        description: 'Freshly prepared vegetarian catering surplus, packed in sealed trays (sample demo listing).',
         foodCategory: 'COOKED_VEG',
         vegNonVegMixed: 'VEG',
         quantity: '25',

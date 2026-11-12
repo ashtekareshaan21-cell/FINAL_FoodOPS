@@ -268,7 +268,7 @@ export default function NgoHistoryInteractive({ history, impactMap }: NgoHistory
 
                 {impactMap[selectedDonation.id].factorsUsed && (
                   <div className="pt-2 border-t border-success-border/40 text-[10px] text-muted-text">
-                    <span className="font-bold text-foreground">Live Telemetry & Factors: </span>
+                    <span className="font-bold text-foreground">Calculated Impact Factors: </span>
                     <span className="font-mono text-[9px]">{impactMap[selectedDonation.id].factorsUsed}</span>
                   </div>
                 )}

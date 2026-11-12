@@ -54,14 +54,14 @@ describe('AI Listing Audit Flow & Security Constraints', () => {
     execSync('node prisma/prepare.js', {
       env: { ...process.env, DATABASE_URL: TEST_DB_URL, PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes' },
       stdio: 'ignore',
-      shell: 'cmd.exe',
+      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
     });
 
     // Run migrations to prepare schema
     execSync('npx prisma db push --accept-data-loss', {
       env: { ...process.env, DATABASE_URL: TEST_DB_URL, PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes' },
       stdio: 'ignore',
-      shell: 'cmd.exe',
+      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
     });
 
     // Clear all tables programmatically to ensure a clean slate

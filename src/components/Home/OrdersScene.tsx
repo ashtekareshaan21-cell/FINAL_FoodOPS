@@ -1,270 +1,98 @@
-'use client';
+import DemoPanelBanner from '@/components/DemoPanelBanner';
+import ImpactStats from '@/components/ImpactStats';
+import { IconDonor, IconShield } from '@/components/Icons';
 
-import { useEffect, useRef, useState } from 'react';
-import { createScope, animate } from 'animejs';
-import { MOTION } from '@/animations/config';
-import { prefersReducedMotion } from '@/animations/accessibility';
-
-export interface RecentOrderItem {
-  id: string;
-  title: string;
-  foodCategory: string;
-  quantity: string;
-  quantityUnit: string;
-  createdAt?: Date | string;
-}
-
-interface OrdersSceneProps {
-  totalAuditedRescues?: number;
-  recentOrders?: RecentOrderItem[];
-}
-
-const FALLBACK_ORDERS = [
-  { id: '#1042', time: 'Just now', servings: '35 meals', category: '🥗 Veg' },
-  { id: '#1043', time: '1 min ago', servings: '60 meals', category: '🍗 Non-Veg' },
-  { id: '#1044', time: '3 min ago', servings: '18 meals', category: '🍞 Bakery' },
-  { id: '#1045', time: '5 min ago', servings: '50 meals', category: '🍲 Mixed' }
+const EXAMPLE_LISTINGS = [
+  {
+    label: 'Example Listing A',
+    title: 'Cooked Vegetarian Meals (~18 kg)',
+    category: 'Cooked Veg',
+    windowNote: 'Example safe window: 90 min',
+  },
+  {
+    label: 'Example Listing B',
+    title: 'Sealed Bakery Trays (~12 kg)',
+    category: 'Bakery',
+    windowNote: 'Example safe window: 120 min',
+  },
+  {
+    label: 'Example Listing C',
+    title: 'Packaged Dry Ration (~15 kg)',
+    category: 'Packaged',
+    windowNote: 'Example safe window: 180 min',
+  },
 ];
 
-export default function OrdersScene({ totalAuditedRescues, recentOrders }: OrdersSceneProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const counterRef = useRef<HTMLSpanElement>(null);
-  const [, setMounted] = useState(false);
-
-  const targetCount = typeof totalAuditedRescues === 'number' && !isNaN(totalAuditedRescues)
-    ? totalAuditedRescues
-    : 0;
-
-  // Build the 4 cards from real orders or fallbacks
-  const displayOrders = [0, 1, 2, 3].map((idx) => {
-    if (recentOrders && recentOrders[idx]) {
-      const o = recentOrders[idx];
-      const catLabel = o.foodCategory === 'COOKED_VEG' 
-        ? '🥗 Veg' 
-        : o.foodCategory === 'COOKED_NON_VEG' 
-        ? '🍗 Non-Veg' 
-        : o.foodCategory === 'BAKERY' 
-        ? '🍞 Bakery' 
-        : `🍲 ${o.foodCategory.replace(/_/g, ' ')}`;
-
-      return {
-        id: `#${o.id.slice(-4).toUpperCase()}`,
-        time: idx === 0 ? 'Just now' : `${idx * 2} min ago`,
-        servings: `${o.quantity} ${o.quantityUnit} (${o.title})`,
-        category: catLabel,
-      };
-    }
-    return FALLBACK_ORDERS[idx];
-  });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || prefersReducedMotion()) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            createScope({ root: el }).add(() => {
-              const text = el.querySelectorAll('.scene-text');
-              const cards = el.querySelectorAll('.order-card');
-              const lines = el.querySelectorAll('.order-line');
-              const core = el.querySelector('.order-core');
-
-              // Animate text slide-in
-              animate(text, {
-                opacity: [0, 1],
-                translateY: [20, 0],
-                duration: MOTION.duration.medium,
-                ease: MOTION.easing.smooth,
-                delay: (_el?: any, i?: number) => (i || 0) * 100
-              });
-
-              // Pop core node
-              if (core) {
-                animate(core, {
-                  scale: [0, 1],
-                  opacity: [0, 1],
-                  duration: MOTION.duration.medium,
-                  ease: MOTION.easing.bounce,
-                  delay: 300
-                });
-              }
-
-              // Stagger order cards docking from different directions
-              const translateOffsets = [
-                { x: [-120, 0], y: [-50, 0] },
-                { x: [120, 0], y: [-50, 0] },
-                { x: [-120, 0], y: [50, 0] },
-                { x: [120, 0], y: [50, 0] }
-              ];
-
-              cards.forEach((card, idx) => {
-                const offsets = translateOffsets[idx % translateOffsets.length];
-                animate(card, {
-                  opacity: [0, 1],
-                  translateX: offsets.x,
-                  translateY: offsets.y,
-                  scale: [0.9, 1],
-                  duration: MOTION.duration.slow,
-                  ease: MOTION.easing.smooth,
-                  delay: 600 + idx * 150
-                });
-              });
-
-              // Draw connection lines
-              animate(lines, {
-                strokeDashoffset: [200, 0],
-                opacity: [0, 1],
-                duration: MOTION.duration.slow,
-                ease: MOTION.easing.smooth,
-                delay: 1100
-              });
-
-              // Interpolate orders counter from database value
-              const counterObj = { val: 0 };
-              const counterEl = counterRef.current;
-              animate(counterObj, {
-                val: targetCount,
-                duration: 2000,
-                ease: MOTION.easing.smooth,
-                delay: 1300,
-                onRender: () => {
-                  if (counterEl) {
-                    const rounded = Math.round(counterObj.val);
-                    counterEl.innerText = isNaN(rounded) ? String(targetCount) : rounded.toString();
-                  }
-                }
-              });
-            });
-            observer.unobserve(el);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [targetCount]);
-
+export default function OrdersScene() {
   return (
-    <section 
-      id="orders-narrative"
-      ref={containerRef}
-      className="relative py-32 border-t border-border overflow-hidden bg-surface-muted/30"
-    >
+    <section className="relative py-20 border-t border-border bg-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          {/* Narrative Text */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          {/* Narrative + REAL DATA Summary Card (F05) */}
           <div className="lg:col-span-5 space-y-6 text-left">
-            <span className="scene-text text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/5 border border-primary/10 px-3 py-1 rounded-full w-fit block">
-              Step 1: surplus listing declaration
+            <span className="text-[11px] font-bold text-[#0b3c26] uppercase tracking-widest bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full w-fit block">
+              Step 1: Surplus Intake
             </span>
-            <h2 
-              className="scene-text text-4xl sm:text-6xl font-black text-foreground leading-[1.1] font-display transition-opacity duration-200 opacity-100"
-            >
+            <h2 className="text-3xl sm:text-5xl font-black text-foreground leading-[1.1] font-display">
               EVERYTHING <br />
               STARTS WITH <br />
-              <span className="text-primary font-display">ORDERS.</span>
+              <span className="text-emerald-800 font-display">LISTINGS.</span>
             </h2>
-            <p 
-              className="scene-text text-sm sm:text-base text-muted-text leading-relaxed font-medium transition-opacity duration-200 opacity-100"
-            >
-              Surplus listing declarations from banquets, events, or corporate dining halls feed instantly into the FoodOps operational queue.
+            <p className="text-sm sm:text-base text-slate-700 leading-relaxed font-medium">
+              Surplus food declarations from commercial kitchens, caterers, and dining halls enter the FoodOPS dispatch queue with weight, category, and a fixed pickup deadline.
             </p>
-            
-            {/* Real-time Order Count display */}
-            <div 
-              className="scene-text p-6 bg-surface border border-border rounded-lg shadow-sm w-fit transition-opacity duration-200 opacity-100"
-            >
-              <div className="flex items-baseline gap-2">
-                <span 
-                  ref={counterRef}
-                  className="text-4xl font-black text-foreground tracking-tight font-mono"
-                >
-                  {targetCount}
-                </span>
-                <span className="text-xs font-bold text-success uppercase tracking-wider">▲ ACTIVE</span>
-              </div>
-              <p className="text-[10px] uppercase font-bold text-muted mt-1 tracking-widest">Rescues Audited Today</p>
-            </div>
+
+            {/* Real-time balance sheet counters live cleanly outside simulated panels */}
+            <ImpactStats variant="summary" />
           </div>
 
-          {/* Converging Cards Graphic */}
-          <div className="lg:col-span-7 flex justify-center items-center relative min-h-[400px]">
-            {/* SVG Connector Lines background */}
-            <svg viewBox="0 0 400 400" className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
-              <path d="M 60,80 L 200,200" fill="none" stroke="var(--color-primary, #10b981)" strokeWidth="1.5" strokeDasharray="200" strokeDashoffset="200" className="order-line opacity-50" />
-              <path d="M 340,80 L 200,200" fill="none" stroke="var(--color-primary, #10b981)" strokeWidth="1.5" strokeDasharray="200" strokeDashoffset="200" className="order-line opacity-50" />
-              <path d="M 60,320 L 200,200" fill="none" stroke="var(--color-primary, #10b981)" strokeWidth="1.5" strokeDasharray="200" strokeDashoffset="200" className="order-line opacity-50" />
-              <path d="M 340,320 L 200,200" fill="none" stroke="var(--color-primary, #10b981)" strokeWidth="1.5" strokeDasharray="200" strokeDashoffset="200" className="order-line opacity-50" />
-            </svg>
+          {/* Static, Non-Looping Example Listings Panel (F04) */}
+          <div className="lg:col-span-7">
+            <div className="rounded-xl border border-border bg-surface p-5 shadow-md space-y-5">
+              <DemoPanelBanner title="Example listings" />
 
-            {/* Central Node */}
-            <div 
-              className="order-core w-24 h-24 rounded-full bg-primary/10 border-2 border-primary flex flex-col items-center justify-center relative z-20 shadow-md transition-all opacity-100 scale-100"
-            >
-              <span className="text-2xl animate-pulse">🛰️</span>
-              <span className="text-[9px] font-black uppercase text-primary tracking-widest mt-1">GATEWAY</span>
-            </div>
-
-            {/* Order cards floating and converging */}
-            {/* Top Left */}
-            <div 
-              className="order-card absolute top-4 left-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all opacity-100"
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-mono text-xs font-bold text-foreground">{displayOrders[0].id}</span>
-                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{displayOrders[0].category}</span>
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-200 text-[#0b3c26] flex items-center justify-center">
+                    <IconShield className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-foreground uppercase tracking-wide">
+                      Example listings
+                    </h3>
+                    <p className="text-xs text-slate-700">
+                      How commercial kitchen surplus appears in the intake queue (illustrative sample only)
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] text-muted-text font-semibold truncate">{displayOrders[0].servings}</p>
-              <p className="text-[9px] text-muted-light mt-1 font-mono">{displayOrders[0].time}</p>
-            </div>
 
-            {/* Top Right */}
-            <div 
-              className="order-card absolute top-4 right-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all opacity-100"
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-mono text-xs font-bold text-foreground">{displayOrders[1].id}</span>
-                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{displayOrders[1].category}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {EXAMPLE_LISTINGS.map((item) => (
+                  <div
+                    key={item.label}
+                    className="p-4 bg-surface-muted border border-border rounded-lg space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-slate-800 font-mono">
+                        {item.label}
+                      </span>
+                      <IconDonor className="w-4 h-4 text-[#0b3c26]" />
+                    </div>
+                    <p className="text-xs font-bold text-foreground leading-snug">
+                      {item.title}
+                    </p>
+                    <p className="text-[11px] font-semibold text-emerald-900 bg-emerald-50 border border-emerald-200 rounded px-2 py-0.5 w-fit">
+                      {item.category}
+                    </p>
+                    <p className="text-[11px] text-slate-700 font-medium">
+                      {item.windowNote}
+                    </p>
+                  </div>
+                ))}
               </div>
-              <p className="text-[10px] text-muted-text font-semibold truncate">{displayOrders[1].servings}</p>
-              <p className="text-[9px] text-muted-light mt-1 font-mono">{displayOrders[1].time}</p>
             </div>
-
-            {/* Bottom Left */}
-            <div 
-              className="order-card absolute bottom-4 left-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all opacity-100"
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-mono text-xs font-bold text-foreground">{displayOrders[2].id}</span>
-                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{displayOrders[2].category}</span>
-              </div>
-              <p className="text-[10px] text-muted-text font-semibold truncate">{displayOrders[2].servings}</p>
-              <p className="text-[9px] text-muted-light mt-1 font-mono">{displayOrders[2].time}</p>
-            </div>
-
-            {/* Bottom Right */}
-            <div 
-              className="order-card absolute bottom-4 right-4 p-4 w-44 bg-surface border border-border rounded-lg shadow-md z-10 hover:border-primary/20 transition-all opacity-100"
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-mono text-xs font-bold text-foreground">{displayOrders[3].id}</span>
-                <span className="text-[9px] font-bold text-success bg-success-bg px-2 py-0.5 rounded-full border border-success-border">{displayOrders[3].category}</span>
-              </div>
-              <p className="text-[10px] text-muted-text font-semibold truncate">{displayOrders[3].servings}</p>
-              <p className="text-[9px] text-muted-light mt-1 font-mono">{displayOrders[3].time}</p>
-            </div>
-
           </div>
-
         </div>
       </div>
     </section>

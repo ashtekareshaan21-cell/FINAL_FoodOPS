@@ -678,7 +678,7 @@ export default function VolunteerFleetView({
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Indiranagar, Koramangala"
+                    placeholder="e.g. Shivajinagar, Kothrud, Pimpri-Chinchwad"
                     value={newArea}
                     onChange={(e) => setNewArea(e.target.value)}
                     className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"

@@ -90,7 +90,7 @@ export default function DonorPhoneOtpBanner({ isPhoneVerified, phoneNumber }: Do
 
       {error && (
         <div className="p-2.5 bg-red-100 border border-red-200 text-red-800 rounded text-xs font-bold">
-          ⚠️ {error}
+          Warning: {error}
         </div>
       )}
 

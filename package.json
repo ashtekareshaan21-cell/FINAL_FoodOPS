@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "node prisma/prepare.js && prisma generate && next dev",
-    "build": "node prisma/prepare.js && prisma generate && next build",
+    "build": "node prisma/prepare.js && prisma generate && next build && node scripts/inject-csp-hashes.mjs",
+    "build:webpack": "node prisma/prepare.js && prisma generate && next build --webpack && node scripts/inject-csp-hashes.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "node prisma/prepare-test.js && vitest run",
+    "check:predeploy": "node scripts/predeploy-check.mjs",
     "db:seed": "node prisma/prepare.js && prisma generate && node prisma/seed.js",
     "db:reset-dev": "node prisma/reset-dev.js"
   },
@@ -16,7 +18,8 @@
     "@prisma/adapter-better-sqlite3": "^7.8.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@react-google-maps/api": "^2.20.8",
-    "@supabase/supabase-js": "^2.112.4",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
     "@types/leaflet": "^1.9.21",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",

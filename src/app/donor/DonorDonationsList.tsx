@@ -276,7 +276,7 @@ export default function DonorDonationsList({ donations }: DonorDonationsListProp
               {/* Progression stepper */}
               {['CANCELLED', 'EXPIRED'].includes(donation.status) ? (
                 <div className="mt-4 p-4 bg-surface-muted border border-border rounded-md text-xs text-muted-text flex items-start gap-3">
-                  <span className="text-lg">⚠️</span>
+                  <span className="font-bold text-amber-800 uppercase tracking-wider text-[10px] mt-0.5">Notice</span>
                   <div>
                     <p className="font-bold text-foreground">
                       Surplus Request Inactive ({donation.status === 'CANCELLED' ? 'Cancelled' : 'Expired / Spoiled'})

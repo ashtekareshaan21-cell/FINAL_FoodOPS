@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629]; // Center of India
-const DEFAULT_ZOOM = 5;
+const DEFAULT_CENTER: [number, number] = [18.5204, 73.8567]; // Pune, Maharashtra
+const DEFAULT_ZOOM = 12;
 const SELECTED_ZOOM = 16;
 
-// Create custom SVG marker icon matching FoodOps theme (Emerald)
+// Create custom SVG marker icon matching FoodOPS theme (Emerald)
 const emeraldIcon = L.icon({
   iconUrl: `data:image/svg+xml;utf8,${encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#10b981" width="36" height="36">
@@ -69,7 +70,7 @@ export default function LeafletLocationPicker({
         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`,
         {
           headers: {
-            'User-Agent': 'FoodOps-Hackathon-MVP/1.0',
+            'User-Agent': 'FoodOPS-Logistics/1.0',
           },
         }
       );
@@ -188,7 +189,7 @@ export default function LeafletLocationPicker({
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value)}&format=json&countrycodes=in&limit=5&accept-language=en`,
           {
             headers: {
-              'User-Agent': 'FoodOps-Hackathon-MVP/1.0',
+              'User-Agent': 'FoodOPS-Logistics/1.0',
             },
           }
         );
@@ -261,12 +262,12 @@ export default function LeafletLocationPicker({
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col border border-zinc-200 dark:border-zinc-800 overflow-hidden" style={{ height: 'min(90vh, 700px)' }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[90vh] max-h-[700px] flex flex-col border border-zinc-200 overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">📍 {title}</h2>
-          <button onClick={onCancel} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1" aria-label="Close">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 flex-shrink-0">
+          <h2 className="text-lg font-bold text-zinc-900">{title}</h2>
+          <button type="button" onClick={onCancel} className="text-zinc-500 hover:text-zinc-800 transition-colors p-1" aria-label="Close">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -303,7 +304,7 @@ export default function LeafletLocationPicker({
         </div>
 
         {/* Map Area */}
-        <div ref={mapContainerRef} className="flex-1 min-h-0 bg-zinc-100 dark:bg-zinc-950 relative z-10" style={{ minHeight: '300px' }} />
+        <div ref={mapContainerRef} className="flex-1 min-h-[300px] bg-zinc-100 relative z-10" />
 
         {/* Footer info & confirmations */}
         <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 flex-shrink-0">

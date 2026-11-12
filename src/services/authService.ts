@@ -294,24 +294,24 @@ export const authService = {
     const donorProfile = await prisma.donorProfile.upsert({
       where: { userId: donorUser.id },
       update: {
-        organizationName: 'Grand Banquet Hall',
+        organizationName: 'Sample Banquet Kitchen',
         organizationType: 'CATERER',
         contactPerson: 'Rahul Sharma',
-        address: '45, Residency Road, Bengaluru',
-        city: 'Bengaluru',
-        latitude: 12.9716,
-        longitude: 77.5946,
+        address: 'Sector 1, Pune, Maharashtra',
+        city: 'Pune',
+        latitude: 18.5204,
+        longitude: 73.8567,
         verificationStatus: 'VERIFIED',
       },
       create: {
         userId: donorUser.id,
-        organizationName: 'Grand Banquet Hall',
+        organizationName: 'Sample Banquet Kitchen',
         organizationType: 'CATERER',
         contactPerson: 'Rahul Sharma',
-        address: '45, Residency Road, Bengaluru',
-        city: 'Bengaluru',
-        latitude: 12.9716,
-        longitude: 77.5946,
+        address: 'Sector 1, Pune, Maharashtra',
+        city: 'Pune',
+        latitude: 18.5204,
+        longitude: 73.8567,
         verificationStatus: 'VERIFIED',
       },
     });
@@ -337,10 +337,10 @@ export const authService = {
         organizationName: 'Save Food Foundation',
         registrationNumber: 'FSSAI-29623000000001',
         status: 'VERIFIED',
-        baseAddress: '10, MG Road, Bengaluru',
-        city: 'Bengaluru',
-        baseLatitude: 12.9616,
-        baseLongitude: 77.5846,
+        baseAddress: 'Shivajinagar Area, Pune, Maharashtra',
+        city: 'Pune',
+        baseLatitude: 18.5308,
+        baseLongitude: 73.8475,
         serviceRadiusKm: 15,
         availability: 'AVAILABLE',
         acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -352,10 +352,10 @@ export const authService = {
         organizationName: 'Save Food Foundation',
         registrationNumber: 'FSSAI-29623000000001',
         status: 'VERIFIED',
-        baseAddress: '10, MG Road, Bengaluru',
-        city: 'Bengaluru',
-        baseLatitude: 12.9616,
-        baseLongitude: 77.5846,
+        baseAddress: 'Shivajinagar Area, Pune, Maharashtra',
+        city: 'Pune',
+        baseLatitude: 18.5308,
+        baseLongitude: 73.8475,
         serviceRadiusKm: 15,
         availability: 'AVAILABLE',
         acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -385,10 +385,10 @@ export const authService = {
         organizationName: 'Hunger Relief Agency',
         registrationNumber: 'FSSAI-29623000000002',
         status: 'VERIFIED',
-        baseAddress: '20, Brigade Road, Bengaluru',
-        city: 'Bengaluru',
-        baseLatitude: 12.9816,
-        baseLongitude: 77.6046,
+        baseAddress: 'Nigdi Area, Pimpri-Chinchwad, Maharashtra',
+        city: 'Pimpri-Chinchwad',
+        baseLatitude: 18.6492,
+        baseLongitude: 73.7707,
         serviceRadiusKm: 10,
         availability: 'AVAILABLE',
         acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -400,10 +400,10 @@ export const authService = {
         organizationName: 'Hunger Relief Agency',
         registrationNumber: 'FSSAI-29623000000002',
         status: 'VERIFIED',
-        baseAddress: '20, Brigade Road, Bengaluru',
-        city: 'Bengaluru',
-        baseLatitude: 12.9816,
-        baseLongitude: 77.6046,
+        baseAddress: 'Nigdi Area, Pimpri-Chinchwad, Maharashtra',
+        city: 'Pimpri-Chinchwad',
+        baseLatitude: 18.6492,
+        baseLongitude: 73.7707,
         serviceRadiusKm: 10,
         availability: 'AVAILABLE',
         acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -434,10 +434,10 @@ export const authService = {
           organizationName: `Care & Share Society (${pendingEmail})`,
           registrationNumber: `FSSAI-${pendingEmail}`,
           status: 'PENDING_VERIFICATION',
-          baseAddress: '30, Indiranagar, Bengaluru',
-          city: 'Bengaluru',
-          baseLatitude: 12.9916,
-          baseLongitude: 77.6146,
+          baseAddress: 'Kothrud Area, Pune, Maharashtra',
+          city: 'Pune',
+          baseLatitude: 18.5074,
+          baseLongitude: 73.8077,
           serviceRadiusKm: 10,
           availability: 'AVAILABLE',
           acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -449,10 +449,10 @@ export const authService = {
           organizationName: `Care & Share Society (${pendingEmail})`,
           registrationNumber: `FSSAI-${pendingEmail}`,
           status: 'PENDING_VERIFICATION',
-          baseAddress: '30, Indiranagar, Bengaluru',
-          city: 'Bengaluru',
-          baseLatitude: 12.9916,
-          baseLongitude: 77.6146,
+          baseAddress: 'Kothrud Area, Pune, Maharashtra',
+          city: 'Pune',
+          baseLatitude: 18.5074,
+          baseLongitude: 73.8077,
           serviceRadiusKm: 10,
           availability: 'AVAILABLE',
           acceptedFoodTypes: 'COOKED_VEG,COOKED_NON_VEG,PACKAGED_FOOD,DRY_RATION,BAKERY,FRUITS_VEG',
@@ -508,8 +508,8 @@ export const authService = {
       await prisma.donation.create({
         data: {
           donorId: donorProfile.id,
-          title: 'Fresh Buffet Meal Surplus',
-          description: 'Freshly prepared vegetarian catering surplus, securely packed in sealed trays.',
+          title: 'Veg Biryani - Sample Catering Surplus',
+          description: 'Freshly prepared vegetarian catering surplus in sealed containers (sample walkthrough listing).',
           foodCategory: 'COOKED_VEG',
           vegNonVegMixed: 'VEG',
           quantity: '25',
@@ -529,6 +529,7 @@ export const authService = {
   async login(input: LoginInput) {
     const { email, password } = input;
     const trimmedInput = (email || '').trim();
+    const isDemoEnvironment = process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV === 'test';
 
     const demoEmails = [
       'donor@foodops.org',
@@ -537,31 +538,14 @@ export const authService = {
       'ngo3@foodops.org',
       'ngo_pending@foodops.org',
       'volunteer@foodops.org',
-      'admin@foodops.org',
-      'ADMIN_FOODOPS',
     ];
-
-    const isAdminLogin = trimmedInput.toUpperCase() === 'ADMIN_FOODOPS' || trimmedInput.toLowerCase() === 'admin@foodops.org';
 
     let user = await userRepository.findByEmail(trimmedInput);
 
-    if (!user && isAdminLogin) {
-      user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: { equals: 'ADMIN_FOODOPS' } },
-            { email: { equals: 'admin@foodops.org' } },
-            { email: { equals: trimmedInput } },
-          ],
-        },
-        include: { donor: true, ngo: true, volunteer: true, admin: true },
-      });
-    }
-
-    if (!user && (demoEmails.includes(trimmedInput) || isAdminLogin)) {
+    if (isDemoEnvironment && !user && demoEmails.includes(trimmedInput)) {
       try {
         await this.seedDemoAccounts();
-        user = await userRepository.findByEmail('ADMIN_FOODOPS') || await userRepository.findByEmail('admin@foodops.org');
+        user = await userRepository.findByEmail(trimmedInput);
       } catch (err) {
         console.error('Auto seed demo accounts failed:', err);
       }
@@ -571,17 +555,7 @@ export const authService = {
       throw new Error('Invalid email or password.');
     }
 
-    let isValid = verifyPassword(password, user.passwordHash);
-
-    // Support admin@123 password for admin role automatically
-    if (!isValid && (isAdminLogin || user.role === 'ADMIN') && password === 'admin@123') {
-      const newHash = hashPassword('admin@123');
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHash: newHash },
-      });
-      isValid = true;
-    }
+    const isValid = verifyPassword(password, user.passwordHash);
 
     if (!isValid) {
       throw new Error('Invalid email or password.');

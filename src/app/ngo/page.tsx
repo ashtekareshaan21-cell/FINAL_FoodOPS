@@ -77,10 +77,10 @@ export default async function NgoDashboard() {
         {ngo.status !== 'VERIFIED' && (
           <div className="mb-10 bg-warning-bg border border-warning-border rounded-md p-6 animate-fade-in text-warning">
             <h3 className="text-base font-bold mb-1.5 flex items-center gap-2">
-              <span>📋</span> FSSAI Compliance Review Notice
+              <span>Compliance Review Notice</span>
             </h3>
             <p className="text-xs leading-relaxed font-semibold">
-              Your organization account is currently under review by the FoodOps Administrator. In compliance with the FSSAI Surplus Food Recovery Regulations (2019), only fully verified NGOs are permitted to accept and distribute food. You will receive an alert once your registration copy is approved.
+              Your organization account is currently under review by the FoodOPS Administrator. In compliance with the FSSAI Surplus Food Recovery Regulations (2019), only verified NGOs are permitted to accept and distribute food. You will receive an alert once your registration copy is approved.
             </p>
           </div>
         )}

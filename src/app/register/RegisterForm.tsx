@@ -7,15 +7,23 @@ import Link from 'next/link';
 import LocationPicker, { SelectedLocation } from '@/components/Maps/LocationPicker';
 import MapPreview from '@/components/Maps/MapPreview';
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react';
+import { IconDonor, IconNgo, IconRider, IconPin } from '@/components/Icons';
 
 interface RegisterFormProps {
   ngos: Array<{ id: string; organizationName: string }>;
+  initialRole?: 'DONOR' | 'NGO' | 'VOLUNTEER';
 }
 
-export default function RegisterForm({ ngos }: RegisterFormProps) {
+const ROLE_LABELS: Record<'DONOR' | 'NGO' | 'VOLUNTEER', string> = {
+  DONOR: 'Surplus Donor',
+  NGO: 'Verified NGO',
+  VOLUNTEER: 'Rescue Rider',
+};
+
+export default function RegisterForm({ ngos, initialRole }: RegisterFormProps) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [role, setRole] = useState<'DONOR' | 'NGO' | 'VOLUNTEER'>('DONOR');
+  const [role, setRole] = useState<'DONOR' | 'NGO' | 'VOLUNTEER'>(initialRole || 'DONOR');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,7 +125,7 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
       return;
     }
     setError(null);
-    setStep(2);
+    setStep(initialRole ? 3 : 2);
   };
 
   const handleRoleSelect = (selectedRole: 'DONOR' | 'NGO' | 'VOLUNTEER') => {
@@ -221,13 +229,28 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
   return (
     <div className="space-y-6">
       {/* Onboarding Steps Indicators */}
-      <div className="flex items-center justify-between mb-8 max-w-xs mx-auto text-[10px] font-bold uppercase tracking-widest text-muted-light">
+      <div className="flex items-center justify-between mb-6 max-w-xs mx-auto text-[10px] font-bold uppercase tracking-widest text-muted-light">
         <span className={`pb-1.5 border-b-2 transition-colors duration-300 ${step >= 1 ? 'border-primary text-primary font-black' : 'border-transparent'}`}>Account</span>
-        <span className="text-border">──</span>
+        <span className="text-border">--</span>
         <span className={`pb-1.5 border-b-2 transition-colors duration-300 ${step >= 2 ? 'border-primary text-primary font-black' : 'border-transparent'}`}>Role</span>
-        <span className="text-border">──</span>
+        <span className="text-border">--</span>
         <span className={`pb-1.5 border-b-2 transition-colors duration-300 ${step === 3 ? 'border-primary text-primary font-black' : 'border-transparent'}`}>Details</span>
       </div>
+
+      {initialRole && step === 1 && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-xs text-[#0b3c26] flex items-center justify-between gap-3">
+          <span>
+            Role pre-selected: <strong>{ROLE_LABELS[role]}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="font-semibold text-[#047857] hover:underline cursor-pointer"
+          >
+            Switch role
+          </button>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {error && (
@@ -340,9 +363,11 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
                 onClick={() => handleRoleSelect('DONOR')}
                 whileHover={shouldReduceMotion ? {} : { scale: 1.02, y: -2 }}
                 whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
-                className="card-premium p-6 text-left hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px] cursor-pointer group"
+                className={`card-premium p-6 text-left hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px] cursor-pointer group ${role === 'DONOR' ? 'border-primary ring-1 ring-primary/30' : ''}`}
               >
-                <div className="text-2xl group-hover:scale-105 transition-transform duration-300">🏨</div>
+                <div className="w-10 h-10 rounded-lg bg-emerald-50 text-[#047857] border border-emerald-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                  <IconDonor className="w-5 h-5" />
+                </div>
                 <div>
                   <h4 className="text-sm font-bold text-foreground mt-3">Surplus Donor</h4>
                   <p className="text-[11px] text-muted-text mt-1 leading-relaxed font-medium">
@@ -358,9 +383,11 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
                 onClick={() => handleRoleSelect('NGO')}
                 whileHover={shouldReduceMotion ? {} : { scale: 1.02, y: -2 }}
                 whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
-                className="card-premium p-6 text-left hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px] cursor-pointer group"
+                className={`card-premium p-6 text-left hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px] cursor-pointer group ${role === 'NGO' ? 'border-primary ring-1 ring-primary/30' : ''}`}
               >
-                <div className="text-2xl group-hover:scale-105 transition-transform duration-300">🌍</div>
+                <div className="w-10 h-10 rounded-lg bg-emerald-50 text-[#047857] border border-emerald-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                  <IconNgo className="w-5 h-5" />
+                </div>
                 <div>
                   <h4 className="text-sm font-bold text-foreground mt-3">Verified NGO</h4>
                   <p className="text-[11px] text-muted-text mt-1 leading-relaxed font-medium">
@@ -376,9 +403,11 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
                 onClick={() => handleRoleSelect('VOLUNTEER')}
                 whileHover={shouldReduceMotion ? {} : { scale: 1.02, y: -2 }}
                 whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
-                className="card-premium p-6 text-left hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px] cursor-pointer group"
+                className={`card-premium p-6 text-left hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px] cursor-pointer group ${role === 'VOLUNTEER' ? 'border-primary ring-1 ring-primary/30' : ''}`}
               >
-                <div className="text-2xl group-hover:scale-105 transition-transform duration-300">🚴</div>
+                <div className="w-10 h-10 rounded-lg bg-emerald-50 text-[#047857] border border-emerald-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                  <IconRider className="w-5 h-5" />
+                </div>
                 <div>
                   <h4 className="text-sm font-bold text-foreground mt-3">Rescue Rider</h4>
                   <p className="text-[11px] text-muted-text mt-1 leading-relaxed font-medium">
@@ -493,7 +522,7 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
                       onClick={() => openLocationPicker('DONOR')}
                       className="w-full py-4 px-4 border-2 border-dashed border-border hover:border-primary/45 rounded-md text-xs font-semibold text-muted-text hover:text-primary transition-colors flex items-center justify-center gap-2 cursor-pointer bg-surface"
                     >
-                      📍 Select Organization Location
+                      <IconPin className="w-4 h-4" /> Select Organization Location
                     </button>
                   )}
                 </motion.div>
@@ -589,7 +618,7 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
                       onClick={() => openLocationPicker('NGO')}
                       className="w-full py-4 px-4 border-2 border-dashed border-border hover:border-primary/45 rounded-md text-xs font-semibold text-muted-text hover:text-primary transition-colors flex items-center justify-center gap-2 cursor-pointer bg-surface"
                     >
-                      📍 Select Operational Address
+                      <IconPin className="w-4 h-4" /> Select Operational Address
                     </button>
                   )}
                 </motion.div>
@@ -755,7 +784,7 @@ export default function RegisterForm({ ngos }: RegisterFormProps) {
                     </select>
                   ) : (
                     <div className="p-4 rounded-md bg-danger-bg border border-danger-border text-danger text-xs font-semibold">
-                      No NGOs are currently registered on FoodOps. An NGO must be onboarded first before volunteers can link.
+                      No NGOs are currently registered on FoodOPS. An NGO must be onboarded first before volunteers can link.
                     </div>
                   )}
                 </motion.div>

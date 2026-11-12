@@ -1,13 +1,35 @@
 export const dynamic = 'force-dynamic';
 
+import type { Metadata } from 'next';
 import { prisma } from '@/lib/db';
 import RegisterForm from './RegisterForm';
 import Navbar from '@/components/Navbar';
+import SiteFooter from '@/components/SiteFooter';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
-export default async function RegisterPage() {
+export const metadata: Metadata = {
+  title: 'Create Account',
+  description: 'Register as a surplus food donor, verified NGO partner, or rescue rider on FoodOPS.',
+  alternates: { canonical: '/register' },
+};
+
+type RoleChoice = 'DONOR' | 'NGO' | 'VOLUNTEER';
+
+function parseRoleParam(roleParam?: string): RoleChoice | undefined {
+  const normalized = roleParam?.trim().toLowerCase();
+  if (normalized === 'donor') return 'DONOR';
+  if (normalized === 'ngo') return 'NGO';
+  if (normalized === 'rider' || normalized === 'volunteer') return 'VOLUNTEER';
+  return undefined;
+}
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ role?: string }>;
+}) {
   const session = await getSession();
   if (session) {
     if (session.role === 'DONOR') redirect('/donor');
@@ -16,6 +38,9 @@ export default async function RegisterPage() {
     if (session.role === 'ADMIN') redirect('/admin');
     redirect('/');
   }
+
+  const resolvedParams = searchParams ? await searchParams : undefined;
+  const initialRole = parseRoleParam(resolvedParams?.role);
 
   let ngos: { id: string; organizationName: string }[] = [];
   try {
@@ -29,7 +54,6 @@ export default async function RegisterPage() {
         { organizationName: 'asc' },
       ],
     });
-    // Ensure the registered Bengaluru NGO (Save Food Foundation) is prioritized at top of list
     ngos = fetchedNgos.sort((a, b) => {
       if (a.organizationName.includes('Save Food Foundation')) return -1;
       if (b.organizationName.includes('Save Food Foundation')) return 1;
@@ -43,20 +67,21 @@ export default async function RegisterPage() {
     <div className="min-h-screen bg-transparent flex flex-col relative">
       <FoodOpsBackground variant="auth" />
       <Navbar />
-      <div className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl w-full space-y-8 bg-surface/75 backdrop-blur-md p-8 rounded-2xl border border-border shadow-lg">
+      <main id="main-content" className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl w-full space-y-8 bg-surface/85 backdrop-blur-md p-8 rounded-2xl border border-border shadow-lg">
           <div>
-            <h2 className="text-center text-3xl font-extrabold text-foreground">
-              Create your FoodOps account
-            </h2>
+            <h1 className="text-center text-3xl font-extrabold text-foreground">
+              Create your FoodOPS account
+            </h1>
             <p className="mt-2 text-center text-sm text-muted-text">
-              Select your role below to register
+              Register as a surplus donor, verified NGO, or rescue rider
             </p>
           </div>
 
-          <RegisterForm ngos={ngos} />
+          <RegisterForm ngos={ngos} initialRole={initialRole} />
         </div>
-      </div>
+      </main>
+      <SiteFooter />
     </div>
   );
 }

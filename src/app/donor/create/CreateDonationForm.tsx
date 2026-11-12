@@ -978,7 +978,7 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
                         {auditResult.warnings && auditResult.warnings.length > 0 && (
                           <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900">
                             <p className="text-[10px] font-bold mb-1 flex items-center gap-1.5">
-                              <span>⚠️</span> AI Safety Observations
+                              <span>Notice:</span> Safety Check Observations
                             </p>
                             <ul className="list-disc pl-4 space-y-0.5 text-[11px] font-medium">
                               {auditResult.warnings.map((warn: string, idx: number) => (

@@ -2,9 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { login } from '@/app/actions/auth';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'motion/react';
+import { login } from '@/app/actions/auth';
+
+const IS_DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
+const DemoSignInPanel = IS_DEMO_MODE
+  ? dynamic(() => import('./DemoSignInPanel'), { ssr: false })
+  : null;
 
 export default function LoginForm() {
   const router = useRouter();
@@ -13,26 +19,19 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const shouldReduceMotion = useReducedMotion();
-  const yOffset = shouldReduceMotion ? 0 : 12;
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: shouldReduceMotion ? 0 : 0.06,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: yOffset },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.35, ease: 'easeOut' as const },
-    },
+  const navigateByRole = (role?: string | null) => {
+    if (role === 'DONOR') {
+      router.push('/donor');
+    } else if (role === 'NGO') {
+      router.push('/ngo');
+    } else if (role === 'VOLUNTEER') {
+      router.push('/volunteer');
+    } else if (role === 'ADMIN') {
+      router.push('/admin');
+    } else {
+      router.push('/');
+    }
+    router.refresh();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,179 +43,96 @@ export default function LoginForm() {
     setLoading(false);
 
     if (res.success) {
-      if (res.role === 'DONOR') {
-        router.push('/donor');
-      } else if (res.role === 'NGO') {
-        router.push('/ngo');
-      } else if (res.role === 'VOLUNTEER') {
-        router.push('/volunteer');
-      } else if (res.role === 'ADMIN') {
-        router.push('/admin');
-      } else {
-        router.push('/');
-      }
-      router.refresh();
+      navigateByRole(res.role);
     } else {
       setError(res.error || 'Authentication failed.');
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string, demoPassword = 'password') => {
+  const handleDemoLogin = async (sampleEmail: string, samplePassword = 'password') => {
+    if (!IS_DEMO_MODE) return;
     setLoading(true);
     setError(null);
-    setEmail(demoEmail);
-    setPassword(demoPassword);
+    setEmail(sampleEmail);
+    setPassword(samplePassword);
 
-    const res = await login({ email: demoEmail, password: demoPassword });
+    const res = await login({ email: sampleEmail, password: samplePassword });
     setLoading(false);
 
     if (res.success) {
-      if (res.role === 'DONOR') {
-        router.push('/donor');
-      } else if (res.role === 'NGO') {
-        router.push('/ngo');
-      } else if (res.role === 'VOLUNTEER') {
-        router.push('/volunteer');
-      } else if (res.role === 'ADMIN') {
-        router.push('/admin');
-      } else {
-        router.push('/');
-      }
-      router.refresh();
+      navigateByRole(res.role);
     } else {
-      setError(res.error || 'Demo login failed.');
+      setError(res.error || 'Sample sign-in failed.');
     }
   };
 
   return (
-    <motion.div 
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       {error && (
-        <motion.div 
-          variants={itemVariants}
+        <div
+          role="alert"
           className="p-4 rounded-sm bg-danger-bg border border-danger-border text-danger text-xs font-semibold"
         >
           {error}
-        </motion.div>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <motion.div variants={itemVariants}>
-          <label className="label-premium">
-            Username / Email Address
+        <div>
+          <label htmlFor="login-email" className="label-premium">
+            Email Address
           </label>
           <input
+            id="login-email"
+            name="email"
             type="text"
+            autoComplete="username"
             required
             className="input-premium"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="ADMIN_FOODOPS or email"
+            placeholder="name@organisation.org"
           />
-        </motion.div>
+        </div>
 
-        <motion.div variants={itemVariants}>
-          <label className="label-premium">
+        <div>
+          <label htmlFor="login-password" className="label-premium">
             Password
           </label>
           <input
+            id="login-password"
+            name="password"
             type="password"
+            autoComplete="current-password"
             required
             className="input-premium"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
+            placeholder="Enter password"
           />
-        </motion.div>
+        </div>
 
-        <motion.div variants={itemVariants}>
-          <motion.button
+        <div>
+          <button
             type="submit"
             disabled={loading}
-            whileHover={shouldReduceMotion ? {} : { scale: 1.01 }}
-            whileTap={shouldReduceMotion ? {} : { scale: 0.99 }}
-            className="btn-primary w-full py-3 shadow-md shadow-primary/10 transition-shadow cursor-pointer"
+            className="btn-primary w-full py-3 shadow-md shadow-primary/10 transition-all cursor-pointer"
           >
             {loading ? 'Signing in...' : 'Sign In'}
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       </form>
 
-      {/* One-Tap Demo Logins */}
-      <motion.div variants={itemVariants} className="pt-2 border-t border-border space-y-3">
-        <div className="flex justify-between items-center text-[11px] font-bold text-muted uppercase tracking-wider">
-          <span>One-Tap Demo Sign In</span>
-          <span className="text-[10px] font-normal text-muted-light">Instant Access</span>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => handleDemoLogin('donor@foodops.org')}
-            className="p-2.5 rounded border border-border bg-surface hover:bg-surface-muted hover:border-primary/40 font-semibold text-foreground flex items-center gap-2 cursor-pointer transition-colors text-left"
-          >
-            <span>🏨</span>
-            <div className="min-w-0">
-              <div className="truncate font-bold">Donor</div>
-              <div className="text-[10px] text-muted-light truncate">donor@foodops.org</div>
-            </div>
-          </button>
+      {IS_DEMO_MODE && DemoSignInPanel ? (
+        <DemoSignInPanel loading={loading} onDemoLogin={handleDemoLogin} />
+      ) : null}
 
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => handleDemoLogin('ngo1@foodops.org')}
-            className="p-2.5 rounded border border-border bg-surface hover:bg-surface-muted hover:border-primary/40 font-semibold text-foreground flex items-center gap-2 cursor-pointer transition-colors text-left"
-          >
-            <span>🌍</span>
-            <div className="min-w-0">
-              <div className="truncate font-bold">NGO (Verified)</div>
-              <div className="text-[10px] text-muted-light truncate">ngo1@foodops.org</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => handleDemoLogin('volunteer@foodops.org')}
-            className="p-2.5 rounded border border-border bg-surface hover:bg-surface-muted hover:border-primary/40 font-semibold text-foreground flex items-center gap-2 cursor-pointer transition-colors text-left"
-          >
-            <span>🚴</span>
-            <div className="min-w-0">
-              <div className="truncate font-bold">Volunteer Rider</div>
-              <div className="text-[10px] text-muted-light truncate">volunteer@foodops.org</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => handleDemoLogin('ADMIN_FOODOPS', 'admin@123')}
-            className="p-2.5 rounded border border-border bg-surface hover:bg-surface-muted hover:border-primary/40 font-semibold text-foreground flex items-center gap-2 cursor-pointer transition-colors text-left"
-          >
-            <span>🛡️</span>
-            <div className="min-w-0">
-              <div className="truncate font-bold">Admin Portal</div>
-              <div className="text-[10px] text-muted-light truncate">ADMIN_FOODOPS</div>
-            </div>
-          </button>
-        </div>
-      </motion.div>
-
-      <motion.div 
-        variants={itemVariants}
-        className="text-center text-sm text-muted-text pt-2"
-      >
-        New to FoodOps?{' '}
+      <div className="text-center text-sm text-muted-text pt-2">
+        New to FoodOPS?{' '}
         <Link href="/register" className="font-semibold text-primary hover:underline">
-          Create Account
+          Register your organisation
         </Link>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }

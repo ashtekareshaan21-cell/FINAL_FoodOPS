@@ -48,12 +48,12 @@ interface VolunteerAssignmentListProps {
 const STATUS_FLOW = ['ASSIGNED', 'TRAVELING', 'ARRIVED', 'PICKED_UP', 'DELIVERING', 'COMPLETED'];
 
 const STATUS_LABELS: Record<string, string> = {
-  ASSIGNED: '📍 Assigned',
-  TRAVELING: '🚴 Traveling to Donor',
-  ARRIVED: '🏁 Arrived at Donor',
-  PICKED_UP: '📦 Picked Up',
-  DELIVERING: '🚛 Delivering to NGO',
-  COMPLETED: '✓ Completed',
+  ASSIGNED: 'Assigned',
+  TRAVELING: 'Traveling to Donor',
+  ARRIVED: 'Arrived at Donor',
+  PICKED_UP: 'Picked Up',
+  DELIVERING: 'Delivering to NGO',
+  COMPLETED: 'Completed',
 };
 
 // Map Volunteer status names to Delivery tracker status names

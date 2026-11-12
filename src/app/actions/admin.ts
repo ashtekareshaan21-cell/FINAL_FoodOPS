@@ -49,6 +49,10 @@ export async function rejectNgo(ngoId: string, reason: string) {
 
 export async function getAdminStats() {
   if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    throw new Error('Unauthorized: Admin access required.');
+  }
   try {
     return await adminService.getAdminStats();
   } catch (error) {

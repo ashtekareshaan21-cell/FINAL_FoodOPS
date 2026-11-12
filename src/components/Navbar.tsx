@@ -1,93 +1,66 @@
 import Link from 'next/link';
-import { getSession, isAdminPortalEnabled } from '@/lib/auth';
-import { logout } from '@/app/actions/auth';
-import { getAvatarGradient, getInitials } from '@/lib/ui';
-import NavbarLinks from './NavbarLinks';
+import { IconBrandMark } from './Icons';
+import { IS_DEMO_MODE } from '@/lib/siteConfig';
+import NavbarClientAuth from './NavbarClientAuth';
 
-export default async function Navbar() {
-  const session = await getSession();
-  const userGrad = session ? getAvatarGradient(session.email) : '';
-  const userInit = session ? getInitials(session.email) : '';
-  const adminEnabled = isAdminPortalEnabled();
-
+export default function Navbar() {
   return (
-    <nav className="sticky top-0 z-50 bg-white/95 border-b border-slate-200 backdrop-blur-md shadow-xs transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            {/* Brand Logo & Platform Title */}
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="flex items-center gap-2.5 group">
-                <div className="w-8 h-8 rounded-lg bg-[#0b3c26] text-white flex items-center justify-center font-bold text-sm shadow-xs group-hover:bg-[#062b1b] transition-colors">
-                  🌱
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold text-[#0b3c26] tracking-tight font-display leading-none">
-                    Food<span className="text-[#10b981]">OPS</span>
-                  </span>
-                  <span className="text-[9px] font-extrabold text-slate-500 tracking-widest uppercase mt-0.5">
-                    SURPLUS RESCUE & RECOVERY
-                  </span>
-                </div>
+    <header className="sticky top-0 z-50 bg-white/95 border-b border-slate-200 backdrop-blur-md shadow-xs transition-colors duration-200">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-[60] focus:rounded-md focus:bg-[#0b3c26] focus:px-4 focus:py-2 focus:text-xs focus:font-bold focus:text-white focus:outline-2 focus:outline-offset-2 focus:outline-emerald-500"
+      >
+        Skip to main content
+      </a>
+
+      {IS_DEMO_MODE ? (
+        <div
+          role="note"
+          className="bg-amber-100 border-b border-amber-300 text-amber-950 text-center py-1.5 px-4 text-xs font-bold tracking-wide"
+        >
+          FoodOPS Demo - sample data only.
+        </div>
+      ) : null}
+
+      <nav aria-label="Primary navigation" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 gap-4">
+          <div className="flex items-center gap-6 min-w-0">
+            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+              <span className="w-8 h-8 rounded-lg bg-[#0b3c26] text-white flex items-center justify-center shadow-xs group-hover:bg-[#062b1b] transition-colors">
+                <IconBrandMark className="w-5 h-5" />
+              </span>
+              <span className="flex flex-col">
+                <span className="text-xl font-bold text-[#0b3c26] tracking-tight font-display leading-none">
+                  Food<span className="text-emerald-700">OPS</span>
+                </span>
+                <span className="text-[10px] font-bold text-slate-700 tracking-wider uppercase mt-0.5">
+                  Surplus Rescue Logistics
+                </span>
+              </span>
+            </Link>
+
+            <div className="hidden lg:flex items-center gap-5 text-xs font-semibold text-slate-700">
+              <Link href="/#how-it-works" className="hover:text-[#0b3c26] transition-colors">
+                How FoodOPS Works
+              </Link>
+              <Link href="/for-donors" className="hover:text-[#0b3c26] transition-colors">
+                For Donors
+              </Link>
+              <Link href="/for-ngos" className="hover:text-[#0b3c26] transition-colors">
+                For NGOs
+              </Link>
+              <Link href="/for-riders" className="hover:text-[#0b3c26] transition-colors">
+                For Riders
+              </Link>
+              <Link href="/food-safety" className="hover:text-[#0b3c26] transition-colors">
+                Food Safety
               </Link>
             </div>
-
-            {/* Navigation links based on role */}
-            {session && (
-              <NavbarLinks role={session.role} adminEnabled={adminEnabled} />
-            )}
           </div>
 
-          <div className="flex items-center gap-4">
-            {session ? (
-              <div className="flex items-center gap-3">
-                <div className="text-right hidden md:block">
-                  <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border tracking-wider uppercase ${
-                    session.role === 'DONOR' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                    session.role === 'NGO' ? 'bg-teal-50 text-teal-800 border-teal-200' :
-                    session.role === 'VOLUNTEER' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                    'bg-slate-100 text-slate-800 border-slate-300'
-                  }`}>
-                    {session.role}
-                  </span>
-                  <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                    {session.email}
-                  </p>
-                </div>
-                
-                {/* Circular Profile Avatar Badge */}
-                <div className="w-8 h-8 rounded-full bg-[#0b3c26] text-white font-bold text-xs flex items-center justify-center ring-2 ring-emerald-400/30 shadow-xs">
-                  {userInit}
-                </div>
-
-                <form action={logout}>
-                  <button
-                    type="submit"
-                    className="btn-secondary px-3 py-1.5 text-xs font-semibold"
-                  >
-                    Logout
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/login"
-                  className="btn-secondary px-4 py-2 text-sm font-semibold border-slate-200 hover:border-slate-300"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  className="btn-primary px-4.5 py-2 text-sm font-semibold shadow-xs"
-                >
-                  Register
-                </Link>
-              </div>
-            )}
-          </div>
+          <NavbarClientAuth />
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }

@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
 import { ocrService } from '@/services/ocrService';
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session || (session.role !== 'DONOR' && session.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
     const contentType = req.headers.get('content-type') || '';
     
     let base64Image = '';

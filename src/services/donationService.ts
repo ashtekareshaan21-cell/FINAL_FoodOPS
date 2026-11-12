@@ -1112,7 +1112,7 @@ export const donationService = {
     if (user.role === 'VOLUNTEER') {
       return {
         success: true,
-        message: 'OTP has been generated. Ask the donor to open their portal and click "View Handover OTP".',
+        message: 'OTP has been generated and sent to the donor. Ask the donor to open their portal and click "View Handover OTP".',
       };
     } else {
       return {

@@ -268,10 +268,10 @@ export async function updateNgoSettings(data: {
 export async function getDonationMatchDiagnostics(donationId: string) {
   const session = await getSession();
   if (!session) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: 'Not found.' };
   }
 
-  // Authorization checks
+  // Authorization checks: return non-disclosing error for non-owners/wrong role
   if (session.role !== 'ADMIN') {
     if (session.role === 'DONOR') {
       const donation = await prisma.donation.findUnique({
@@ -279,10 +279,10 @@ export async function getDonationMatchDiagnostics(donationId: string) {
         include: { donor: true },
       });
       if (!donation || donation.donor.userId !== session.userId) {
-        return { success: false, error: 'Unauthorized. You do not own this donation.' };
+        return { success: false, error: 'Not found.' };
       }
     } else {
-      return { success: false, error: 'Unauthorized' };
+      return { success: false, error: 'Not found.' };
     }
   }
 
@@ -291,8 +291,7 @@ export async function getDonationMatchDiagnostics(donationId: string) {
     return { success: true, diagnostics };
   } catch (error) {
     console.error('Get donation match diagnostics error:', error);
-    const message = error instanceof Error ? error.message : 'Failed to retrieve diagnostics.';
-    return { success: false, error: message };
+    return { success: false, error: 'Not found.' };
   }
 }
 
@@ -350,17 +349,21 @@ export async function generatePickupOtp(assignmentId: string) {
 
 export async function getPublicImpactStats() {
   try {
-    return await adminService.getAdminStats();
+    const stats = await adminService.getAdminStats();
+    return {
+      completedRescues: stats.completedRescues,
+      activeRescues: stats.activeRescues,
+      co2SavedKg: stats.co2SavedKg,
+      waterSavedLiters: stats.waterSavedLiters,
+      foodWeightKg: stats.foodWeightKg,
+      divertedWeightKg: stats.divertedWeightKg,
+      biogasGeneratedKwh: stats.biogasGeneratedKwh,
+    };
   } catch (error) {
     console.error('Failed to load public impact stats:', error);
     return {
-      totalDonors: 0,
-      totalNgos: 0,
-      verifiedNgos: 0,
-      pendingNgos: 0,
-      totalVolunteers: 0,
-      totalDonations: 0,
       completedRescues: 0,
+      activeRescues: 0,
       co2SavedKg: 0,
       waterSavedLiters: 0,
       foodWeightKg: 0,

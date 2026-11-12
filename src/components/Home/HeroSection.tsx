@@ -1,145 +1,114 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createScope, animate } from 'animejs';
-import { MOTION } from '@/animations/config';
-import { prefersReducedMotion } from '@/animations/accessibility';
+import DemoPanelBanner from '@/components/DemoPanelBanner';
+import { MetricKindBadge } from '@/components/ImpactStats';
+import {
+  IconArrowRight,
+  IconCheck,
+  IconClock,
+  IconLock,
+  IconPin,
+  IconRider,
+  IconShield,
+} from '@/components/Icons';
+import { DEMO_SITE_URL, IS_DEMO_MODE } from '@/lib/siteConfig';
 
-interface HeroSectionProps {
-  sessionRole?: string;
-}
-
-export default function HeroSection({ sessionRole }: HeroSectionProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
+export default function HeroSection() {
+  const [sessionRole, setSessionRole] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    const root = rootRef.current;
-    if (!root || prefersReducedMotion()) return;
-
-    // Component-scoped Anime.js timeline entrance
-    const scope = createScope({ root }).add(() => {
-      const textItems = root.querySelectorAll('.hero-text-anim');
-      const nodes = root.querySelectorAll('.hero-node-anim');
-      const lines = root.querySelectorAll('.hero-line-anim');
-
-      // Animating the text and then drawing the connections of the central core
-      animate(textItems, {
-        opacity: [0, 1],
-        translateY: [25, 0],
-        duration: MOTION.duration.slow,
-        ease: MOTION.easing.smooth,
-        delay: (_el?: any, i?: number) => (i || 0) * 120,
-      });
-
-      animate(lines, {
-        strokeDashoffset: [300, 0],
-        opacity: [0, 1],
-        duration: MOTION.duration.slow,
-        ease: MOTION.easing.smooth,
-        delay: 500,
-      });
-
-      animate(nodes, {
-        scale: [0, 1],
-        opacity: [0, 1],
-        duration: MOTION.duration.medium,
-        ease: MOTION.easing.bounce,
-        delay: (_el?: any, i?: number) => 800 + (i || 0) * 100,
-      });
-    });
+    let active = true;
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : { role: null }))
+      .then((data: { role?: string | null }) => {
+        if (active && data.role) {
+          setSessionRole(data.role);
+        }
+      })
+      .catch(() => undefined);
 
     return () => {
-      scope.revert();
+      active = false;
     };
   }, []);
 
   return (
-    <section ref={rootRef} className="relative overflow-hidden min-h-[90vh] pt-20 pb-16 flex items-center bg-transparent">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
+    <section className="relative overflow-hidden py-14 sm:py-20 bg-transparent">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* Headline & CTAs */}
           <div className="lg:col-span-7 space-y-6 text-left">
-            <div className="hero-text-anim inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-[#0b3c26] border border-emerald-200/80 text-xs font-bold tracking-wide uppercase">
-              <span className="w-2 h-2 rounded-full bg-[#10b981] animate-ping" />
-              <span>Real-Time Surplus Rescue Network</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-[#0b3c26] border border-emerald-200 text-xs font-bold tracking-wide uppercase">
+              <IconShield className="w-3.5 h-3.5 text-emerald-800" />
+              <span>Surplus Food Rescue · Pune &amp; Pimpri-Chinchwad Pilot</span>
             </div>
 
-            <h1 
-              className="hero-text-anim text-4xl sm:text-6xl font-extrabold tracking-tight text-[#0b3c26] leading-[1.08] font-display"
-            >
+            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-[#0b3c26] leading-[1.08] font-display">
               Rescue surplus food <br />
               <span className="text-slate-800 font-bold">
                 before the window closes.
               </span>
             </h1>
-            
-            <p 
-              className="hero-text-anim max-w-xl text-base sm:text-lg text-slate-600 leading-relaxed font-medium"
-            >
-              Connect surplus meals from commercial kitchens with verified local receiver NGOs in minutes. Automated time-window countdowns, verified OTP handovers, and continuous organic recovery routing.
+
+            <p className="max-w-xl text-base sm:text-lg text-slate-700 leading-relaxed font-medium">
+              FoodOPS coordinates surplus meals from commercial kitchens with verified local NGOs in Pune and Pimpri-Chinchwad. Fixed pickup windows, one-time OTP handovers, and compost or biogas routing if a batch expires.
             </p>
-            
-            <div 
-              className="hero-text-anim pt-2 flex flex-col sm:flex-row gap-3.5"
-            >
+
+            <div className="pt-1 flex flex-col sm:flex-row flex-wrap gap-3.5">
               {sessionRole === 'DONOR' ? (
                 <>
                   <Link
                     href="/donor"
-                    className="btn-primary px-8 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
+                    className="btn-primary px-7 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
                   >
                     <span>Open Donor Dashboard</span>
-                    <span className="text-emerald-300">&rarr;</span>
+                    <IconArrowRight className="w-4 h-4" />
                   </Link>
                   <Link
                     href="/donor/create"
-                    className="btn-secondary px-7 py-3.5 text-sm font-semibold shadow-xs text-center inline-flex items-center justify-center"
+                    className="btn-secondary px-6 py-3.5 text-sm font-semibold shadow-xs inline-flex items-center justify-center"
                   >
-                    + New Surplus Listing
+                    New Surplus Listing
                   </Link>
                 </>
               ) : sessionRole === 'NGO' ? (
                 <>
                   <Link
                     href="/ngo"
-                    className="btn-primary px-8 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
+                    className="btn-primary px-7 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
                   >
                     <span>Open NGO Portal</span>
-                    <span className="text-emerald-300">&rarr;</span>
+                    <IconArrowRight className="w-4 h-4" />
                   </Link>
                   <Link
                     href="/ngo/active"
-                    className="btn-secondary px-7 py-3.5 text-sm font-semibold shadow-xs text-center inline-flex items-center justify-center"
+                    className="btn-secondary px-6 py-3.5 text-sm font-semibold shadow-xs inline-flex items-center justify-center"
                   >
                     Active Rescues
                   </Link>
                 </>
               ) : sessionRole === 'VOLUNTEER' ? (
-                <>
-                  <Link
-                    href="/volunteer"
-                    className="btn-primary px-8 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
-                  >
-                    <span>My Assigned Pickups</span>
-                    <span className="text-emerald-300">&rarr;</span>
-                  </Link>
-                </>
+                <Link
+                  href="/volunteer"
+                  className="btn-primary px-7 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
+                >
+                  <span>My Assigned Pickups</span>
+                  <IconArrowRight className="w-4 h-4" />
+                </Link>
               ) : sessionRole === 'ADMIN' ? (
                 <>
                   <Link
                     href="/admin"
-                    className="btn-primary px-8 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
+                    className="btn-primary px-7 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
                   >
                     <span>Admin Coordinator</span>
-                    <span className="text-emerald-300">&rarr;</span>
+                    <IconArrowRight className="w-4 h-4" />
                   </Link>
                   <Link
                     href="/admin/data"
-                    className="btn-secondary px-7 py-3.5 text-sm font-semibold shadow-xs text-center inline-flex items-center justify-center"
+                    className="btn-secondary px-6 py-3.5 text-sm font-semibold shadow-xs inline-flex items-center justify-center"
                   >
                     Data Browser
                   </Link>
@@ -147,118 +116,187 @@ export default function HeroSection({ sessionRole }: HeroSectionProps) {
               ) : (
                 <>
                   <Link
-                    href="/register"
-                    className="btn-primary px-8 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
+                    href="/for-donors"
+                    className="btn-primary px-7 py-3.5 text-sm font-semibold shadow-md inline-flex items-center justify-center gap-2"
                   >
-                    <span>Publish Surplus Food</span>
-                    <span className="text-emerald-300">&rarr;</span>
+                    <span>Onboard as Partner</span>
+                    <IconArrowRight className="w-4 h-4" />
                   </Link>
                   <a
                     href="#how-it-works"
-                    className="btn-secondary px-7 py-3.5 text-sm font-semibold shadow-xs text-center"
+                    className="btn-secondary px-6 py-3.5 text-sm font-semibold shadow-xs text-center inline-flex items-center justify-center"
                   >
                     How FoodOPS Works
                   </a>
+                  {!IS_DEMO_MODE && DEMO_SITE_URL ? (
+                    <a
+                      href={DEMO_SITE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-secondary px-6 py-3.5 text-sm font-semibold shadow-xs text-center inline-flex items-center justify-center border-emerald-300 text-[#0b3c26]"
+                    >
+                      Try the demo
+                    </a>
+                  ) : !IS_DEMO_MODE ? (
+                    <Link
+                      href="/about#demo-environment"
+                      className="btn-secondary px-6 py-3.5 text-sm font-semibold shadow-xs text-center inline-flex items-center justify-center border-emerald-300 text-[#0b3c26]"
+                    >
+                      Try the demo
+                    </Link>
+                  ) : null}
                 </>
               )}
             </div>
 
-            {/* Platform Operational Metrics Bar */}
-            <div className="hero-text-anim pt-6 grid grid-cols-3 gap-4 border-t border-slate-200/80">
-              <div>
-                <p className="text-2xl font-black text-[#0b3c26] font-display">100%</p>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Verified NGOs</p>
+            {/* Honest Pilot Expectations & Claims (F07, F08, F11) */}
+            <div className="pt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-200">
+              <div className="rounded-lg border border-border bg-white/90 p-3.5 space-y-1">
+                <p className="text-xs font-extrabold text-[#0b3c26] uppercase tracking-wider">
+                  NGO Verification
+                </p>
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  Every NGO is verified before its first claim: registration details, a named contact, and a food-handling check. Verification steps are listed on our{' '}
+                  <Link href="/food-safety" className="text-emerald-800 font-semibold underline">
+                    Food Safety page
+                  </Link>
+                  .
+                </p>
               </div>
-              <div>
-                <p className="text-2xl font-black text-[#0b3c26] font-display">&lt; 45m</p>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Rescue Window</p>
+
+              <div className="rounded-lg border border-border bg-white/90 p-3.5 space-y-1">
+                <p className="text-xs font-extrabold text-[#0b3c26] uppercase tracking-wider">
+                  Pilot Window Target
+                </p>
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  Our target: from listing to pickup in under 45 minutes inside our pilot area. We will publish the measured average after the first 20 rescues.
+                </p>
               </div>
-              <div>
-                <p className="text-2xl font-black text-[#10b981] font-display">Zero</p>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Food Waste Target</p>
+
+              <div className="rounded-lg border border-border bg-white/90 p-3.5 space-y-1">
+                <p className="text-xs font-extrabold text-[#0b3c26] uppercase tracking-wider">
+                  Safe Handling Checks
+                </p>
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  Food safety first: donors confirm the food was stored safely and is within its safe window; receivers check temperature and condition at pickup.{' '}
+                  <Link href="/food-safety" className="text-emerald-800 font-semibold underline">
+                    See how our checks work
+                  </Link>
+                  .
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Live Operational Rescue Preview Card */}
+          {/* Example Rescue Walkthrough Card (F02, F03, F19, F35, F36) */}
           <div className="lg:col-span-5 flex justify-center items-center">
-            <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-              {/* Header */}
-              <div className="bg-[#0b3c26] p-4 text-white flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Active Rescue Stream</span>
-                </div>
-                <span className="status-badge bg-emerald-950/60 text-emerald-300 border-emerald-700/50 text-[10px]">
-                  LIVE MATCH
+            <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+              {/* Mandatory Top Demo Banner (F02) */}
+              <div className="p-3 bg-slate-50 border-b border-slate-200">
+                <DemoPanelBanner title="Illustrative Walkthrough" />
+              </div>
+
+              {/* Card Header */}
+              <div className="bg-[#0b3c26] px-5 py-3.5 text-white flex justify-between items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  How a rescue flows - example
+                </span>
+                <span className="inline-flex items-center rounded border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-950">
+                  DEMO
                 </span>
               </div>
 
               {/* Card Body */}
               <div className="p-5 space-y-4">
-                {/* Active Item Title & SLA Counter */}
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-3">
                   <div>
-                    <h3 className="font-bold text-slate-900 text-base">Fresh Veg Biryani & Curry</h3>
-                    <p className="text-xs text-slate-500 font-medium">Grand Palace Hotel &bull; 45 Servings (~18 kg)</p>
+                    <h2 className="font-bold text-slate-900 text-base">
+                      Veg Biryani - Example Listing
+                    </h2>
+                    <p className="text-xs text-slate-700 font-medium">
+                      Sample commercial kitchen &bull; ~18 kg (illustrative)
+                    </p>
                   </div>
-                  <div className="px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-xs font-extrabold font-mono flex items-center gap-1">
-                    <span>⏱️</span>
-                    <span>42 MIN REMAINING</span>
+                  <div
+                    className="px-2.5 py-1 rounded bg-amber-50 text-amber-950 border border-amber-300 text-[11px] font-bold flex items-center gap-1.5 shrink-0"
+                    aria-label="Safe pickup window: 42 minutes remaining in this example"
+                  >
+                    <IconClock className="w-3.5 h-3.5 text-amber-900" />
+                    <span>42 minutes remaining in this example</span>
                   </div>
                 </div>
 
                 {/* Stepper Pipeline */}
-                <div className="space-y-3 py-2 border-y border-slate-100">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 font-semibold text-slate-700">
-                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px]">1</span>
-                      Donor Audit
+                <div className="space-y-3 py-2.5 border-y border-slate-200">
+                  <div className="flex items-center justify-between text-xs gap-2">
+                    <span className="flex items-center gap-2 font-semibold text-slate-800">
+                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-[10px]">
+                        1
+                      </span>
+                      Donor safe-window declaration
                     </span>
-                    <span className="text-emerald-700 font-bold flex items-center gap-1">
-                      <span>✓</span> AI Verified
+                    <span className="text-emerald-900 font-bold flex items-center gap-1">
+                      <IconCheck className="w-3.5 h-3.5" />
+                      <span>Declared (example)</span>
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 font-semibold text-slate-700">
-                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px]">2</span>
-                      Receiver Claim
+                  <div className="flex items-center justify-between text-xs gap-2">
+                    <span className="flex items-center gap-2 font-semibold text-slate-800">
+                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-[10px]">
+                        2
+                      </span>
+                      NGO claim (first-accept lock)
                     </span>
-                    <span className="text-emerald-700 font-bold">Asha Shelter Org</span>
+                    <span className="text-emerald-900 font-bold">
+                      Verified NGO Partner (example)
+                    </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-xs gap-2">
                     <span className="flex items-center gap-2 font-semibold text-[#0b3c26]">
-                      <span className="w-5 h-5 rounded-full bg-[#0b3c26] text-white flex items-center justify-center font-bold text-[10px] animate-pulse">3</span>
-                      Rider Transit
+                      <IconRider className="w-4 h-4 text-[#0b3c26]" />
+                      Rider pickup &amp; handover
                     </span>
-                    <span className="status-badge status-badge-active text-[10px]">
-                      EN ROUTE
+                    <span className="inline-flex items-center rounded border border-sky-300 bg-sky-50 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-900">
+                      EN ROUTE (EXAMPLE)
                     </span>
                   </div>
                 </div>
 
-                {/* Handover OTP Box */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Pickup Security OTP</p>
-                    <p className="text-xs text-slate-600 font-medium">Verify code with Donor at location</p>
+                {/* Masked Handover OTP Box (F03) */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] font-bold uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+                      <IconLock className="w-3.5 h-3.5 text-[#0b3c26]" />
+                      <span>Pickup Handover Code</span>
+                    </p>
+                    <p className="text-xs text-slate-700 font-medium leading-snug">
+                      The donor sees a one-time code at pickup. Codes are never shown publicly.
+                    </p>
                   </div>
-                  <div className="px-3 py-1.5 bg-[#0b3c26] text-white rounded font-mono font-bold text-sm tracking-widest">
-                    4 8 2 9
+                  <div
+                    aria-label="Masked one-time pickup code"
+                    className="px-3 py-1.5 bg-[#0b3c26] text-white rounded font-mono font-bold text-base tracking-[0.25em] shrink-0"
+                  >
+                    &bull;&bull;&bull;&bull;
                   </div>
                 </div>
               </div>
 
               {/* Card Footer */}
-              <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-[11px] font-medium text-slate-500">
-                <span>📍 MG Road Sector 4 &rarr; Koramangala</span>
-                <span className="text-emerald-700 font-bold">9.8 kg CO2e Saved</span>
+              <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap justify-between items-center gap-2 text-xs font-medium text-slate-700">
+                <span className="inline-flex items-center gap-1.5">
+                  <IconPin className="w-3.5 h-3.5 text-[#0b3c26]" />
+                  <span>A hotel kitchen to a shelter, about 4 km in this scenario</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <MetricKindBadge kind="SIMULATED" />
+                  <span className="font-bold text-slate-900">Example CO₂e: 45 kg</span>
+                </span>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </section>

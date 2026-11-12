@@ -50,13 +50,13 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
     execSync('node prisma/prepare.js', {
       env: { ...process.env, DATABASE_URL: TEST_DB_URL, PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes' },
       stdio: 'ignore',
-      shell: 'cmd.exe',
+      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
     });
     // Generate test database tables
     execSync('npx prisma db push --accept-data-loss', {
       env: { ...process.env, DATABASE_URL: TEST_DB_URL, PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes' },
       stdio: 'ignore',
-      shell: 'cmd.exe',
+      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
     });
 
     // Programmatically clear all tables to ensure clean slate
@@ -207,8 +207,8 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
         pickupAvailableAt: new Date(),
         pickupDeadlineAt: new Date(Date.now() + 3600000),
         pickupAddress: 'Test Location',
-        pickupLatitude: 12.9716,
-        pickupLongitude: 77.5946,
+        pickupLatitude: 18.5204,
+        pickupLongitude: 73.8567,
         status: 'VOLUNTEER_ASSIGNED',
         acceptedNgoId: ngo1!.id,
       },
@@ -266,8 +266,8 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
         pickupAvailableAt: new Date(),
         pickupDeadlineAt: new Date(Date.now() + 3600000),
         pickupAddress: 'Test Location',
-        pickupLatitude: 12.9716,
-        pickupLongitude: 77.5946,
+        pickupLatitude: 18.5204,
+        pickupLongitude: 73.8567,
         status: 'AVAILABLE',
       },
     });
@@ -327,8 +327,8 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
         pickupAvailableAt: new Date(),
         pickupDeadlineAt: new Date(Date.now() + 3600000),
         pickupAddress: 'Test Location',
-        pickupLatitude: 12.9716,
-        pickupLongitude: 77.5946,
+        pickupLatitude: 18.5204,
+        pickupLongitude: 73.8567,
         status: 'AVAILABLE',
       },
     });
@@ -386,8 +386,8 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
         pickupAvailableAt: new Date(),
         pickupDeadlineAt: new Date(Date.now() + 3600000),
         pickupAddress: 'Test Location',
-        pickupLatitude: 12.9716,
-        pickupLongitude: 77.5946,
+        pickupLatitude: 18.5204,
+        pickupLongitude: 73.8567,
         status: 'VOLUNTEER_ASSIGNED',
         acceptedNgoId: ngo!.id,
       },
@@ -532,8 +532,8 @@ describe('FoodOps 3.0 P0 Core Integrity & Concurrency', () => {
         pickupAvailableAt: new Date(),
         pickupDeadlineAt: new Date(Date.now() + 3600000),
         pickupAddress: 'Test Location',
-        pickupLatitude: 12.9716,
-        pickupLongitude: 77.5946,
+        pickupLatitude: 18.5204,
+        pickupLongitude: 73.8567,
         status: 'AVAILABLE',
       },
     });

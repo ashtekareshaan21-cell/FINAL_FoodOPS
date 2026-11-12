@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -36,7 +35,7 @@
   --info-border: #bae6fd;
   
   --muted: #475569;          /* Slate secondary text */
-  --muted-light: #64748b;    /* Lighter slate text */
+  --muted-light: #475569;    /* Accessible AA slate secondary text */
   
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
