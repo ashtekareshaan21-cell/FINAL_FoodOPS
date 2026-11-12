@@ -1,25 +1,42 @@
 'use server';
 
 import { getSession, isAdminPortalEnabled } from '@/lib/auth';
+import { isLocalhostDevAdmin } from '@/lib/adminGate';
 import { adminService } from '@/services/adminService';
 import { revalidatePath } from 'next/cache';
 
-export async function getPendingNgos() {
-  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
+async function resolveAdminAccess(): Promise<
+  { ok: true; userId: string } | { ok: false; error: string }
+> {
+  if (await isLocalhostDevAdmin()) {
+    const session = await getSession();
+    return {
+      ok: true,
+      userId: session?.role === 'ADMIN' ? session.userId : 'local-dev-admin',
+    };
+  }
+  if (process.env.NODE_ENV === 'production' || !isAdminPortalEnabled()) {
+    return { ok: false, error: 'Admin portal is disabled.' };
+  }
   const session = await getSession();
-  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  if (!session || session.role !== 'ADMIN') {
+    return { ok: false, error: 'Unauthorized' };
+  }
+  return { ok: true, userId: session.userId };
+}
+
+export async function getPendingNgos() {
+  const access = await resolveAdminAccess();
+  if (!access.ok) throw new Error(access.error);
   return adminService.getPendingNgos();
 }
 
 export async function verifyNgo(ngoId: string) {
-  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    return { success: false, error: 'Unauthorized' };
-  }
+  const access = await resolveAdminAccess();
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
-    await adminService.verifyNgo(session.userId, ngoId);
+    await adminService.verifyNgo(access.userId, ngoId);
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
@@ -30,14 +47,11 @@ export async function verifyNgo(ngoId: string) {
 }
 
 export async function rejectNgo(ngoId: string, reason: string) {
-  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    return { success: false, error: 'Unauthorized' };
-  }
+  const access = await resolveAdminAccess();
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
-    await adminService.rejectNgo(session.userId, ngoId, reason);
+    await adminService.rejectNgo(access.userId, ngoId, reason);
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
@@ -48,10 +62,13 @@ export async function rejectNgo(ngoId: string, reason: string) {
 }
 
 export async function getAdminStats() {
-  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    throw new Error('Unauthorized: Admin access required.');
+  const access = await resolveAdminAccess();
+  if (!access.ok) {
+    throw new Error(
+      access.error === 'Unauthorized'
+        ? 'Unauthorized: Admin access required.'
+        : access.error
+    );
   }
   try {
     return await adminService.getAdminStats();
@@ -75,63 +92,61 @@ export async function getAdminStats() {
 }
 
 export async function getAllDonors() {
-  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  const access = await resolveAdminAccess();
+  if (!access.ok) throw new Error(access.error);
   return adminService.getAllDonors();
 }
 
 export async function getAllNgos() {
-  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  const access = await resolveAdminAccess();
+  if (!access.ok) throw new Error(access.error);
   return adminService.getAllNgos();
 }
 
 export async function getAllVolunteers() {
-  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  const access = await resolveAdminAccess();
+  if (!access.ok) throw new Error(access.error);
   return adminService.getAllVolunteers();
 }
 
 export async function getAllDonations() {
-  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  const access = await resolveAdminAccess();
+  if (!access.ok) throw new Error(access.error);
   return adminService.getAllDonations();
 }
 
 export async function getRecoveryDonations() {
-  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  const access = await resolveAdminAccess();
+  if (!access.ok) throw new Error(access.error);
   return adminService.getRecoveryDonations();
 }
 
 export async function getAllImpactRecords() {
-  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  const access = await resolveAdminAccess();
+  if (!access.ok) throw new Error(access.error);
   return adminService.getAllImpactRecords();
 }
 
 export async function getAllVerificationRequests() {
-  if (!isAdminPortalEnabled()) throw new Error('Admin portal is disabled.');
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+  const access = await resolveAdminAccess();
+  if (!access.ok) throw new Error(access.error);
   return adminService.getAllVerificationRequests();
 }
 
 export async function forceExpireDonation(donationId: string) {
-  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    return { success: false, error: 'Unauthorized. Only Admins can force-expire donations.' };
+  const access = await resolveAdminAccess();
+  if (!access.ok) {
+    return {
+      success: false,
+      error:
+        access.error === 'Unauthorized'
+          ? 'Unauthorized. Only Admins can force-expire donations.'
+          : access.error,
+    };
   }
 
   try {
-    await adminService.forceExpireDonation(session.userId, donationId);
+    await adminService.forceExpireDonation(access.userId, donationId);
     revalidatePath('/admin');
     revalidatePath('/admin/data');
     revalidatePath('/ngo');
@@ -144,14 +159,11 @@ export async function forceExpireDonation(donationId: string) {
 }
 
 export async function verifyDonor(donorId: string) {
-  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    return { success: false, error: 'Unauthorized' };
-  }
+  const access = await resolveAdminAccess();
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
-    await adminService.verifyDonor(session.userId, donorId);
+    await adminService.verifyDonor(access.userId, donorId);
     revalidatePath('/admin');
     revalidatePath('/admin/data');
     return { success: true };
@@ -163,14 +175,11 @@ export async function verifyDonor(donorId: string) {
 }
 
 export async function rejectDonor(donorId: string, reason: string) {
-  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    return { success: false, error: 'Unauthorized' };
-  }
+  const access = await resolveAdminAccess();
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
-    await adminService.rejectDonor(session.userId, donorId, reason);
+    await adminService.rejectDonor(access.userId, donorId, reason);
     revalidatePath('/admin');
     revalidatePath('/admin/data');
     return { success: true };
@@ -182,14 +191,11 @@ export async function rejectDonor(donorId: string, reason: string) {
 }
 
 export async function verifyVolunteer(volunteerId: string) {
-  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    return { success: false, error: 'Unauthorized' };
-  }
+  const access = await resolveAdminAccess();
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
-    await adminService.verifyVolunteer(session.userId, volunteerId);
+    await adminService.verifyVolunteer(access.userId, volunteerId);
     revalidatePath('/admin');
     revalidatePath('/admin/data');
     revalidatePath('/volunteer');
@@ -202,14 +208,11 @@ export async function verifyVolunteer(volunteerId: string) {
 }
 
 export async function rejectVolunteer(volunteerId: string, reason: string) {
-  if (!isAdminPortalEnabled()) return { success: false, error: 'Admin portal is disabled.' };
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    return { success: false, error: 'Unauthorized' };
-  }
+  const access = await resolveAdminAccess();
+  if (!access.ok) return { success: false, error: access.error };
 
   try {
-    await adminService.rejectVolunteer(session.userId, volunteerId, reason);
+    await adminService.rejectVolunteer(access.userId, volunteerId, reason);
     revalidatePath('/admin');
     revalidatePath('/admin/data');
     revalidatePath('/volunteer');
@@ -220,5 +223,3 @@ export async function rejectVolunteer(volunteerId: string, reason: string) {
     return { success: false, error: message };
   }
 }
-
-

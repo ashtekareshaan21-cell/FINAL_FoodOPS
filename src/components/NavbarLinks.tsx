@@ -84,7 +84,7 @@ export default function NavbarLinks({ role, adminEnabled }: NavbarLinksProps) {
         </Link>
       )}
 
-      {role === 'ADMIN' && adminEnabled && (
+      {process.env.NODE_ENV === 'development' && role === 'ADMIN' && adminEnabled && (
         <>
           <Link
             href="/admin"

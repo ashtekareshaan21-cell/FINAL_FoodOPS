@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { buildGoogleMapsSearchUrl } from '@/lib/googleMapsUrl';
 import { divertDonationToBiogas, generateDeliveryOtp } from '@/app/actions/donations';
 import { autoAllotTasks, advanceRescueStage, seedDemoRescues, getNgoLiveMonitoringFeed } from '@/app/actions/ngo';
+import { IS_DEMO_MODE } from '@/lib/siteConfig';
 import { prefersReducedMotion } from '@/animations/accessibility';
 import { staggerCards } from '@/animations/cards';
 
@@ -254,6 +255,7 @@ export default function ActiveRescuesList({
 
   // Handle Seed Demo Rescues
   const handleSeedDemo = async () => {
+    if (!IS_DEMO_MODE) return;
     startTransition(async () => {
       const res = await seedDemoRescues();
       if (res.success) {
@@ -354,14 +356,16 @@ export default function ActiveRescuesList({
             </button>
           )}
 
-          {/* Seed Demo Rescues */}
-          <button
-            onClick={handleSeedDemo}
-            disabled={isPending}
-            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-950 text-emerald-200 hover:bg-emerald-900 border border-emerald-800 transition-all flex items-center gap-1"
-          >
-            <span>⚡ Seed Test Rescues</span>
-          </button>
+          {/* Seed Demo Rescues (demo mode only) */}
+          {IS_DEMO_MODE && (
+            <button
+              onClick={handleSeedDemo}
+              disabled={isPending}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-950 text-emerald-200 hover:bg-emerald-900 border border-emerald-800 transition-all flex items-center gap-1"
+            >
+              <span>⚡ Seed Test Rescues</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -405,13 +409,15 @@ export default function ActiveRescuesList({
             allotment and concurrent live monitoring.
           </p>
           <div className="pt-2 flex justify-center gap-3">
-            <button
-              onClick={handleSeedDemo}
-              disabled={isPending}
-              className="btn-primary px-5 py-2.5 text-xs font-bold shadow-xs flex items-center gap-2"
-            >
-              <span>⚡ Generate 3 Demo Rescues</span>
-            </button>
+            {IS_DEMO_MODE && (
+              <button
+                onClick={handleSeedDemo}
+                disabled={isPending}
+                className="btn-primary px-5 py-2.5 text-xs font-bold shadow-xs flex items-center gap-2"
+              >
+                <span>⚡ Generate 3 Demo Rescues</span>
+              </button>
+            )}
             <Link
               href="/ngo"
               className="px-4 py-2.5 rounded-xl bg-surface-muted hover:bg-slate-200 text-foreground text-xs font-bold border border-border"

@@ -11,7 +11,7 @@ This document records the post-remediation architecture for `www.foodops.live`, 
 | `NEXT_PUBLIC_SITE_URL` | `https://www.foodops.live` | `https://demo.foodops.live` | Controls canonical links, `robots.txt`, `sitemap.xml`, `metadataBase`, and Open Graph URLs (`src/lib/siteConfig.ts`). |
 | `NEXT_PUBLIC_DEMO_MODE` | *(unset / `false`)* | `true` | When unset or `false`, `/login` omits all demo buttons/copy, `seedDemoAccounts()` does not run automatically, and the homepage hides demo banners. |
 | `NEXT_PUBLIC_DEMO_URL` | `[TEAM TO INSERT: dedicated demo URL]` | *(unset)* | Displays the subtle `"Try the demo"` link on `/` when set on production. |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | `[TEAM TO INSERT: monitored team email]` | *(optional)* | Populates clickable `mailto:` links in the shared footer and `/contact`. |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | `FoodOPServices@gmail.com` (default) | *(optional override)* | Populates clickable `mailto:` links in the shared footer, `/contact`, `/privacy`, and homepage JSON-LD (`src/lib/siteConfig.ts`). |
 | `DATABASE_URL` | `[TEAM TO INSERT: Postgres connection string]` | Demo/staging DB URL | `prisma/prepare.js` switches `prisma/schema.prisma` from `sqlite` (local dev) to `postgresql` when `DATABASE_URL` begins with `postgresql://` or `postgres://`. |
 | `JWT_SECRET` | Secret (>= 32 chars) | Distinct secret | Required for HMAC session signing (`foodops_session`). |
 

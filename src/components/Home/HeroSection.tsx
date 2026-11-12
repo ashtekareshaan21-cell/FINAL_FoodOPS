@@ -17,14 +17,18 @@ import { DEMO_SITE_URL, IS_DEMO_MODE } from '@/lib/siteConfig';
 
 export default function HeroSection() {
   const [sessionRole, setSessionRole] = useState<string | null>(null);
+  const [adminEnabled, setAdminEnabled] = useState(false);
 
   useEffect(() => {
     let active = true;
     fetch('/api/auth/session', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : { role: null }))
-      .then((data: { role?: string | null }) => {
-        if (active && data.role) {
-          setSessionRole(data.role);
+      .then((res) => (res.ok ? res.json() : { role: null, adminEnabled: false }))
+      .then((data: { role?: string | null; adminEnabled?: boolean }) => {
+        if (active) {
+          if (data.role) {
+            setSessionRole(data.role);
+          }
+          setAdminEnabled(Boolean(data.adminEnabled));
         }
       })
       .catch(() => undefined);
@@ -97,7 +101,7 @@ export default function HeroSection() {
                   <span>My Assigned Pickups</span>
                   <IconArrowRight className="w-4 h-4" />
                 </Link>
-              ) : sessionRole === 'ADMIN' ? (
+              ) : process.env.NODE_ENV === 'development' && sessionRole === 'ADMIN' && adminEnabled ? (
                 <>
                   <Link
                     href="/admin"

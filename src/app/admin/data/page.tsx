@@ -2,15 +2,19 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
+import { isLocalhostDevAdmin } from '@/lib/adminGate';
 import { getAllDonors, getAllNgos, getAllVolunteers, getAllDonations, getAllImpactRecords, getAllVerificationRequests } from '@/app/actions/admin';
 import Navbar from '@/components/Navbar';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 import AdminDataBrowser from './AdminDataBrowser';
 
 export default async function AdminDataPage() {
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    redirect('/login');
+  const localDevAdmin = await isLocalhostDevAdmin();
+  if (!localDevAdmin) {
+    const session = await getSession();
+    if (!session || session.role !== 'ADMIN') {
+      redirect('/login');
+    }
   }
 
   const donors = await getAllDonors();

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
+import { isLocalhostDevAdmin } from '@/lib/adminGate';
 import { getPendingNgos, getAdminStats, verifyNgo, rejectNgo, getAllDonors, verifyDonor, rejectDonor, getAllVolunteers, verifyVolunteer, rejectVolunteer, getRecoveryDonations } from '@/app/actions/admin';
 import { escalateDonation, resolveOrganicDonation } from '@/app/actions/donations';
 import PendingNgoList from './PendingNgoList';
@@ -13,9 +14,12 @@ import Navbar from '@/components/Navbar';
 import FoodOpsBackground from '@/components/visual/FoodOpsBackground';
 
 export default async function AdminPage() {
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
-    redirect('/login');
+  const localDevAdmin = await isLocalhostDevAdmin();
+  if (!localDevAdmin) {
+    const session = await getSession();
+    if (!session || session.role !== 'ADMIN') {
+      redirect('/login');
+    }
   }
 
   const pendingNgos = await getPendingNgos();

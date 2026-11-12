@@ -127,6 +127,28 @@ export async function login(formData: LoginInput) {
   }
 }
 
+export async function demoLogin(email: string) {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+    return { success: false, error: 'Demo login is disabled.' };
+  }
+
+  try {
+    const user = await authService.demoLogin(email);
+    await setSession({
+      userId: user.id,
+      role: user.role,
+      email: user.email,
+      verificationStatus: user.verificationStatus,
+      accountStatus: user.accountStatus,
+    });
+    return { success: true, role: user.role };
+  } catch (error) {
+    console.error('Demo login error:', error);
+    const message = error instanceof Error ? error.message : 'Sample sign-in failed.';
+    return { success: false, error: message };
+  }
+}
+
 export async function logout() {
   const session = await getSession();
   if (session) {

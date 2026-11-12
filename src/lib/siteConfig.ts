@@ -12,11 +12,12 @@ export const CANONICAL_HOST = (() => {
 export const DEMO_SITE_URL = process.env.NEXT_PUBLIC_DEMO_URL?.trim() || '';
 export const IS_DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
-const configuredEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || '';
+const configuredEmail =
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || 'FoodOPServices@gmail.com';
 export const HAS_CONFIGURED_CONTACT_EMAIL = configuredEmail.includes('@');
 export const CONTACT_EMAIL = HAS_CONFIGURED_CONTACT_EMAIL
   ? configuredEmail
-  : '[TEAM TO INSERT: monitored team email]';
+  : 'FoodOPServices@gmail.com';
 
 export const PUBLIC_ROUTES = [
   '/',

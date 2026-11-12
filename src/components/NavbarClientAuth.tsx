@@ -9,6 +9,7 @@ interface ClientSessionState {
   loaded: boolean;
   authenticated: boolean;
   role: string | null;
+  adminEnabled: boolean;
 }
 
 export default function NavbarClientAuth() {
@@ -16,24 +17,33 @@ export default function NavbarClientAuth() {
     loaded: false,
     authenticated: false,
     role: null,
+    adminEnabled: false,
   });
 
   useEffect(() => {
     let active = true;
     fetch('/api/auth/session', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : { authenticated: false, role: null }))
-      .then((data: { authenticated?: boolean; role?: string | null }) => {
+      .then((res) =>
+        res.ok ? res.json() : { authenticated: false, role: null, adminEnabled: false }
+      )
+      .then((data: { authenticated?: boolean; role?: string | null; adminEnabled?: boolean }) => {
         if (active) {
           setSessionState({
             loaded: true,
             authenticated: Boolean(data.authenticated),
             role: data.role || null,
+            adminEnabled: Boolean(data.adminEnabled),
           });
         }
       })
       .catch(() => {
         if (active) {
-          setSessionState({ loaded: true, authenticated: false, role: null });
+          setSessionState({
+            loaded: true,
+            authenticated: false,
+            role: null,
+            adminEnabled: false,
+          });
         }
       });
 
@@ -45,21 +55,23 @@ export default function NavbarClientAuth() {
   if (sessionState.authenticated && sessionState.role) {
     return (
       <div className="flex items-center gap-3">
-        <NavbarLinks role={sessionState.role} adminEnabled={true} />
-        <Link
-          href={
-            sessionState.role === 'DONOR'
-              ? '/donor'
-              : sessionState.role === 'NGO'
-              ? '/ngo'
-              : sessionState.role === 'VOLUNTEER'
-              ? '/volunteer'
-              : '/admin'
-          }
-          className="text-xs font-bold px-2.5 py-1 rounded border border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
-        >
-          {sessionState.role} Portal
-        </Link>
+        <NavbarLinks role={sessionState.role} adminEnabled={sessionState.adminEnabled} />
+        {(sessionState.role !== 'ADMIN' || sessionState.adminEnabled) && (
+          <Link
+            href={
+              sessionState.role === 'DONOR'
+                ? '/donor'
+                : sessionState.role === 'NGO'
+                ? '/ngo'
+                : sessionState.role === 'VOLUNTEER'
+                ? '/volunteer'
+                : '/admin'
+            }
+            className="text-xs font-bold px-2.5 py-1 rounded border border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
+          >
+            {sessionState.role} Portal
+          </Link>
+        )}
         <form action={logout}>
           <button
             type="submit"
@@ -74,6 +86,9 @@ export default function NavbarClientAuth() {
 
   return (
     <div className="flex items-center gap-2">
+      {sessionState.adminEnabled && (
+        <NavbarLinks role="ADMIN" adminEnabled={sessionState.adminEnabled} />
+      )}
       <Link
         href="/login"
         className="btn-secondary px-3.5 py-2 text-sm font-semibold border-slate-200 hover:border-slate-300"

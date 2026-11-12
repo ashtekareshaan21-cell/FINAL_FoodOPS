@@ -240,8 +240,16 @@ export const authService = {
   },
 
   async seedDemoAccounts() {
-    const demoPasswordHash = hashPassword('password');
-    const adminPasswordHash = hashPassword('admin@123');
+    if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true' && process.env.NODE_ENV !== 'test') {
+      throw new Error('Demo seeding is disabled outside demo mode.');
+    }
+
+    const demoPasswordHash = hashPassword(
+      process.env.DEMO_SEED_PASSWORD || crypto.randomBytes(24).toString('hex')
+    );
+    const adminPasswordHash = hashPassword(
+      process.env.ADMIN_SEED_PASSWORD || crypto.randomBytes(24).toString('hex')
+    );
 
     // 1. Admin
     const adminUser = await prisma.user.upsert({
@@ -526,30 +534,43 @@ export const authService = {
     }
   },
 
+  async demoLogin(email: string) {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+      throw new Error('Demo login is disabled.');
+    }
+    const allowedDemoEmails = ['donor@foodops.org', 'ngo1@foodops.org', 'volunteer@foodops.org'];
+    const trimmedInput = (email || '').trim();
+    if (!allowedDemoEmails.includes(trimmedInput)) {
+      throw new Error('Sample account is not available for walkthrough sign-in.');
+    }
+
+    let user = await userRepository.findByEmail(trimmedInput);
+    if (!user) {
+      await this.seedDemoAccounts();
+      user = await userRepository.findByEmail(trimmedInput);
+    }
+    if (!user) {
+      throw new Error('Sample account unavailable.');
+    }
+
+    await userRepository.updateLastLogin(user.id);
+    await auditService.log(prisma, {
+      userId: user.id,
+      role: user.role,
+      action: 'LOGIN',
+      entityType: 'User',
+      entityId: user.id,
+      newValues: { lastLoginAt: new Date(), mode: 'demo' },
+    });
+
+    return user;
+  },
+
   async login(input: LoginInput) {
     const { email, password } = input;
     const trimmedInput = (email || '').trim();
-    const isDemoEnvironment = process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV === 'test';
 
-    const demoEmails = [
-      'donor@foodops.org',
-      'ngo1@foodops.org',
-      'ngo2@foodops.org',
-      'ngo3@foodops.org',
-      'ngo_pending@foodops.org',
-      'volunteer@foodops.org',
-    ];
-
-    let user = await userRepository.findByEmail(trimmedInput);
-
-    if (isDemoEnvironment && !user && demoEmails.includes(trimmedInput)) {
-      try {
-        await this.seedDemoAccounts();
-        user = await userRepository.findByEmail(trimmedInput);
-      } catch (err) {
-        console.error('Auto seed demo accounts failed:', err);
-      }
-    }
+    const user = await userRepository.findByEmail(trimmedInput);
 
     if (!user || !user.passwordHash || !password) {
       throw new Error('Invalid email or password.');

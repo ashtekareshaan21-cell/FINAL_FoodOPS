@@ -52,8 +52,15 @@ async function main() {
     prisma = new PrismaClient({ adapter });
   }
 
-  const demoPasswordHash = hashPassword('password');
-  const adminPasswordHash = hashPassword('admin@123');
+  const isTestSqlite = !isPostgres && (process.env.NODE_ENV === 'test' || (process.env.DATABASE_URL || '').startsWith('file:'));
+  const demoPassword = process.env.DEMO_SEED_PASSWORD || (isTestSqlite ? crypto.randomBytes(16).toString('hex') : '');
+  const adminPassword = process.env.ADMIN_SEED_PASSWORD || (isTestSqlite ? crypto.randomBytes(16).toString('hex') : '');
+  if (!demoPassword || !adminPassword) {
+    throw new Error('DEMO_SEED_PASSWORD and ADMIN_SEED_PASSWORD env vars are required to run seed.js.');
+  }
+
+  const demoPasswordHash = hashPassword(demoPassword);
+  const adminPasswordHash = hashPassword(adminPassword);
 
   // 1. Create/Upsert Admin
   const adminUser = await prisma.user.upsert({

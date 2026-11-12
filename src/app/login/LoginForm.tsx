@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { login } from '@/app/actions/auth';
+import { login, demoLogin } from '@/app/actions/auth';
 
 const IS_DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
@@ -49,14 +49,13 @@ export default function LoginForm() {
     }
   };
 
-  const handleDemoLogin = async (sampleEmail: string, samplePassword = 'password') => {
+  const handleDemoLogin = async (sampleEmail: string) => {
     if (!IS_DEMO_MODE) return;
     setLoading(true);
     setError(null);
     setEmail(sampleEmail);
-    setPassword(samplePassword);
 
-    const res = await login({ email: sampleEmail, password: samplePassword });
+    const res = await demoLogin(sampleEmail);
     setLoading(false);
 
     if (res.success) {

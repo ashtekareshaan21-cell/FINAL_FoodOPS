@@ -1,6 +1,7 @@
 'use server';
 
-import { getSession } from '@/lib/auth';
+import { getSession, isAdminPortalEnabled } from '@/lib/auth';
+import { isLocalhostDevAdmin } from '@/lib/adminGate';
 import { revalidatePath } from 'next/cache';
 import { NgoAvailability } from '@prisma/client';
 import { donationService } from '@/services/donationService';
@@ -295,14 +296,29 @@ export async function getDonationMatchDiagnostics(donationId: string) {
   }
 }
 
-export async function escalateDonation(donationId: string) {
+async function resolveAdminDonationActor() {
+  if (await isLocalhostDevAdmin()) {
+    const session = await getSession();
+    return session?.role === 'ADMIN' ? session.userId : 'local-dev-admin';
+  }
+  if (process.env.NODE_ENV === 'production' || !isAdminPortalEnabled()) {
+    return null;
+  }
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') {
+    return null;
+  }
+  return session.userId;
+}
+
+export async function escalateDonation(donationId: string) {
+  const adminUserId = await resolveAdminDonationActor();
+  if (!adminUserId) {
     return { success: false, error: 'Unauthorized. Only Admins can escalate recovery.' };
   }
 
   try {
-    await donationService.escalateDonation(session.userId, donationId);
+    await donationService.escalateDonation(adminUserId, donationId);
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
@@ -313,13 +329,13 @@ export async function escalateDonation(donationId: string) {
 }
 
 export async function resolveOrganicDonation(donationId: string) {
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
+  const adminUserId = await resolveAdminDonationActor();
+  if (!adminUserId) {
     return { success: false, error: 'Unauthorized. Only Admins can resolve organic recovery.' };
   }
 
   try {
-    await donationService.resolveOrganicDonation(session.userId, donationId);
+    await donationService.resolveOrganicDonation(adminUserId, donationId);
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {

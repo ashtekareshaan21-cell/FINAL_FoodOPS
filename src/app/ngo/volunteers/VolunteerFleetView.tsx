@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { addNgoVolunteer, autoAllotTasks, seedDemoRescues } from '@/app/actions/ngo';
 import { assignVolunteer } from '@/app/actions/donations';
+import { IS_DEMO_MODE } from '@/lib/siteConfig';
 
 export interface VolunteerFleetItem {
   id: string;
@@ -164,6 +165,7 @@ export default function VolunteerFleetView({
 
   // Handle Seed Demo Rescues
   const handleSeedDemo = async () => {
+    if (!IS_DEMO_MODE) return;
     setFormError(null);
     startTransition(async () => {
       const res = await seedDemoRescues();
@@ -338,16 +340,18 @@ export default function VolunteerFleetView({
               <span>Live Monitor</span>
             </Link>
 
-            {/* Quick Demo Rescues Seeder */}
-            <button
-              onClick={handleSeedDemo}
-              disabled={isPending}
-              title="Add 3 realistic surplus donations for quick testing"
-              className="px-3 py-2.5 rounded-xl bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 text-xs font-semibold border border-emerald-700/50 transition-all flex items-center gap-1.5"
-            >
-              <span>⚡</span>
-              <span>Seed Demo Rescues</span>
-            </button>
+            {/* Quick Demo Rescues Seeder (demo mode only) */}
+            {IS_DEMO_MODE && (
+              <button
+                onClick={handleSeedDemo}
+                disabled={isPending}
+                title="Add 3 realistic surplus donations for quick testing"
+                className="px-3 py-2.5 rounded-xl bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 text-xs font-semibold border border-emerald-700/50 transition-all flex items-center gap-1.5"
+              >
+                <span>⚡</span>
+                <span>Seed Demo Rescues</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -847,13 +851,15 @@ export default function VolunteerFleetView({
                       <p className="text-xs text-muted-text">
                         No pending donations waiting for allotment.
                       </p>
-                      <button
-                        onClick={handleSeedDemo}
-                        disabled={isPending}
-                        className="mt-3 px-3 py-1.5 rounded-lg bg-emerald-800 text-white text-xs font-bold hover:bg-emerald-900 transition-all"
-                      >
-                        ⚡ Seed 3 Demo Rescues Now
-                      </button>
+                      {IS_DEMO_MODE && (
+                        <button
+                          onClick={handleSeedDemo}
+                          disabled={isPending}
+                          className="mt-3 px-3 py-1.5 rounded-lg bg-emerald-800 text-white text-xs font-bold hover:bg-emerald-900 transition-all"
+                        >
+                          ⚡ Seed 3 Demo Rescues Now
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="border border-border rounded-xl divide-y divide-border max-h-48 overflow-y-auto">
