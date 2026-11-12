@@ -128,15 +128,15 @@ export const organicRecoveryService = {
 
     const { donationId, facilityId, assignedVolunteerId, vehicleType, divertReason, notes } = input;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { ngoProfile: true },
-    });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || (user.role !== 'NGO' && user.role !== 'ADMIN')) {
       throw new Error('Not found');
     }
 
-    const ngo = user.role === 'NGO' ? user.ngoProfile : null;
+    const ngo =
+      user.role === 'NGO'
+        ? await prisma.nGOProfile.findUnique({ where: { userId } })
+        : null;
     if (user.role === 'NGO' && !ngo) {
       throw new Error('NGO profile not found');
     }
@@ -328,10 +328,7 @@ export const organicRecoveryService = {
    * Confirm arrival and weighbridge acceptance at the processing facility.
    */
   async confirmFacilityArrival(userId: string, missionId: string, otp?: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { ngoProfile: true },
-    });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || (user.role !== 'NGO' && user.role !== 'ADMIN')) {
       throw new Error('Mission not found');
     }
@@ -344,8 +341,12 @@ export const organicRecoveryService = {
 
     const isAdmin = user.role === 'ADMIN';
     const isInitiator = mission.initiatedById === userId;
+    const ngo =
+      !isAdmin && !isInitiator
+        ? await prisma.nGOProfile.findUnique({ where: { userId } })
+        : null;
     const isAssignedNgo = Boolean(
-      user.ngoProfile && mission.donation.acceptedNgoId === user.ngoProfile.id
+      ngo && mission.donation.acceptedNgoId === ngo.id
     );
     if (!isAdmin && !isInitiator && !isAssignedNgo) {
       throw new Error('Mission not found');
@@ -530,7 +531,7 @@ export const organicRecoveryService = {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new Error('User not found');
 
-    let donor = await prisma.donorProfile.findFirst();
+    const donor = await prisma.donorProfile.findFirst();
     if (!donor) {
       throw new Error('Donor profile required to seed donations.');
     }
