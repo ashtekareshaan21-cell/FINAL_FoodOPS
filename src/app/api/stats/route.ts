@@ -30,6 +30,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: 'Data unavailable',
+        details: error instanceof Error ? error.message : String(error),
         asOf: new Date().toISOString(),
       },
       {
