@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const globalForPrisma = global as unknown as { prismaCache?: Record<string, PrismaClient> };
+const globalForPrisma = globalThis as unknown as { prismaCache?: Record<string, PrismaClient> };
 
 function createPrismaClient(url: string): PrismaClient {
   const isPostgres = url.startsWith('postgresql://') || url.startsWith('postgres://');
@@ -32,10 +32,6 @@ function getPrismaClient(): PrismaClient {
     : (process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgresql://') || process.env.DATABASE_URL.startsWith('postgres://')) && !process.env.DATABASE_URL.includes('[YOUR-PASSWORD]')
         ? process.env.DATABASE_URL
         : 'file:./dev.db');
-
-  if (process.env.NODE_ENV === 'production') {
-    return createPrismaClient(dbUrl);
-  }
 
   if (!globalForPrisma.prismaCache) {
     globalForPrisma.prismaCache = {};

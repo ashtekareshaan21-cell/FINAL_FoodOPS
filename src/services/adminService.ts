@@ -255,30 +255,62 @@ export const adminService = {
 
 
   async getAdminStats() {
-    const totalDonors = await donorRepository.count();
-    const totalNgos = await ngoRepository.count();
-    const verifiedNgos = await ngoRepository.count({ where: { status: 'VERIFIED' } });
-    const pendingNgos = await ngoRepository.count({ where: { status: 'PENDING_VERIFICATION' } });
-    const totalVolunteers = await volunteerRepository.count();
-    const totalDonations = await donationRepository.count();
-    // Section 15 rule: Only COMPLETED rescues increment real completed rescue counters.
-    const completedRescues = await donationRepository.count({
-      where: {
-        status: 'COMPLETED',
-      },
-    });
-    const activeRescues = await donationRepository.count({
-      where: {
-        status: {
-          in: ['ACCEPTED', 'VOLUNTEER_ASSIGNED', 'PICKUP_IN_PROGRESS', 'PICKED_UP', 'DELIVERY_IN_PROGRESS'],
+    const [
+      totalDonors,
+      totalNgos,
+      verifiedNgos,
+      pendingNgos,
+      totalVolunteers,
+      totalDonations,
+      completedRescues,
+      activeRescues,
+      completedDonations,
+      recoveryImpact,
+      missionEnergy,
+    ] = await Promise.all([
+      donorRepository.count(),
+      ngoRepository.count(),
+      ngoRepository.count({ where: { status: 'VERIFIED' } }),
+      ngoRepository.count({ where: { status: 'PENDING_VERIFICATION' } }),
+      volunteerRepository.count(),
+      donationRepository.count(),
+      donationRepository.count({
+        where: {
+          status: 'COMPLETED',
         },
-      },
-    });
+      }),
+      donationRepository.count({
+        where: {
+          status: {
+            in: ['ACCEPTED', 'VOLUNTEER_ASSIGNED', 'PICKUP_IN_PROGRESS', 'PICKED_UP', 'DELIVERY_IN_PROGRESS'],
+          },
+        },
+      }),
+      prisma.donation.findMany({
+        where: { status: 'COMPLETED' },
+        select: { id: true },
+      }),
+      donationRepository.aggregateImpact({
+        where: {
+          OR: [
+            { calculationMethod: 'BIOGAS_RECOVERY_2026' },
+            { calculationMethod: { contains: 'RECOVERY' } },
+            { calculationMethod: { contains: 'ANAEROBIC' } },
+            { calculationMethod: { contains: 'AEROBIC' } },
+            { calculationMethod: { contains: 'CIRCULAR' } },
+          ],
+        },
+        _sum: {
+          co2EquivalentKg: true,
+          waterSavedLiters: true,
+          foodWeightKg: true,
+        },
+      }),
+      prisma.organicRecoveryMission.aggregate({
+        _sum: { cleanEnergyKwh: true },
+      }),
+    ]);
 
-    const completedDonations = await prisma.donation.findMany({
-      where: { status: 'COMPLETED' },
-      select: { id: true },
-    });
     const completedDonationIds = completedDonations.map((d) => d.id);
 
     // Aggregate rescue impact (direct food delivery only — never merged with organic recovery weight)
@@ -307,31 +339,9 @@ export const adminService = {
           })
         : { _sum: { co2EquivalentKg: 0, waterSavedLiters: 0, foodWeightKg: 0 } };
 
-    // Aggregate dynamic recovery impact (biogas, biomethanation, composting, goshala) as its own separate line
-    const recoveryImpact = await donationRepository.aggregateImpact({
-      where: {
-        OR: [
-          { calculationMethod: 'BIOGAS_RECOVERY_2026' },
-          { calculationMethod: { contains: 'RECOVERY' } },
-          { calculationMethod: { contains: 'ANAEROBIC' } },
-          { calculationMethod: { contains: 'AEROBIC' } },
-          { calculationMethod: { contains: 'CIRCULAR' } },
-        ],
-      },
-      _sum: {
-        co2EquivalentKg: true,
-        waterSavedLiters: true,
-        foodWeightKg: true,
-      },
-    });
-
     const rescueWeight = rescueImpact._sum?.foodWeightKg || 0;
     const divertedWeight = recoveryImpact._sum?.foodWeightKg || 0;
 
-    // Aggregate live clean energy generated from recovery missions
-    const missionEnergy = await prisma.organicRecoveryMission.aggregate({
-      _sum: { cleanEnergyKwh: true },
-    });
     const liveCleanEnergyKwh =
       (missionEnergy._sum?.cleanEnergyKwh || 0) +
       (divertedWeight > 0 && !missionEnergy._sum?.cleanEnergyKwh ? divertedWeight * 1.15 : 0);
