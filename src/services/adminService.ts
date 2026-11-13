@@ -268,28 +268,28 @@ export const adminService = {
       recoveryImpact,
       missionEnergy,
     ] = await Promise.all([
-      donorRepository.count(),
-      ngoRepository.count(),
-      ngoRepository.count({ where: { status: 'VERIFIED' } }),
-      ngoRepository.count({ where: { status: 'PENDING_VERIFICATION' } }),
-      volunteerRepository.count(),
-      donationRepository.count(),
+      donorRepository.count().catch(() => 0),
+      ngoRepository.count().catch(() => 0),
+      ngoRepository.count({ where: { status: 'VERIFIED' } }).catch(() => 0),
+      ngoRepository.count({ where: { status: 'PENDING_VERIFICATION' } }).catch(() => 0),
+      volunteerRepository.count().catch(() => 0),
+      donationRepository.count().catch(() => 0),
       donationRepository.count({
         where: {
           status: 'COMPLETED',
         },
-      }),
+      }).catch(() => 0),
       donationRepository.count({
         where: {
           status: {
             in: ['ACCEPTED', 'VOLUNTEER_ASSIGNED', 'PICKUP_IN_PROGRESS', 'PICKED_UP', 'DELIVERY_IN_PROGRESS'],
           },
         },
-      }),
+      }).catch(() => 0),
       prisma.donation.findMany({
         where: { status: 'COMPLETED' },
         select: { id: true },
-      }),
+      }).catch(() => []),
       donationRepository.aggregateImpact({
         where: {
           OR: [
@@ -305,13 +305,21 @@ export const adminService = {
           waterSavedLiters: true,
           foodWeightKg: true,
         },
-      }),
+      }).catch(() => ({
+        _sum: {
+          co2EquivalentKg: null,
+          waterSavedLiters: null,
+          foodWeightKg: null,
+        },
+      })),
       prisma.organicRecoveryMission.aggregate({
         _sum: { cleanEnergyKwh: true },
-      }),
+      }).catch(() => ({
+        _sum: { cleanEnergyKwh: null },
+      })),
     ]);
 
-    const completedDonationIds = completedDonations.map((d) => d.id);
+    const completedDonationIds = (completedDonations || []).map((d) => d.id);
 
     // Aggregate rescue impact (direct food delivery only — never merged with organic recovery weight)
     const rescueImpact =
@@ -336,7 +344,7 @@ export const adminService = {
               waterSavedLiters: true,
               foodWeightKg: true,
             },
-          })
+          }).catch(() => ({ _sum: { co2EquivalentKg: 0, waterSavedLiters: 0, foodWeightKg: 0 } }))
         : { _sum: { co2EquivalentKg: 0, waterSavedLiters: 0, foodWeightKg: 0 } };
 
     const rescueWeight = rescueImpact._sum?.foodWeightKg || 0;
