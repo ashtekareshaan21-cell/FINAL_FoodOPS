@@ -120,7 +120,7 @@ export default function SiteFooter() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs text-slate-700">
-          <p>&copy; {year} FoodOPS. Pune, Maharashtra.</p>
+          <p>&copy; {year} Eshaan Ashtekar / Team KALPAVAT - FoodOPS. All rights reserved. Pune, Maharashtra.</p>
           <p className="font-medium">
             Impact figures on this site are labelled REAL DATA, ESTIMATED IMPACT or SIMULATED.
           </p>

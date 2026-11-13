@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword } from '@/lib/password';
 import { prisma } from '@/lib/db';
 import { RegisterDonorInput, RegisterNGOInput, RegisterVolunteerInput, LoginInput } from '@/app/actions/auth';
 import { auditService } from './auditService';
+import { smsService } from './smsService';
 import crypto from 'crypto';
 
 export const authService = {
@@ -599,9 +600,10 @@ export const authService = {
   async sendDonorPhoneOtp(userId: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new Error('User not found.');
+    if (!user.phoneNumber) throw new Error('No phone number registered for this user.');
 
-    // Check rate limiting: existing active OTP within last 60 seconds
-    const existing = await prisma.oTPAttempt.findFirst({
+    // Rate limiting: check if an OTP was requested within the last 60 seconds
+    const existingRecent = await prisma.oTPAttempt.findFirst({
       where: {
         userId,
         purpose: 'DONOR_PHONE_VERIFICATION',
@@ -610,17 +612,38 @@ export const authService = {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (existing) {
+    if (existingRecent) {
       throw new Error('Please wait 60 seconds before requesting another OTP.');
     }
+
+    // Invalidate any previous unverified OTP attempts (one live code per phone number)
+    await prisma.oTPAttempt.updateMany({
+      where: {
+        userId,
+        purpose: 'DONOR_PHONE_VERIFICATION',
+        isUsed: false,
+      },
+      data: {
+        isUsed: true,
+      },
+    });
 
     const otp = crypto.randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min expiry
 
+    // Send code via SMS provider (MSG91 in India / test mode)
+    const smsResult = await smsService.sendOtp(user.phoneNumber, otp);
+    if (!smsResult.success) {
+      throw new Error(smsResult.error || 'SMS could not be sent, try again');
+    }
+
+    // Store SHA-256 hash in database - never store raw code in plaintext
+    const hashedOtp = smsService.hashOtp(otp);
+
     await prisma.oTPAttempt.create({
       data: {
         userId,
-        otp,
+        otp: hashedOtp,
         purpose: 'DONOR_PHONE_VERIFICATION',
         expiresAt,
       },
@@ -636,8 +659,9 @@ export const authService = {
 
     return {
       success: true,
-      message: `OTP code sent to ${user.phoneNumber}.`,
-      devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
+      message: smsResult.testMode
+        ? 'Test mode: OTP generated (DLT registration pending).'
+        : `OTP code sent to ${user.phoneNumber}.`,
     };
   },
 
@@ -672,7 +696,8 @@ export const authService = {
       },
     });
 
-    if (attempt.otp !== otpInput.trim()) {
+    const isMatch = smsService.verifyOtpHash(otpInput, attempt.otp);
+    if (!isMatch) {
       throw new Error('Invalid OTP code.');
     }
 

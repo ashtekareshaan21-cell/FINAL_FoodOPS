@@ -13,7 +13,6 @@ export default function DonorPhoneOtpBanner({ isPhoneVerified, phoneNumber }: Do
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
-  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [otpCode, setOtpCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,9 +32,6 @@ export default function DonorPhoneOtpBanner({ isPhoneVerified, phoneNumber }: Do
     if (res.success && 'message' in res) {
       setOtpSent(true);
       setMessage(res.message || 'OTP code sent successfully!');
-      if ('devOtp' in res && res.devOtp) {
-        setDevOtp(res.devOtp);
-      }
     } else if ('error' in res && res.error) {
       setError(res.error);
     } else {
@@ -96,7 +92,7 @@ export default function DonorPhoneOtpBanner({ isPhoneVerified, phoneNumber }: Do
 
       {message && (
         <div className="p-2.5 bg-emerald-100 border border-emerald-200 text-emerald-900 rounded text-xs font-bold">
-          ✓ {message} {devOtp && <span className="font-mono bg-emerald-200 px-2 py-0.5 rounded ml-2 text-black">Dev OTP: {devOtp}</span>}
+          ✓ {message}
         </div>
       )}
 
