@@ -92,10 +92,16 @@ export default function VolunteerFleetView({
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newVehicle, setNewVehicle] = useState('Bike / Two-Wheeler');
   const [newArea, setNewArea] = useState('Central Zone');
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [createdVolunteerCredentials, setCreatedVolunteerCredentials] = useState<{
+    email: string;
+    temporaryPassword?: string;
+    name: string;
+  } | null>(null);
 
   // Filtering
   const filteredVolunteers = volunteers.filter((vol) => {
@@ -127,18 +133,21 @@ export default function VolunteerFleetView({
         phoneNumber: newPhone,
         vehicleInfo: newVehicle,
         operatingArea: newArea,
+        initialPassword: newPassword.trim() || undefined,
       });
 
       if (res.success) {
         setFormSuccess(`Volunteer ${newName} registered successfully!`);
+        setCreatedVolunteerCredentials({
+          email: newEmail,
+          name: newName,
+          temporaryPassword: res.temporaryPassword,
+        });
         setNewName('');
         setNewEmail('');
         setNewPhone('');
-        setTimeout(() => {
-          setShowAddModal(false);
-          setFormSuccess(null);
-          router.refresh();
-        }, 1200);
+        setNewPassword('');
+        router.refresh();
       } else {
         setFormError(res.error || 'Failed to add volunteer.');
       }
@@ -609,104 +618,162 @@ export default function VolunteerFleetView({
                 {formError}
               </div>
             )}
-            {formSuccess && (
+            {formSuccess && !createdVolunteerCredentials && (
               <div className="mt-4 p-3 rounded-lg bg-success-bg text-success border border-success-border text-xs font-semibold">
                 ✓ {formSuccess}
               </div>
             )}
 
-            <form onSubmit={handleAddVolunteerSubmit} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Ramesh Kumar"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-foreground mb-1">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+91 9876543210"
-                    value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
-                  />
+            {createdVolunteerCredentials ? (
+              <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-600" />
+                  <h4 className="font-bold text-emerald-950 text-sm">Volunteer Rider Registered!</h4>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-foreground mb-1">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="rider@foodops.org"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
-                  />
+                <p className="text-emerald-900 leading-relaxed">
+                  Rider <strong>{createdVolunteerCredentials.name}</strong> has been created and verified. Share these credentials with them for logging into the volunteer dashboard:
+                </p>
+                <div className="p-3 bg-white border border-emerald-300 rounded-lg font-mono text-slate-800 space-y-1.5 text-xs">
+                  <div><span className="text-slate-500 font-sans">Login Email:</span> <span className="font-bold text-slate-900">{createdVolunteerCredentials.email}</span></div>
+                  <div><span className="text-slate-500 font-sans">Temporary Password:</span> <code className="bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded font-bold">{createdVolunteerCredentials.temporaryPassword}</code></div>
+                  <div><span className="text-slate-500 font-sans">Portal URL:</span> <span className="text-primary font-bold">https://foodops.live/login</span></div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-foreground mb-1">
-                    Vehicle Type
-                  </label>
-                  <select
-                    value={newVehicle}
-                    onChange={(e) => setNewVehicle(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
+                <p className="text-[11px] text-emerald-800 italic">
+                  A welcome email containing these login details has also been dispatched to the rider.
+                </p>
+                <div className="pt-2 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`FoodOPS Volunteer Login:\nEmail: ${createdVolunteerCredentials.email}\nTemporary Password: ${createdVolunteerCredentials.temporaryPassword}\nLogin: https://foodops.live/login`);
+                      alert('Login credentials copied to clipboard!');
+                    }}
+                    className="w-full py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-xs shadow-xs"
                   >
-                    <option value="Bike / Two-Wheeler">Bike / Two-Wheeler</option>
-                    <option value="EV Scooter">EV Scooter</option>
-                    <option value="Cargo Auto">Cargo Auto</option>
-                    <option value="Van / Four-Wheeler">Van / Four-Wheeler</option>
-                    <option value="Bicycle">Bicycle</option>
-                  </select>
+                    📋 Copy Credentials to Clipboard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatedVolunteerCredentials(null);
+                      setShowAddModal(false);
+                    }}
+                    className="w-full py-2 px-3 bg-surface-muted hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs"
+                  >
+                    Done & Close
+                  </button>
                 </div>
+              </div>
+            ) : (
+              <form onSubmit={handleAddVolunteerSubmit} className="mt-4 space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1">
-                    Operating Area
+                    Full Name *
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Shivajinagar, Kothrud, Pimpri-Chinchwad"
-                    value={newArea}
-                    onChange={(e) => setNewArea(e.target.value)}
+                    required
+                    placeholder="e.g. Ramesh Kumar"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
                     className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
                   />
                 </div>
-              </div>
 
-              <div className="pt-4 border-t border-border flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-lg bg-surface-muted hover:bg-slate-200 text-xs font-semibold text-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="btn-primary px-5 py-2 text-xs font-bold shadow-xs disabled:opacity-50"
-                >
-                  {isPending ? 'Registering...' : 'Register Volunteer'}
-                </button>
-              </div>
-            </form>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="+91 9876543210"
+                      value={newPhone}
+                      onChange={(e) => setNewPhone(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="rider@foodops.org"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Initial Password (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Min 6 chars, or leave blank to auto-generate"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
+                  />
+                  <p className="text-[10px] text-muted-text mt-1">
+                    Rider will log in with this password. (Riders can also self-register at <code className="text-primary font-mono">/register?role=volunteer</code>)
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      Vehicle Type
+                    </label>
+                    <select
+                      value={newVehicle}
+                      onChange={(e) => setNewVehicle(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="Bike / Two-Wheeler">Bike / Two-Wheeler</option>
+                      <option value="EV Scooter">EV Scooter</option>
+                      <option value="Cargo Auto">Cargo Auto</option>
+                      <option value="Van / Four-Wheeler">Van / Four-Wheeler</option>
+                      <option value="Bicycle">Bicycle</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      Operating Area
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Shivajinagar, Kothrud, Pimpri-Chinchwad"
+                      value={newArea}
+                      onChange={(e) => setNewArea(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-surface-muted border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-border flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 rounded-lg bg-surface-muted hover:bg-slate-200 text-xs font-semibold text-slate-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="btn-primary px-5 py-2 text-xs font-bold shadow-xs disabled:opacity-50"
+                  >
+                    {isPending ? 'Registering...' : 'Register Volunteer'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

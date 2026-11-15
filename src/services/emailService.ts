@@ -3,6 +3,10 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 export const emailService = {
   async sendEmail(to: string, subject: string, html: string) {
     if (!RESEND_API_KEY) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error(`[EMAIL ERROR] RESEND_API_KEY is not configured in production. Cannot deliver email to: ${to}`);
+        return { success: false, error: 'Email delivery service is unconfigured.' };
+      }
       console.log(`[EMAIL MOCK] To: ${to} | Subject: ${subject}`);
       console.log(`[EMAIL MOCK] Body: ${html.replace(/<[^>]*>/g, '')}`);
       return { success: true, mock: true };
@@ -43,6 +47,23 @@ export const emailService = {
       `<h1>Welcome to FoodOPS, ${orgName}</h1>
        <p>We are pleased to inform you that your food-handling and registration details have been reviewed and approved by our coordinator.</p>
        <p>You can now log in to the NGO Portal to claim nearby surplus food rescues and assign volunteer riders.</p>
+       <br/>
+       <p>Best regards,</p>
+       <p>The FoodOPS Team</p>`
+    );
+  },
+
+  async sendVolunteerWelcomeEmail(email: string, name: string, ngoName: string, temporaryPassword?: string) {
+    return this.sendEmail(
+      email,
+      'Welcome to FoodOPS — Rider Account Created',
+      `<h1>Welcome to FoodOPS, ${name}!</h1>
+       <p>You have been registered as an active volunteer rider affiliated with <strong>${ngoName}</strong>.</p>
+       <p>You can log in to your dashboard to view and manage rescue shipments:</p>
+       <p><strong>Login Email:</strong> ${email}<br/>
+       ${temporaryPassword ? `<strong>Temporary Password:</strong> <code>${temporaryPassword}</code><br/>` : ''}
+       <strong>Login URL:</strong> <a href="https://foodops.live/login">https://foodops.live/login</a></p>
+       <p>Please log in and update your security credentials after your initial session.</p>
        <br/>
        <p>Best regards,</p>
        <p>The FoodOPS Team</p>`

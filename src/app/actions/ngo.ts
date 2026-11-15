@@ -58,6 +58,7 @@ export async function addNgoVolunteer(data: {
   phoneNumber: string;
   vehicleInfo?: string;
   operatingArea?: string;
+  initialPassword?: string;
 }) {
   const session = await getSession();
   if (!session || session.role !== 'NGO') {
@@ -65,11 +66,11 @@ export async function addNgoVolunteer(data: {
   }
 
   try {
-    const volunteer = await ngoFleetService.addVolunteerToNgo(session.userId, data);
+    const result = await ngoFleetService.addVolunteerToNgo(session.userId, data);
     revalidatePath('/ngo/volunteers');
     revalidatePath('/ngo/active');
     revalidatePath('/ngo');
-    return { success: true, volunteer };
+    return { success: true, volunteer: result, temporaryPassword: result.temporaryPassword };
   } catch (error) {
     console.error('Error adding volunteer:', error);
     const message = error instanceof Error ? error.message : 'Failed to register volunteer.';
@@ -117,6 +118,13 @@ export async function autoAllotTasks(options: {
  * Live stage advance action for concurrent rescue tracking and operations
  */
 export async function advanceRescueStage(donationId: string) {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true' && process.env.NODE_ENV !== 'test') {
+    return {
+      success: false,
+      error: 'Direct stage advancement is disabled in production. Rescues require volunteer OTP verification.',
+    };
+  }
+
   const session = await getSession();
   if (!session || session.role !== 'NGO') {
     return { success: false, error: 'Unauthorized.' };

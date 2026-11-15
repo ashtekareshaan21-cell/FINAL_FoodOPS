@@ -3,14 +3,14 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const VALID_CATEGORIES = ['mixed', 'grains', 'bakery', 'vegetables', 'fruits', 'dairy', 'meat'];
 
-const PROMPT_TEXT = `Analyze this food listing image. Return a JSON object with the following fields:
+const PROMPT_TEXT = `Analyze this food listing image for surplus food rescue redistribution. Return a JSON object with the following fields:
 - foodCategory: must be one of: "mixed", "grains", "bakery", "vegetables", "fruits", "dairy", "meat"
 - estimatedServings: estimated number of servings as an integer
 - estimatedQuantityKg: estimated quantity in kilograms as a float/number
-- packagingObservation: description of how the food is packaged (e.g., plastic box, cardboard, wrapped)
-- visualObservations: array of strings containing observations about the food's appearance, freshness, and composition
-- warnings: array of strings with any potential food safety concerns or visual warnings (e.g., leaking container, potential allergens seen, signs of damage)
-- confidence: a number between 0 and 100 representing your confidence level in these estimates.
+- packagingObservation: description of how the food is packaged (e.g., plastic box, stainless steel vessel, foil wrap, unpackaged)
+- visualObservations: array of strings containing factual visual observations about appearance, coloration, and apparent condition
+- warnings: array of strings with potential food safety red flags or concerns. CRITICAL FOOD SAFETY AUDIT: If the food shows any visible sign of mold, fungal growth, discoloration, rot, insect damage, foreign objects, slime, structural decay, or unhygienic storage, you MUST include a warning starting with "[CRITICAL SAFETY]" (e.g. "[CRITICAL SAFETY] Visible mold or fungal growth detected on food surface. Unfit for human redistribution.").
+- confidence: a number between 0 and 100 representing your confidence in this analysis (significantly reduce confidence if the image is blurry, ambiguous, or spoiled).
 
 You must strictly output valid JSON matching this schema, with no markdown formatting or extra text outside the JSON object.`;
 
@@ -45,97 +45,6 @@ export function validateMagicNumbers(buffer: Buffer): boolean {
   return false;
 }
 
-function getAdaptiveVisionAudit(ocrText?: string) {
-  const rawText = ocrText || '';
-  const ocrLower = rawText.toLowerCase();
-
-  let category = 'mixed';
-  if (ocrLower.includes('bread') || ocrLower.includes('cake') || ocrLower.includes('pastry') || ocrLower.includes('bakery') || ocrLower.includes('bun') || ocrLower.includes('croissant')) {
-    category = 'bakery';
-  } else if (ocrLower.includes('rice') || ocrLower.includes('roti') || ocrLower.includes('chapati') || ocrLower.includes('wheat') || ocrLower.includes('grain') || ocrLower.includes('biryani') || ocrLower.includes('pulao')) {
-    category = 'grains';
-  } else if (ocrLower.includes('veg') || ocrLower.includes('paneer') || ocrLower.includes('curry') || ocrLower.includes('salad') || ocrLower.includes('dal') || ocrLower.includes('sabzi')) {
-    category = 'vegetables';
-  } else if (ocrLower.includes('fruit') || ocrLower.includes('apple') || ocrLower.includes('banana') || ocrLower.includes('orange')) {
-    category = 'fruits';
-  } else if (ocrLower.includes('milk') || ocrLower.includes('curd') || ocrLower.includes('yogurt') || ocrLower.includes('cheese')) {
-    category = 'dairy';
-  } else if (ocrLower.includes('chicken') || ocrLower.includes('mutton') || ocrLower.includes('egg') || ocrLower.includes('fish') || ocrLower.includes('meat')) {
-    category = 'meat';
-  }
-
-  // 1. Dynamic extraction of quantity and units from OCR text
-  let estimatedQuantityKg = 0;
-  let estimatedServings = 0;
-
-  const kgMatch = rawText.match(/(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilograms?|kilos?)/i);
-  const gramMatch = rawText.match(/(\d+(?:\.\d+)?)\s*(?:g|gm|grams?)/i);
-  const literMatch = rawText.match(/(\d+(?:\.\d+)?)\s*(?:l|ltr|liters?|litres?)/i);
-  const servingMatch = rawText.match(/(\d+)\s*(?:servings?|portions?|plates?|meals?|people|pax)/i);
-  const containerMatch = rawText.match(/(\d+)\s*(?:trays?|boxes?|tubs?|deghs?|containers?|vessels?)/i);
-
-  if (kgMatch) {
-    estimatedQuantityKg = parseFloat(kgMatch[1]);
-  } else if (gramMatch) {
-    estimatedQuantityKg = parseFloat(gramMatch[1]) / 1000;
-  } else if (literMatch) {
-    estimatedQuantityKg = parseFloat(literMatch[1]);
-  } else if (containerMatch) {
-    // Each catering degh / commercial tray ~ 8.5 kg average
-    estimatedQuantityKg = parseInt(containerMatch[1], 10) * 8.5;
-  }
-
-  if (servingMatch) {
-    estimatedServings = parseInt(servingMatch[1], 10);
-    if (!estimatedQuantityKg) {
-      estimatedQuantityKg = Number((estimatedServings * 0.32).toFixed(1));
-    }
-  }
-
-  // If no explicit number in text, compute dynamic deterministic variation from content
-  if (!estimatedQuantityKg || estimatedQuantityKg <= 0) {
-    const hash = rawText.split('').reduce((acc, char) => acc + char.charCodeAt(0), 42);
-    const dynamicBase = 12 + (hash % 28); // Dynamic 12kg to 40kg based on text
-    estimatedQuantityKg = Number(dynamicBase.toFixed(1));
-  }
-
-  if (!estimatedServings || estimatedServings <= 0) {
-    const portionFactor = category === 'bakery' ? 0.22 : category === 'grains' ? 0.35 : 0.3;
-    estimatedServings = Math.max(1, Math.round(estimatedQuantityKg / portionFactor));
-  }
-
-  // Dynamic packaging detection
-  let packagingObservation = 'Food packed in covered commercial catering containers with tamper-evident seal.';
-  if (ocrLower.includes('tray') || ocrLower.includes('aluminum') || ocrLower.includes('foil')) {
-    packagingObservation = 'Sealed heavy-gauge aluminum foil catering trays with crimped thermal lid.';
-  } else if (ocrLower.includes('box') || ocrLower.includes('carton')) {
-    packagingObservation = 'Corrugated food-grade pastry boxes with greaseproof parchment lining.';
-  } else if (ocrLower.includes('degh') || ocrLower.includes('vessel') || ocrLower.includes('handi')) {
-    packagingObservation = 'Stainless steel commercial banquet transport vessel with sealed clamp lid.';
-  } else if (ocrLower.includes('tub') || ocrLower.includes('plastic') || ocrLower.includes('bucket')) {
-    packagingObservation = 'Aseptic HDPE food-grade tubs with hermetic snap-lock closure.';
-  }
-
-  const confidence = Number((88.5 + (rawText.length % 9) + 0.5).toFixed(1));
-
-  return {
-    foodCategory: category,
-    estimatedServings,
-    estimatedQuantityKg,
-    packagingObservation,
-    visualObservations: [
-      `Dynamic item analysis resolved substrate profile for ${category.toUpperCase()} catering surplus (${estimatedQuantityKg} kg).`,
-      `Container integrity verified with standard FSSAI dispatch containment protocols.`,
-      `Visual texture and color uniformity indicate high freshness retention suitable for immediate redistribution.`
-    ],
-    warnings: [
-      'Confirm dispatch core temperature: >= 60°C for hot banquet items or <= 4°C for chilled surplus.',
-      'SLA reminder: Distribute within the 4-hour dynamic rescue dispatch window.'
-    ],
-    confidence,
-  };
-}
-
 export const aiListingAuditService = {
   async runAudit(base64Image: string, mimeType: string, donorId: string, ocrText?: string) {
     // 1. Validation on inputs
@@ -163,33 +72,14 @@ export const aiListingAuditService = {
       'gemini-1.5-flash',
     ].filter(Boolean))) as string[];
 
-    // 2. Check API Key presence
+    // 2. Check API Key presence - honest status if unconfigured
     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '') {
-      if (process.env.VITEST) {
-        return prisma.foodListingAudit.create({
-          data: {
-            donorId,
-            status: 'AI_UNAVAILABLE',
-            provider: 'google',
-            model: candidateModels[0] || 'gemini-1.5-flash',
-          },
-        });
-      }
-
-      const fallback = getAdaptiveVisionAudit(ocrText);
       return prisma.foodListingAudit.create({
         data: {
           donorId,
-          status: 'COMPLETED',
-          foodCategory: fallback.foodCategory,
-          estimatedServings: fallback.estimatedServings,
-          estimatedQuantityKg: fallback.estimatedQuantityKg,
-          packagingObservation: fallback.packagingObservation,
-          visualObservations: fallback.visualObservations,
-          warnings: fallback.warnings,
-          confidence: fallback.confidence,
+          status: 'AI_UNAVAILABLE',
           provider: 'google',
-          model: 'gemini-1.5-flash-adaptive',
+          model: candidateModels[0] || 'gemini-1.5-flash',
         },
       });
     }
@@ -278,33 +168,15 @@ export const aiListingAuditService = {
       }
     }
 
-    if (process.env.VITEST) {
-      return prisma.foodListingAudit.create({
-        data: {
-          donorId,
-          status: 'FAILED',
-          provider: 'google',
-          model: candidateModels[0],
-        },
-      });
-    }
-
-    // In runtime/demo/production: if Google API blocks key or encounters network/quota errors,
-    // provide realistic adaptive vision audit so donor operations are never blocked with failure.
-    const fallback = getAdaptiveVisionAudit(ocrText);
+    // If all candidate models fail or encountered quota/network errors,
+    // record honest FAILED status rather than fabricating audit observations.
+    console.warn('All Gemini candidate models failed to produce an audit. Recording status as FAILED.', lastError instanceof Error ? lastError.message : lastError);
     return prisma.foodListingAudit.create({
       data: {
         donorId,
-        status: 'COMPLETED',
-        foodCategory: fallback.foodCategory,
-        estimatedServings: fallback.estimatedServings,
-        estimatedQuantityKg: fallback.estimatedQuantityKg,
-        packagingObservation: fallback.packagingObservation,
-        visualObservations: fallback.visualObservations,
-        warnings: fallback.warnings,
-        confidence: fallback.confidence,
+        status: 'FAILED',
         provider: 'google',
-        model: candidateModels[0] || 'gemini-1.5-flash-adaptive',
+        model: candidateModels[0] || 'gemini-1.5-flash',
       },
     });
   },

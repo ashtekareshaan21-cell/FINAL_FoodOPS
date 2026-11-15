@@ -651,8 +651,8 @@ export default function ActiveRescuesList({
                         )}
                       </div>
 
-                      {/* Dynamic Stage Advance Simulator Button */}
-                      {currentStageIdx < 4 && (
+                      {/* Dynamic Stage Advance Simulator Button (Gated to Demo Mode) */}
+                      {IS_DEMO_MODE && currentStageIdx < 4 && (
                         <div className="space-y-1.5">
                           <button
                             type="button"

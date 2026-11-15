@@ -208,58 +208,17 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
 
     try {
       const res = await analyzeListingAction(base64Image, mimeType);
-      if (res.success && res.audit && (res.audit.status === 'COMPLETED' || res.audit.status === 'SUCCESS')) {
+      if (res.success && res.audit) {
         setAuditId(res.auditId ?? null);
         setAuditResult(res.audit as unknown as AuditResult);
       } else {
-        // Adaptive Fallback: Always display actionable AI audit findings rather than blocking donor with failure banner
-        const parsedServings = estimatedServings ? parseInt(estimatedServings, 10) : (title.toLowerCase().includes('buffet') || title.toLowerCase().includes('banquet') ? 50 : 35);
-        const parsedKg = quantity ? parseFloat(quantity) || 15.0 : 15.0;
-        const inferredCategory = foodCategory && foodCategory !== 'other' ? foodCategory : 'mixed';
-
-        const synthesizedAudit: AuditResult = {
-          id: res?.auditId || `audit_${Date.now()}`,
-          status: 'COMPLETED',
-          foodCategory: inferredCategory,
-          estimatedServings: isNaN(parsedServings) ? 35 : parsedServings,
-          estimatedQuantityKg: isNaN(parsedKg) ? 15.0 : parsedKg,
-          packagingObservation: 'Food sealed in food-grade covered trays with insulated thermal lining for transport.',
-          visualObservations: [
-            'Visual examination indicates fresh, recently prepared surplus with consistent coloration and density.',
-            'Surface shows no signs of moisture weeping, structural deformation, or foreign particles.',
-            'Container sealing is intact and compliant with urban volunteer bike/van transport protocols.'
-          ],
-          warnings: [
-            'Safety checklist: Verify core temperature (>= 60°C for hot food or <= 4°C for chilled surplus) at collection bay.',
-            'Transit guideline: Deliver and distribute within the FSSAI-recommended 4-hour rescue window.'
-          ],
-          confidence: 93.5,
-        };
-
-        setAuditId(synthesizedAudit.id);
-        setAuditResult(synthesizedAudit);
+        setAuditId(null);
+        setAuditError(res.error || 'AI visual audit service is currently unavailable. Standard physical inspection applies.');
       }
     } catch (err) {
-      console.error('Audit analysis fallback applied:', err);
-      const synthesizedAudit: AuditResult = {
-        id: `audit_${Date.now()}`,
-        status: 'COMPLETED',
-        foodCategory: foodCategory && foodCategory !== 'other' ? foodCategory : 'mixed',
-        estimatedServings: 35,
-        estimatedQuantityKg: 15.0,
-        packagingObservation: 'Food sealed in food-grade covered trays with insulated thermal lining for transport.',
-        visualObservations: [
-          'Visual examination indicates fresh, recently prepared surplus with consistent coloration and density.',
-          'Container sealing is intact and compliant with urban volunteer bike/van transport protocols.'
-        ],
-        warnings: [
-          'Safety checklist: Verify core temperature (>= 60°C for hot food or <= 4°C for chilled surplus) at collection bay.',
-          'Transit guideline: Deliver and distribute within the FSSAI-recommended 4-hour rescue window.'
-        ],
-        confidence: 91.0,
-      };
-      setAuditId(synthesizedAudit.id);
-      setAuditResult(synthesizedAudit);
+      console.error('Audit analysis failed:', err);
+      setAuditId(null);
+      setAuditError('Could not reach AI audit service. You may proceed with manual listing details.');
     } finally {
       setAnalyzing(false);
     }
@@ -939,6 +898,28 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
                       <span className="text-[10px] text-emerald-800 font-mono font-bold">Status: {auditResult.status}</span>
                     </div>
 
+                    {auditResult.status === 'AI_UNAVAILABLE' && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-xs space-y-1">
+                        <p className="font-bold flex items-center gap-1.5 text-amber-950">
+                          <span>ℹ️</span> AI Visual Listing Audit Unavailable
+                        </p>
+                        <p className="text-[11px] text-amber-800 leading-relaxed">
+                          Automated visual analysis is currently unconfigured or unavailable. Your food surplus listing will proceed normally with physical verification conducted by the collecting NGO / rider during pickup.
+                        </p>
+                      </div>
+                    )}
+
+                    {auditResult.status === 'FAILED' && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-xs space-y-1">
+                        <p className="font-bold flex items-center gap-1.5 text-amber-950">
+                          <span>⚠️</span> Image Analysis Inconclusive
+                        </p>
+                        <p className="text-[11px] text-amber-800 leading-relaxed">
+                          The image could not be verified by the AI visual model. You can still publish this listing; standard physical food safety checks will apply at pickup.
+                        </p>
+                      </div>
+                    )}
+
                     {auditResult.status === 'COMPLETED' && (
                       <div className="space-y-4 text-xs">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -976,13 +957,19 @@ export default function CreateDonationForm({ defaultLocation, donorVerificationS
                         </div>
 
                         {auditResult.warnings && auditResult.warnings.length > 0 && (
-                          <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900">
+                          <div className={`p-3 rounded-md ${
+                            auditResult.warnings.some((w: string) => w.includes('[CRITICAL SAFETY]') || w.toLowerCase().includes('mold') || w.toLowerCase().includes('spoil'))
+                              ? 'bg-rose-50 border border-rose-300 text-rose-900'
+                              : 'bg-amber-50 border border-amber-200 text-amber-900'
+                          }`}>
                             <p className="text-[10px] font-bold mb-1 flex items-center gap-1.5">
-                              <span>Notice:</span> Safety Check Observations
+                              <span>⚠️</span> Safety Check Observations
                             </p>
                             <ul className="list-disc pl-4 space-y-0.5 text-[11px] font-medium">
                               {auditResult.warnings.map((warn: string, idx: number) => (
-                                <li key={idx}>{warn}</li>
+                                <li key={idx} className={warn.includes('[CRITICAL SAFETY]') ? 'font-bold text-rose-700' : ''}>
+                                  {warn}
+                                </li>
                               ))}
                             </ul>
                           </div>

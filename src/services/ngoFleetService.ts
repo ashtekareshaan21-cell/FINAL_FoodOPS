@@ -4,6 +4,7 @@ import { ngoRepository } from '@/repositories/ngoRepository';
 import { auditService } from './auditService';
 import { hashPassword } from '@/lib/password';
 import { dynamicImpactEngine } from './dynamicImpactEngine';
+import { emailService } from './emailService';
 
 export const ngoFleetService = {
   /**
@@ -133,6 +134,7 @@ export const ngoFleetService = {
       phoneNumber: string;
       vehicleInfo?: string;
       operatingArea?: string;
+      initialPassword?: string;
     }
   ) {
     const ngo = await ngoRepository.findByUserId(ngoUserId);
@@ -155,14 +157,25 @@ export const ngoFleetService = {
       throw new Error('A user with this email or phone number already exists.');
     }
 
-    const defaultPasswordHash = hashPassword(crypto.randomBytes(24).toString('hex'));
+    let passwordToUse: string;
+    if (data.initialPassword && data.initialPassword.trim().length > 0) {
+      if (data.initialPassword.trim().length < 6) {
+        throw new Error('Initial password must be at least 6 characters.');
+      }
+      passwordToUse = data.initialPassword.trim();
+    } else {
+      // Generate a memorable temporary password for immediate rider login
+      passwordToUse = `Rider@${Math.floor(100000 + Math.random() * 900000)}`;
+    }
+
+    const passwordHash = hashPassword(passwordToUse);
 
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email: cleanEmail,
           phoneNumber: cleanPhone,
-          passwordHash: defaultPasswordHash,
+          passwordHash,
           role: 'VOLUNTEER',
           accountStatus: 'ACTIVE',
           verificationStatus: 'VERIFIED',
@@ -196,7 +209,17 @@ export const ngoFleetService = {
       return volunteer;
     });
 
-    return result;
+    // Dispatch welcome email with credentials
+    try {
+      await emailService.sendVolunteerWelcomeEmail(cleanEmail, data.name.trim(), ngo.organizationName, passwordToUse);
+    } catch (e) {
+      console.warn('Failed to send volunteer welcome email:', e);
+    }
+
+    return {
+      ...result,
+      temporaryPassword: passwordToUse,
+    };
   },
 
   /**
@@ -384,6 +407,10 @@ export const ngoFleetService = {
    * VOLUNTEER_ASSIGNED -> PICKUP_IN_PROGRESS -> PICKED_UP -> DELIVERY_IN_PROGRESS -> COMPLETED
    */
   async advanceRescueStage(ngoUserId: string, donationId: string) {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true' && process.env.NODE_ENV !== 'test') {
+      throw new Error('Direct stage simulation is disabled outside demo mode. Rescues must proceed with volunteer OTP verification.');
+    }
+
     const ngo = await ngoRepository.findByUserId(ngoUserId);
     if (!ngo) throw new Error('NGO profile not found');
 

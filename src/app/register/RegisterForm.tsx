@@ -146,6 +146,11 @@ export default function RegisterForm({ ngos, initialRole }: RegisterFormProps) {
       return;
     }
     if (role === 'NGO') {
+      if (!ngoRegNum || !ngoRegNum.trim()) {
+        setError('Please enter your FSSAI License or Registration number.');
+        setLoading(false);
+        return;
+      }
       if (ngoLat === null || ngoLng === null || !ngoAddress) {
         setError('Please select and confirm your NGO operational address on the map.');
         setLoading(false);
@@ -548,10 +553,11 @@ export default function RegisterForm({ ngos, initialRole }: RegisterFormProps) {
                   </motion.div>
                   <motion.div variants={itemVariants}>
                     <label className="label-premium">
-                      FSSAI License / Registration
+                      FSSAI License / Registration <span className="text-danger">*</span>
                     </label>
                     <input
                       type="text"
+                      required
                       className="input-premium"
                       value={ngoRegNum}
                       onChange={(e) => setNgoRegNum(e.target.value)}

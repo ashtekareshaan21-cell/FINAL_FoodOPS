@@ -103,9 +103,10 @@ export const authService = {
 
     const passwordHash = password ? hashPassword(password) : '';
 
-    const finalRegNum = registrationNumber && registrationNumber.trim() !== ''
-      ? registrationNumber
-      : `FSSAI-TEMP-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    if (!registrationNumber || registrationNumber.trim() === '') {
+      throw new Error('FSSAI License / Registration number is required for NGO onboarding.');
+    }
+    const finalRegNum = registrationNumber.trim();
 
     const user = await prisma.$transaction(async (tx) => {
       const newUser = await userRepository.createUser({
@@ -178,6 +179,14 @@ export const authService = {
     const existingUser = await userRepository.findByEmail(email);
     if (existingUser) {
       throw new Error('Email or Phone number already registered.');
+    }
+
+    const targetNgo = await prisma.nGOProfile.findUnique({
+      where: { id: ngoId },
+      select: { id: true, status: true },
+    });
+    if (!targetNgo || targetNgo.status !== 'VERIFIED') {
+      throw new Error('Selected NGO organization is not verified or does not exist.');
     }
 
     const passwordHash = password ? hashPassword(password) : '';

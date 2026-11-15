@@ -45,20 +45,18 @@ export default async function RegisterPage({
   let ngos: { id: string; organizationName: string }[] = [];
   try {
     const fetchedNgos = await prisma.nGOProfile.findMany({
+      where: {
+        status: 'VERIFIED',
+      },
       select: {
         id: true,
         organizationName: true,
       },
-      orderBy: [
-        { status: 'desc' },
-        { organizationName: 'asc' },
-      ],
+      orderBy: {
+        organizationName: 'asc',
+      },
     });
-    ngos = fetchedNgos.sort((a, b) => {
-      if (a.organizationName.includes('Save Food Foundation')) return -1;
-      if (b.organizationName.includes('Save Food Foundation')) return 1;
-      return 0;
-    });
+    ngos = fetchedNgos;
   } catch (err) {
     console.error('Failed to fetch NGOs for registration page:', err);
   }

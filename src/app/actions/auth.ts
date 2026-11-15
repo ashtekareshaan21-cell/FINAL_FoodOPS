@@ -44,7 +44,7 @@ export interface RegisterNGOInput {
   password?: string;
   phoneNumber: string;
   organizationName: string;
-  registrationNumber?: string;
+  registrationNumber: string;
   baseAddress: string;
   city?: string;
   baseLatitude: string | number;
